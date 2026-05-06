@@ -1,6 +1,8 @@
 package mx.unam.dgtic.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,14 +19,17 @@ public class MessageEntity {
     @Column(name = "id")
     private int id;
 
+    @NotNull
     @ManyToOne
     @JoinColumn(name = "id_thread")
     private ThreadEntity thread;
 
+    @NotNull
     @ManyToOne
     @JoinColumn(name = "user_id")
     private AccountEntity account;
 
+    @NotBlank
     @Column(name = "content")
     private String content;
 

@@ -1,6 +1,7 @@
 package mx.unam.dgtic.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,6 +17,7 @@ public class ClientEntity {
     private int idUser;
 
     @OneToOne
+    @NotNull
     @JoinColumn(name = "id_user", referencedColumnName = "id_user")
     private AccountEntity account;
 }

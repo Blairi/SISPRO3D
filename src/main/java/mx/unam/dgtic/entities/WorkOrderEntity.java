@@ -1,6 +1,8 @@
 package mx.unam.dgtic.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,18 +21,23 @@ public class WorkOrderEntity {
     @Column(name = "id")
     private int id;
 
+    @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private OrderStatus status;
 
+    @PastOrPresent
     @Column(name = "started_at")
     private LocalDateTime startedAt;
 
+    @PastOrPresent
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @NotNull
     @OneToOne
     @JoinColumn(name = "id_quote")
     private QuoteEntity quote;

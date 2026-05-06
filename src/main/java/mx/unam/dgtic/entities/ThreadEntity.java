@@ -1,6 +1,7 @@
 package mx.unam.dgtic.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,6 +18,7 @@ public class ThreadEntity {
     private int id;
 
     @OneToOne
+    @NotNull
     @JoinColumn(name = "id_order")
     private WorkOrderEntity workOrder;
 }
