@@ -1,0 +1,14 @@
+package mx.unam.dgtic.service;
+
+import mx.unam.dgtic.dto.ClientDTO;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ClientService {
+    List<ClientDTO> findAll();
+    Optional<ClientDTO> findById(int id);
+    ClientDTO create(ClientDTO dto);
+    ClientDTO update(int id, ClientDTO dto);
+    void delete(int id);
+}
