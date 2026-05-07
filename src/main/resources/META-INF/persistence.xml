@@ -1,0 +1,26 @@
+<!--
+ REFERENCIA: https://jakarta.ee/specifications/persistence/3.1/
+-->
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd" version="3.1">
+
+    <persistence-unit name="micursojpa" transaction-type="RESOURCE_LOCAL">
+
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <properties>
+            <!--  JDBC connection (replace with your values)  -->
+            <property name="jakarta.persistence.jdbc.driver" value="org.mariadb.jdbc.Driver"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:mariadb://localhost:3306/sispro3d_db"/>
+            <property name="jakarta.persistence.jdbc.user" value="cursos"/>
+            <property name="jakarta.persistence.jdbc.password" value="cursos"/>
+
+            <!--  Hibernate settings  -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MariaDBDialect"/>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+<!--            <property name="hibernate.hbm2ddl.auto" value="update"/>-->
+        </properties>
+
+    </persistence-unit>
+
+</persistence>
