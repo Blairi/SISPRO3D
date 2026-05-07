@@ -19,9 +19,10 @@ public class ExpertEntity {
     @Column(name = "id_user")
     private int idUser;
 
-    @NotNull
     @OneToOne
-    @JoinColumn(name = "id_user", referencedColumnName = "id_user")
+    @NotNull
+    @MapsId  // PK de AccountEntity
+    @JoinColumn(name = "id_user")
     private AccountEntity account;
 
     @NotBlank

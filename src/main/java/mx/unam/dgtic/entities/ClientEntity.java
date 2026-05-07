@@ -18,6 +18,7 @@ public class ClientEntity {
 
     @OneToOne
     @NotNull
-    @JoinColumn(name = "id_user", referencedColumnName = "id_user")
+    @MapsId  // PK de AccountEntity
+    @JoinColumn(name = "id_user")
     private AccountEntity account;
 }

@@ -1,6 +1,7 @@
 package mx.unam.dgtic.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,11 +12,14 @@ import lombok.Setter;
 @Entity
 @Table(name = "admin")
 public class AdminEntity {
+
     @Id
     @Column(name = "id_user")
     private int idUser;
 
     @OneToOne
-    @JoinColumn(name = "id_user", referencedColumnName = "id_user")
+    @NotNull
+    @MapsId  // PK de AccountEntity
+    @JoinColumn(name = "id_user")
     private AccountEntity account;
 }
