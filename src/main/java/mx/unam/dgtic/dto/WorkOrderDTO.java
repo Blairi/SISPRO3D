@@ -1,14 +1,18 @@
 package mx.unam.dgtic.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class WorkOrderDTO {
     private int id;
     private String status; // PENDING, IN_PROGRESS, IN_REVIEW, COMPLETED, CANCELED

@@ -1,16 +1,20 @@
 package mx.unam.dgtic.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import mx.unam.dgtic.domain.UserType;
 
 import java.time.LocalDateTime;
 
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class AccountDTO {
     private int idUser;
     private String name;
