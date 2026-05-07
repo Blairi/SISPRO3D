@@ -1,86 +1,68 @@
 package mx.unam.dgtic.service.impl;
 
-import mx.unam.dgtic.dao.GenericDAO;
-import mx.unam.dgtic.domain.Account;
 import mx.unam.dgtic.dto.AccountDTO;
+import mx.unam.dgtic.entities.AccountEntity;
+import mx.unam.dgtic.mapper.AccountMapper;
+import mx.unam.dgtic.repository.IAccountRepository;
+import mx.unam.dgtic.repository.impl.AccountRepository;
 import mx.unam.dgtic.service.AccountService;
 
 import java.util.List;
-import java.util.Optional;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 public class AccountServiceImpl implements AccountService {
 
-    private final GenericDAO<Account> accountDAO;
+    private final IAccountRepository accountRepository;
 
-    public AccountServiceImpl(GenericDAO<Account> accountDAO) {
-        this.accountDAO = accountDAO;
+    public AccountServiceImpl() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("micursojpa");
+		EntityManager em = emf.createEntityManager();
+		this.accountRepository = new AccountRepository(em);
     }
 
     @Override
     public List<AccountDTO> findAll() {
-        return accountDAO.findAll()
-                .stream()
-                .map(this::toResponseDTO)
-                .toList();
+        return AccountMapper.toDtoList(accountRepository.findAll());
     }
 
     @Override
-    public Optional<AccountDTO> findById(int id) {
-        return accountDAO.findById(id)
-                .map(this::toResponseDTO);
+    public AccountDTO findById(Integer id) {
+        return AccountMapper.toDTO(accountRepository.findById(id));
     }
 
     @Override
     public AccountDTO create(AccountDTO dto) {
-        Account account = toEntity(dto);
-        int generatedId = accountDAO.insert(account);
-        account.setIdUser(generatedId);
-        return toResponseDTO(account);
+        AccountEntity entity = AccountMapper.toEntity(dto);
+        accountRepository.save(entity);
+        return AccountMapper.toDTO(entity);
     }
 
     @Override
-    public AccountDTO update(int id, AccountDTO dto) {
-        accountDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Account no encontrado con id: " + id));
+    public AccountDTO update(Integer id, AccountDTO dto) {
 
-        Account account = toEntity(dto);
-        account.setIdUser(id);
-        accountDAO.update(account);
-        return toResponseDTO(account);
+        AccountEntity existingAccount = accountRepository.findById(id);
+        if (existingAccount == null) {
+            throw new RuntimeException("Account no encontrado con id: " + id);
+        }
+
+        AccountEntity accountEntity = AccountMapper.toEntity(dto);
+
+        accountRepository.update(accountEntity);
+
+        return AccountMapper.toDTO(accountEntity);
     }
 
     @Override
-    public void delete(int id) {
-        accountDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Account no encontrado con id: " + id));
-        accountDAO.delete(id);
-    }
+    public void delete(Integer id) {
 
-    // ------------------------------------------------------------------
-    //  Mappers
-    // ------------------------------------------------------------------
+        AccountEntity existingAccount = accountRepository.findById(id);
+        if (existingAccount == null) {
+            throw new RuntimeException("Account no encontrado con id: " + id);
+        }
 
-    private Account toEntity(AccountDTO dto) {
-        Account account = new Account();
-        account.setName(dto.getName());
-        account.setLastName(dto.getLastName());
-        account.setEmail(dto.getEmail());
-        account.setPhone(dto.getPhone());
-        account.setPassword(dto.getPassword());
-        account.setType(dto.getType());
-        return account;
-    }
-
-    private AccountDTO toResponseDTO(Account account) {
-        AccountDTO dto = new AccountDTO();
-        dto.setIdUser(account.getIdUser());
-        dto.setName(account.getName());
-        dto.setLastName(account.getLastName());
-        dto.setEmail(account.getEmail());
-        dto.setPhone(account.getPhone());
-        dto.setPassword(account.getPassword());
-        dto.setType(account.getType());
-        dto.setCreatedAt(account.getCreatedAt());
-        return dto;
+        accountRepository.delete(existingAccount);
     }
 }

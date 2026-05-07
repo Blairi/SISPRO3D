@@ -1,135 +1,64 @@
+
 package mx.unam.dgtic.service.impl;
 
-import mx.unam.dgtic.dao.GenericDAO;
-import mx.unam.dgtic.domain.Review;
 import mx.unam.dgtic.dto.ReviewDTO;
-import mx.unam.dgtic.dto.ClientDTO;
-import mx.unam.dgtic.dto.ServiceDTO;
+import mx.unam.dgtic.entities.ReviewEntity;
+import mx.unam.dgtic.mapper.ReviewMapper;
+import mx.unam.dgtic.repository.IReviewRepository;
+import mx.unam.dgtic.repository.impl.ReviewRepository;
 import mx.unam.dgtic.service.ReviewService;
 
 import java.util.List;
-import java.util.Optional;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 public class ReviewServiceImpl implements ReviewService {
 
-    private final GenericDAO<Review> reviewDAO;
+    private final IReviewRepository reviewRepository;
 
-    public ReviewServiceImpl(GenericDAO<Review> reviewDAO) {
-        this.reviewDAO = reviewDAO;
+    public ReviewServiceImpl() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("micursojpa");
+        EntityManager em = emf.createEntityManager();
+        this.reviewRepository = new ReviewRepository(em);
     }
 
     @Override
     public List<ReviewDTO> findAll() {
-        return reviewDAO.findAll()
-                .stream()
-                .map(this::toResponseDTO)
-                .toList();
+        return ReviewMapper.toDtoList(reviewRepository.findAll());
     }
 
     @Override
-    public Optional<ReviewDTO> findById(int id) {
-        return reviewDAO.findById(id)
-                .map(this::toResponseDTO);
+    public ReviewDTO findById(Integer id) {
+        return ReviewMapper.toDTO(reviewRepository.findById(id));
     }
 
     @Override
     public ReviewDTO create(ReviewDTO dto) {
-        Review review = toEntity(dto);
-        int generatedId = reviewDAO.insert(review);
-        review.setId(generatedId);
-        return toResponseDTO(review);
+        ReviewEntity entity = ReviewMapper.toEntity(dto);
+        reviewRepository.save(entity);
+        return ReviewMapper.toDTO(entity);
     }
 
     @Override
-    public ReviewDTO update(int id, ReviewDTO dto) {
-        reviewDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reseña no encontrada con id: " + id));
-
-        Review review = toEntity(dto);
-        review.setId(id);
-        reviewDAO.update(review);
-        return toResponseDTO(review);
+    public ReviewDTO update(Integer id, ReviewDTO dto) {
+        ReviewEntity existingReview = reviewRepository.findById(id);
+        if (existingReview == null) {
+            throw new RuntimeException("Reseña no encontrada con id: " + id);
+        }
+        ReviewEntity reviewEntity = ReviewMapper.toEntity(dto);
+        reviewEntity.setId(id);
+        reviewRepository.update(reviewEntity);
+        return ReviewMapper.toDTO(reviewEntity);
     }
 
     @Override
-    public void delete(int id) {
-        reviewDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Reseña no encontrada con id: " + id));
-        reviewDAO.delete(id);
-    }
-
-    private Review toEntity(ReviewDTO dto) {
-        Review review = new Review();
-        review.setRating(dto.getRating());
-        review.setComment(dto.getComment());
-
-        if (dto.getClient() != null && dto.getClient().getAccount() != null) {
-            mx.unam.dgtic.domain.Client client = new mx.unam.dgtic.domain.Client();
-            client.setAccount(new mx.unam.dgtic.domain.Account(dto.getClient().getAccount().getIdUser()));
-            review.setClient(client);
+    public void delete(Integer id) {
+        ReviewEntity existingReview = reviewRepository.findById(id);
+        if (existingReview == null) {
+            throw new RuntimeException("Reseña no encontrada con id: " + id);
         }
-
-        if (dto.getService() != null) {
-            review.setService(mapServiceByDTO(dto.getService()));
-        }
-
-        return review;
-    }
-
-    private ReviewDTO toResponseDTO(Review review) {
-        ReviewDTO dto = new ReviewDTO();
-        dto.setId(review.getId());
-        dto.setRating(review.getRating());
-        dto.setComment(review.getComment());
-        dto.setCreatedAt(review.getCreatedAt());
-
-        if (review.getClient() != null) {
-            ClientDTO clientDTO = new ClientDTO();
-            if (review.getClient().getAccount() != null) {
-                clientDTO.setAccount(mapAccountToDTO(review.getClient().getAccount()));
-            }
-            dto.setClient(clientDTO);
-        }
-
-        if (review.getService() != null) {
-            dto.setService(mapServiceToDTO(review.getService()));
-        }
-
-        return dto;
-    }
-
-    private mx.unam.dgtic.domain.Service mapServiceByDTO(ServiceDTO serviceDTO) {
-        mx.unam.dgtic.domain.Service service = new mx.unam.dgtic.domain.Service();
-        service.setId(serviceDTO.getId());
-        service.setTitle(serviceDTO.getTitle());
-        service.setDescription(serviceDTO.getDescription());
-        service.setBasePrice(serviceDTO.getBasePrice());
-        service.setDeliveryTimeDays(serviceDTO.getDeliveryTimeDays());
-        return service;
-    }
-
-    private ServiceDTO mapServiceToDTO(mx.unam.dgtic.domain.Service service) {
-        ServiceDTO dto = new ServiceDTO();
-        dto.setId(service.getId());
-        dto.setTitle(service.getTitle());
-        dto.setDescription(service.getDescription());
-        dto.setBasePrice(service.getBasePrice());
-        dto.setDeliveryTimeDays(service.getDeliveryTimeDays());
-        dto.setCreatedAt(service.getCreatedAt());
-        dto.setUpdatedAt(service.getUpdatedAt());
-        return dto;
-    }
-
-    private mx.unam.dgtic.dto.AccountDTO mapAccountToDTO(mx.unam.dgtic.domain.Account account) {
-        mx.unam.dgtic.dto.AccountDTO dto = new mx.unam.dgtic.dto.AccountDTO();
-        dto.setIdUser(account.getIdUser());
-        dto.setName(account.getName());
-        dto.setLastName(account.getLastName());
-        dto.setEmail(account.getEmail());
-        dto.setPhone(account.getPhone());
-        dto.setPassword(account.getPassword());
-        dto.setType(account.getType());
-        dto.setCreatedAt(account.getCreatedAt());
-        return dto;
+        reviewRepository.delete(existingReview);
     }
 }

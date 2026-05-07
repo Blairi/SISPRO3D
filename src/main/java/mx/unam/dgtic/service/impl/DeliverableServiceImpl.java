@@ -1,95 +1,64 @@
 package mx.unam.dgtic.service.impl;
 
-import mx.unam.dgtic.dao.GenericDAO;
-import mx.unam.dgtic.domain.Deliverable;
-import mx.unam.dgtic.domain.WorkOrder;
 import mx.unam.dgtic.dto.DeliverableDTO;
-import mx.unam.dgtic.dto.WorkOrderDTO;
+import mx.unam.dgtic.entities.DeliverableEntity;
+import mx.unam.dgtic.mapper.DeliverableMapper;
+import mx.unam.dgtic.repository.IDeliverableRepository;
+import mx.unam.dgtic.repository.impl.DeliverableRepository;
 import mx.unam.dgtic.service.DeliverableService;
 
 import java.util.List;
-import java.util.Optional;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 public class DeliverableServiceImpl implements DeliverableService {
 
-    private final GenericDAO<Deliverable> deliverableDAO;
+    private final IDeliverableRepository deliverableRepository;
 
-    public DeliverableServiceImpl(GenericDAO<Deliverable> deliverableDAO) {
-        this.deliverableDAO = deliverableDAO;
+    public DeliverableServiceImpl() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("micursojpa");
+        EntityManager em = emf.createEntityManager();
+        this.deliverableRepository = new DeliverableRepository(em);
     }
 
     @Override
     public List<DeliverableDTO> findAll() {
-        return deliverableDAO.findAll()
-                .stream()
-                .map(this::toResponseDTO)
-                .toList();
+        return DeliverableMapper.toDtoList(deliverableRepository.findAll());
     }
 
     @Override
-    public Optional<DeliverableDTO> findById(int id) {
-        return deliverableDAO.findById(id)
-                .map(this::toResponseDTO);
+    public DeliverableDTO findById(Integer id) {
+        return DeliverableMapper.toDTO(deliverableRepository.findById(id));
     }
 
     @Override
     public DeliverableDTO create(DeliverableDTO dto) {
-        Deliverable deliverable = toEntity(dto);
-        int generatedId = deliverableDAO.insert(deliverable);
-        deliverable.setId(generatedId);
-        return toResponseDTO(deliverable);
+        DeliverableEntity entity = DeliverableMapper.toEntity(dto);
+        deliverableRepository.save(entity);
+        return DeliverableMapper.toDTO(entity);
     }
 
     @Override
-    public DeliverableDTO update(int id, DeliverableDTO dto) {
-        deliverableDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Entregable no encontrado con id: " + id));
+    public DeliverableDTO update(Integer id, DeliverableDTO dto) {
+        DeliverableEntity existingDeliverable = deliverableRepository.findById(id);
+        if (existingDeliverable == null) {
+            throw new RuntimeException("Deliverable no encontrado con id: " + id);
+        }
 
-        Deliverable deliverable = toEntity(dto);
-        deliverable.setId(id);
-        deliverableDAO.update(deliverable);
-        return toResponseDTO(deliverable);
+        DeliverableEntity deliverableEntity = DeliverableMapper.toEntity(dto);
+        deliverableEntity.setId(id);
+        deliverableRepository.update(deliverableEntity);
+        return DeliverableMapper.toDTO(deliverableEntity);
     }
 
     @Override
-    public void delete(int id) {
-        deliverableDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Entregable no encontrado con id: " + id));
-        deliverableDAO.delete(id);
-    }
-
-    private Deliverable toEntity(DeliverableDTO dto) {
-        Deliverable deliverable = new Deliverable();
-        deliverable.setName(dto.getName());
-        deliverable.setUrlFile(dto.getUrlFile());
-        deliverable.setFileType(dto.getFileType());
-
-        if (dto.getWorkOrder() != null) {
-            WorkOrder workOrder = new WorkOrder(dto.getWorkOrder().getId());
-            deliverable.setWorkOrder(workOrder);
+    public void delete(Integer id) {
+        DeliverableEntity existingDeliverable = deliverableRepository.findById(id);
+        if (existingDeliverable == null) {
+            throw new RuntimeException("Deliverable no encontrado con id: " + id);
         }
-
-        return deliverable;
-    }
-
-    private DeliverableDTO toResponseDTO(Deliverable deliverable) {
-        DeliverableDTO dto = new DeliverableDTO();
-        dto.setId(deliverable.getId());
-        dto.setName(deliverable.getName());
-        dto.setUrlFile(deliverable.getUrlFile());
-        dto.setFileType(deliverable.getFileType());
-        dto.setCreatedAt(deliverable.getCreatedAt());
-
-        if (deliverable.getWorkOrder() != null) {
-            WorkOrderDTO woDTO = new WorkOrderDTO();
-            woDTO.setId(deliverable.getWorkOrder().getId());
-            woDTO.setStatus(deliverable.getWorkOrder().getStatus());
-            woDTO.setStartedAt(deliverable.getWorkOrder().getStartedAt());
-            woDTO.setCompletedAt(deliverable.getWorkOrder().getCompletedAt());
-            woDTO.setCreatedAt(deliverable.getWorkOrder().getCreatedAt());
-            dto.setWorkOrder(woDTO);
-        }
-
-        return dto;
+        deliverableRepository.delete(existingDeliverable);
     }
 }

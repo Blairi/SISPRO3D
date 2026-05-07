@@ -1,96 +1,64 @@
 package mx.unam.dgtic.service.impl;
 
-import mx.unam.dgtic.dao.GenericDAO;
-import mx.unam.dgtic.domain.WorkOrder;
-import mx.unam.dgtic.domain.Quote;
 import mx.unam.dgtic.dto.WorkOrderDTO;
-import mx.unam.dgtic.dto.QuoteDTO;
+import mx.unam.dgtic.entities.WorkOrderEntity;
+import mx.unam.dgtic.mapper.WorkOrderMapper;
+import mx.unam.dgtic.repository.IWorkOrderRepository;
+import mx.unam.dgtic.repository.impl.WorkOrderRepository;
 import mx.unam.dgtic.service.WorkOrderService;
 
 import java.util.List;
-import java.util.Optional;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 public class WorkOrderServiceImpl implements WorkOrderService {
 
-    private final GenericDAO<WorkOrder> workOrderDAO;
+    private final IWorkOrderRepository workOrderRepository;
 
-    public WorkOrderServiceImpl(GenericDAO<WorkOrder> workOrderDAO) {
-        this.workOrderDAO = workOrderDAO;
+    public WorkOrderServiceImpl() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("micursojpa");
+        EntityManager em = emf.createEntityManager();
+        this.workOrderRepository = new WorkOrderRepository(em);
     }
 
     @Override
     public List<WorkOrderDTO> findAll() {
-        return workOrderDAO.findAll()
-                .stream()
-                .map(this::toResponseDTO)
-                .toList();
+        return WorkOrderMapper.toDtoList(workOrderRepository.findAll());
     }
 
     @Override
-    public Optional<WorkOrderDTO> findById(int id) {
-        return workOrderDAO.findById(id)
-                .map(this::toResponseDTO);
+    public WorkOrderDTO findById(Integer id) {
+        return WorkOrderMapper.toDTO(workOrderRepository.findById(id));
     }
 
     @Override
     public WorkOrderDTO create(WorkOrderDTO dto) {
-        WorkOrder workOrder = toEntity(dto);
-        int generatedId = workOrderDAO.insert(workOrder);
-        workOrder.setId(generatedId);
-        return toResponseDTO(workOrder);
+        WorkOrderEntity entity = WorkOrderMapper.toEntity(dto);
+        workOrderRepository.save(entity);
+        return WorkOrderMapper.toDTO(entity);
     }
 
     @Override
-    public WorkOrderDTO update(int id, WorkOrderDTO dto) {
-        workOrderDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Orden de trabajo no encontrada con id: " + id));
+    public WorkOrderDTO update(Integer id, WorkOrderDTO dto) {
+        WorkOrderEntity existingWorkOrder = workOrderRepository.findById(id);
+        if (existingWorkOrder == null) {
+            throw new RuntimeException("Orden de trabajo no encontrada con id: " + id);
+        }
 
-        WorkOrder workOrder = toEntity(dto);
-        workOrder.setId(id);
-        workOrderDAO.update(workOrder);
-        return toResponseDTO(workOrder);
+        WorkOrderEntity workOrderEntity = WorkOrderMapper.toEntity(dto);
+        workOrderEntity.setId(id);
+        workOrderRepository.update(workOrderEntity);
+        return WorkOrderMapper.toDTO(workOrderEntity);
     }
 
     @Override
-    public void delete(int id) {
-        workOrderDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Orden de trabajo no encontrada con id: " + id));
-        workOrderDAO.delete(id);
-    }
-
-    private WorkOrder toEntity(WorkOrderDTO dto) {
-        WorkOrder workOrder = new WorkOrder();
-        workOrder.setStatus(dto.getStatus());
-        workOrder.setStartedAt(dto.getStartedAt());
-        workOrder.setCompletedAt(dto.getCompletedAt());
-
-        if (dto.getQuote() != null) {
-            Quote quote = new Quote(dto.getQuote().getId());
-            workOrder.setQuote(quote);
+    public void delete(Integer id) {
+        WorkOrderEntity existingWorkOrder = workOrderRepository.findById(id);
+        if (existingWorkOrder == null) {
+            throw new RuntimeException("Orden de trabajo no encontrada con id: " + id);
         }
-
-        return workOrder;
-    }
-
-    private WorkOrderDTO toResponseDTO(WorkOrder workOrder) {
-        WorkOrderDTO dto = new WorkOrderDTO();
-        dto.setId(workOrder.getId());
-        dto.setStatus(workOrder.getStatus());
-        dto.setStartedAt(workOrder.getStartedAt());
-        dto.setCompletedAt(workOrder.getCompletedAt());
-        dto.setCreatedAt(workOrder.getCreatedAt());
-
-        if (workOrder.getQuote() != null) {
-            QuoteDTO quoteDTO = new QuoteDTO();
-            quoteDTO.setId(workOrder.getQuote().getId());
-            quoteDTO.setStatus(workOrder.getQuote().getStatus());
-            quoteDTO.setTotalAmount(workOrder.getQuote().getTotalAmount());
-            quoteDTO.setValidUntil(workOrder.getQuote().getValidUntil());
-            quoteDTO.setDescription(workOrder.getQuote().getDescription());
-            quoteDTO.setCreatedAt(workOrder.getQuote().getCreatedAt());
-            dto.setQuote(quoteDTO);
-        }
-
-        return dto;
+        workOrderRepository.delete(existingWorkOrder);
     }
 }

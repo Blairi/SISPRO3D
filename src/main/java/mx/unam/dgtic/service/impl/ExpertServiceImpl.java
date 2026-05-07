@@ -1,93 +1,64 @@
 package mx.unam.dgtic.service.impl;
 
-import mx.unam.dgtic.dao.GenericDAO;
-import mx.unam.dgtic.domain.Account;
-import mx.unam.dgtic.domain.Expert;
-import mx.unam.dgtic.dto.AccountDTO;
 import mx.unam.dgtic.dto.ExpertDTO;
+import mx.unam.dgtic.entities.ExpertEntity;
+import mx.unam.dgtic.mapper.ExpertMapper;
+import mx.unam.dgtic.repository.IExpertRepository;
+import mx.unam.dgtic.repository.impl.ExpertRepository;
 import mx.unam.dgtic.service.ExpertService;
 
 import java.util.List;
-import java.util.Optional;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 public class ExpertServiceImpl implements ExpertService {
 
-    private final GenericDAO<Expert> expertDAO;
+    private final IExpertRepository expertRepository;
 
-    public ExpertServiceImpl(GenericDAO<Expert> expertDAO) {
-        this.expertDAO = expertDAO;
+    public ExpertServiceImpl() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("micursojpa");
+        EntityManager em = emf.createEntityManager();
+        this.expertRepository = new ExpertRepository(em);
     }
 
     @Override
     public List<ExpertDTO> findAll() {
-        return expertDAO.findAll()
-                .stream()
-                .map(this::toResponseDTO)
-                .toList();
+        return ExpertMapper.toDtoList(expertRepository.findAll());
     }
 
     @Override
-    public Optional<ExpertDTO> findById(int id) {
-        return expertDAO.findById(id)
-                .map(this::toResponseDTO);
+    public ExpertDTO findById(Integer id) {
+        return ExpertMapper.toDTO(expertRepository.findById(id));
     }
 
     @Override
     public ExpertDTO create(ExpertDTO dto) {
-        Expert expert = toEntity(dto);
-        int generatedId = expertDAO.insert(expert);
-        expert.getAccount().setIdUser(generatedId);
-        return toResponseDTO(expert);
+        ExpertEntity entity = ExpertMapper.toEntity(dto);
+        expertRepository.save(entity);
+        return ExpertMapper.toDTO(entity);
     }
 
     @Override
-    public ExpertDTO update(int id, ExpertDTO dto) {
-        expertDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Experto no encontrado con id: " + id));
+    public ExpertDTO update(Integer id, ExpertDTO dto) {
+        ExpertEntity existingExpert = expertRepository.findById(id);
+        if (existingExpert == null) {
+            throw new RuntimeException("Expert no encontrado con id: " + id);
+        }
 
-        Expert expert = toEntity(dto);
-        expert.getAccount().setIdUser(id);
-        expertDAO.update(expert);
-        return toResponseDTO(expert);
+        ExpertEntity expertEntity = ExpertMapper.toEntity(dto);
+        expertEntity.setIdUser(id);
+        expertRepository.update(expertEntity);
+        return ExpertMapper.toDTO(expertEntity);
     }
 
     @Override
-    public void delete(int id) {
-        expertDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Experto no encontrado con id: " + id));
-        expertDAO.delete(id);
-    }
-
-    private Expert toEntity(ExpertDTO dto) {
-        Expert expert = new Expert();
-        if (dto.getAccount() != null) {
-            expert.setAccount(new Account(dto.getAccount().getIdUser()));
+    public void delete(Integer id) {
+        ExpertEntity existingExpert = expertRepository.findById(id);
+        if (existingExpert == null) {
+            throw new RuntimeException("Expert no encontrado con id: " + id);
         }
-        expert.setSpecialty(dto.getSpecialty());
-        expert.setPortfolioUrl(dto.getPortfolioUrl());
-        expert.setBio(dto.getBio());
-        expert.setYearsExperience(dto.getYearsExperience());
-        return expert;
-    }
-
-    private ExpertDTO toResponseDTO(Expert expert) {
-        ExpertDTO dto = new ExpertDTO();
-        if (expert.getAccount() != null) {
-            AccountDTO accountDTO = new AccountDTO();
-            accountDTO.setIdUser(expert.getAccount().getIdUser());
-            accountDTO.setName(expert.getAccount().getName());
-            accountDTO.setLastName(expert.getAccount().getLastName());
-            accountDTO.setEmail(expert.getAccount().getEmail());
-            accountDTO.setPhone(expert.getAccount().getPhone());
-            accountDTO.setPassword(expert.getAccount().getPassword());
-            accountDTO.setType(expert.getAccount().getType());
-            accountDTO.setCreatedAt(expert.getAccount().getCreatedAt());
-            dto.setAccount(accountDTO);
-        }
-        dto.setSpecialty(expert.getSpecialty());
-        dto.setPortfolioUrl(expert.getPortfolioUrl());
-        dto.setBio(expert.getBio());
-        dto.setYearsExperience(expert.getYearsExperience());
-        return dto;
+        expertRepository.delete(existingExpert);
     }
 }

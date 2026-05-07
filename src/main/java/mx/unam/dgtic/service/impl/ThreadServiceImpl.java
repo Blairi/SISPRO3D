@@ -1,88 +1,64 @@
 package mx.unam.dgtic.service.impl;
 
-import mx.unam.dgtic.dao.GenericDAO;
-import mx.unam.dgtic.domain.Thread;
-import mx.unam.dgtic.domain.WorkOrder;
 import mx.unam.dgtic.dto.ThreadDTO;
-import mx.unam.dgtic.dto.WorkOrderDTO;
+import mx.unam.dgtic.entities.ThreadEntity;
+import mx.unam.dgtic.mapper.ThreadMapper;
+import mx.unam.dgtic.repository.IThreadRepository;
+import mx.unam.dgtic.repository.impl.ThreadRepository;
 import mx.unam.dgtic.service.ThreadService;
 
 import java.util.List;
-import java.util.Optional;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 public class ThreadServiceImpl implements ThreadService {
 
-    private final GenericDAO<Thread> threadDAO;
+    private final IThreadRepository threadRepository;
 
-    public ThreadServiceImpl(GenericDAO<Thread> threadDAO) {
-        this.threadDAO = threadDAO;
+    public ThreadServiceImpl() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("micursojpa");
+        EntityManager em = emf.createEntityManager();
+        this.threadRepository = new ThreadRepository(em);
     }
 
     @Override
     public List<ThreadDTO> findAll() {
-        return threadDAO.findAll()
-                .stream()
-                .map(this::toResponseDTO)
-                .toList();
+        return ThreadMapper.toDtoList(threadRepository.findAll());
     }
 
     @Override
-    public Optional<ThreadDTO> findById(int id) {
-        return threadDAO.findById(id)
-                .map(this::toResponseDTO);
+    public ThreadDTO findById(Integer id) {
+        return ThreadMapper.toDTO(threadRepository.findById(id));
     }
 
     @Override
     public ThreadDTO create(ThreadDTO dto) {
-        Thread thread = toEntity(dto);
-        int generatedId = threadDAO.insert(thread);
-        thread.setId(generatedId);
-        return toResponseDTO(thread);
+        ThreadEntity entity = ThreadMapper.toEntity(dto);
+        threadRepository.save(entity);
+        return ThreadMapper.toDTO(entity);
     }
 
     @Override
-    public ThreadDTO update(int id, ThreadDTO dto) {
-        threadDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Hilo no encontrado con id: " + id));
+    public ThreadDTO update(Integer id, ThreadDTO dto) {
+        ThreadEntity existingThread = threadRepository.findById(id);
+        if (existingThread == null) {
+            throw new RuntimeException("Hilo no encontrado con id: " + id);
+        }
 
-        Thread thread = toEntity(dto);
-        thread.setId(id);
-        threadDAO.update(thread);
-        return toResponseDTO(thread);
+        ThreadEntity threadEntity = ThreadMapper.toEntity(dto);
+        threadEntity.setId(id);
+        threadRepository.update(threadEntity);
+        return ThreadMapper.toDTO(threadEntity);
     }
 
     @Override
-    public void delete(int id) {
-        threadDAO.findById(id)
-                .orElseThrow(() -> new RuntimeException("Hilo no encontrado con id: " + id));
-        threadDAO.delete(id);
-    }
-
-    private Thread toEntity(ThreadDTO dto) {
-        Thread thread = new Thread();
-
-        if (dto.getWorkOrder() != null) {
-            WorkOrder workOrder = new WorkOrder(dto.getWorkOrder().getId());
-            thread.setWorkOrder(workOrder);
+    public void delete(Integer id) {
+        ThreadEntity existingThread = threadRepository.findById(id);
+        if (existingThread == null) {
+            throw new RuntimeException("Hilo no encontrado con id: " + id);
         }
-
-        return thread;
-    }
-
-    private ThreadDTO toResponseDTO(Thread thread) {
-        ThreadDTO dto = new ThreadDTO();
-        dto.setId(thread.getId());
-
-        if (thread.getWorkOrder() != null) {
-            WorkOrderDTO woDTO = new WorkOrderDTO();
-            woDTO.setId(thread.getWorkOrder().getId());
-            woDTO.setStatus(thread.getWorkOrder().getStatus());
-            woDTO.setStartedAt(thread.getWorkOrder().getStartedAt());
-            woDTO.setCompletedAt(thread.getWorkOrder().getCompletedAt());
-            woDTO.setCreatedAt(thread.getWorkOrder().getCreatedAt());
-            dto.setWorkOrder(woDTO);
-        }
-
-        return dto;
+        threadRepository.delete(existingThread);
     }
 }
