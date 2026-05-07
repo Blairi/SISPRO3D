@@ -17,9 +17,4 @@ public class ExpertDTO {
     private String portfolioUrl;
     private String bio;
     private int yearsExperience;
-
-    public ExpertDTO(int idUser) {
-        this.account = new AccountDTO();
-        this.account.setIdUser(idUser);
-    }
 }
