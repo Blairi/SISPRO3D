@@ -12,4 +12,9 @@ public class CategoryDTO {
     private int id;
     private String name;
     private String description;
+
+    public static CategoryDTO ofId(int idCategory) {
+        CategoryDTO categoryDTO = new CategoryDTO();
+        return CategoryDTO.builder().id(idCategory).build();
+    }
 }

@@ -18,6 +18,12 @@ public class ExpertDTO {
     private String bio;
     private int yearsExperience;
 
+    public static ExpertDTO ofId(int idExpert) {
+        AccountDTO acc = new AccountDTO();
+        acc.setIdUser(idExpert);
+        return ExpertDTO.builder().account(acc).build();
+    }
+
     @Override
     public String toString() {
         return "ExpertDTO{" +

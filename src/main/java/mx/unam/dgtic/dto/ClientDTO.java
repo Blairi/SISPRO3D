@@ -13,4 +13,10 @@ import lombok.Setter;
 @Builder
 public class ClientDTO {
     private AccountDTO account;
+
+    public static ClientDTO ofId(int idUser) {
+        AccountDTO acc = new AccountDTO();
+        acc.setIdUser(idUser);
+        return ClientDTO.builder().account(acc).build();
+    }
 }
