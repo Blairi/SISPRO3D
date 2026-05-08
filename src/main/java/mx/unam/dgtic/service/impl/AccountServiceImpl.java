@@ -30,7 +30,11 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public AccountDTO findById(Integer id) {
-        return AccountMapper.toDTO(accountRepository.findById(id));
+        AccountEntity existingAccount = accountRepository.findById(id);
+        if (existingAccount == null) {
+            throw new RuntimeException("Account no encontrado con id: " + id);
+        }
+        return AccountMapper.toDTO(existingAccount);
     }
 
     @Override

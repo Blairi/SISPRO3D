@@ -30,7 +30,11 @@ public class ExpertServiceImpl implements ExpertService {
 
     @Override
     public ExpertDTO findById(Integer id) {
-        return ExpertMapper.toDTO(expertRepository.findById(id));
+        ExpertEntity existingExpert = expertRepository.findById(id);
+        if (existingExpert == null) {
+            throw new RuntimeException("Expert no encontrado con id: " + id);
+        }
+        return ExpertMapper.toDTO(existingExpert);
     }
 
     @Override

@@ -30,7 +30,11 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public AdminDTO findById(Integer id) {
-        return AdminMapper.toDTO(adminRepository.findById(id));
+        AdminEntity existingAdmin = adminRepository.findById(id);
+        if (existingAdmin == null) {
+            throw new RuntimeException("Admin no encontrado con id: " + id);
+        }
+        return AdminMapper.toDTO(existingAdmin);
     }
 
     @Override

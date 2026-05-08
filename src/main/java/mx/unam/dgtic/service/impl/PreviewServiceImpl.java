@@ -30,7 +30,11 @@ public class PreviewServiceImpl implements PreviewService {
 
     @Override
     public PreviewDTO findById(Integer id) {
-        return PreviewMapper.toDTO(previewRepository.findById(id));
+        PreviewEntity existingPreview = previewRepository.findById(id);
+        if (existingPreview == null) {
+            throw new RuntimeException("Vista previa no encontrada con id: " + id);
+        }
+        return PreviewMapper.toDTO(existingPreview);
     }
 
     @Override

@@ -30,7 +30,11 @@ public class ThreadServiceImpl implements ThreadService {
 
     @Override
     public ThreadDTO findById(Integer id) {
-        return ThreadMapper.toDTO(threadRepository.findById(id));
+        ThreadEntity existingThread = threadRepository.findById(id);
+        if (existingThread == null) {
+            throw new RuntimeException("Hilo no encontrado con id: " + id);
+        }
+        return ThreadMapper.toDTO(existingThread);
     }
 
     @Override

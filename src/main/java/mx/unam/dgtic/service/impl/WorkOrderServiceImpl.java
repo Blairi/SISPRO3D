@@ -30,7 +30,11 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
     @Override
     public WorkOrderDTO findById(Integer id) {
-        return WorkOrderMapper.toDTO(workOrderRepository.findById(id));
+        WorkOrderEntity existingWorkOrder = workOrderRepository.findById(id);
+        if (existingWorkOrder == null) {
+            throw new RuntimeException("Orden de trabajo no encontrada con id: " + id);
+        }
+        return WorkOrderMapper.toDTO(existingWorkOrder);
     }
 
     @Override

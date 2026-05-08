@@ -30,7 +30,11 @@ public class DeliverableServiceImpl implements DeliverableService {
 
     @Override
     public DeliverableDTO findById(Integer id) {
-        return DeliverableMapper.toDTO(deliverableRepository.findById(id));
+        DeliverableEntity existingDeliverable = deliverableRepository.findById(id);
+        if (existingDeliverable == null) {
+            throw new RuntimeException("Deliverable no encontrado con id: " + id);
+        }
+        return DeliverableMapper.toDTO(existingDeliverable);
     }
 
     @Override

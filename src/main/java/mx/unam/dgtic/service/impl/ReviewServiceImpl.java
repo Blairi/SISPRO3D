@@ -31,7 +31,11 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public ReviewDTO findById(Integer id) {
-        return ReviewMapper.toDTO(reviewRepository.findById(id));
+        ReviewEntity existingReview = reviewRepository.findById(id);
+        if (existingReview == null) {
+            throw new RuntimeException("Reseña no encontrada con id: " + id);
+        }
+        return ReviewMapper.toDTO(existingReview);
     }
 
     @Override

@@ -30,7 +30,11 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public ClientDTO findById(Integer id) {
-        return ClientMapper.toDTO(clientRepository.findById(id));
+        ClientEntity existingClient = clientRepository.findById(id);
+        if (existingClient == null) {
+            throw new RuntimeException("Client no encontrado con id: " + id);
+        }
+        return ClientMapper.toDTO(existingClient);
     }
 
     @Override

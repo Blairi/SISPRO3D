@@ -30,7 +30,11 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDTO findById(Integer id) {
-        return CategoryMapper.toDTO(categoryRepository.findById(id));
+        CategoryEntity existingCategory = categoryRepository.findById(id);
+        if (existingCategory == null) {
+            throw new RuntimeException("Category no encontrada con id: " + id);
+        }
+        return CategoryMapper.toDTO(existingCategory);
     }
 
     @Override

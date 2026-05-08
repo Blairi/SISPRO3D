@@ -29,7 +29,11 @@ public class QuoteServiceImpl implements QuoteService {
 
     @Override
     public QuoteDTO findById(Integer id) {
-        return QuoteMapper.toDTO(quoteRepository.findById(id));
+        QuoteEntity existingQuote = quoteRepository.findById(id);
+        if (existingQuote == null) {
+            throw new RuntimeException("Cotización no encontrada con id: " + id);
+        }
+        return QuoteMapper.toDTO(existingQuote);
     }
 
     @Override

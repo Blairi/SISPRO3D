@@ -30,7 +30,11 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public MessageDTO findById(Integer id) {
-        return MessageMapper.toDTO(messageRepository.findById(id));
+        MessageEntity existingMessage = messageRepository.findById(id);
+        if (existingMessage == null) {
+            throw new RuntimeException("Mensaje no encontrado con id: " + id);
+        }
+        return MessageMapper.toDTO(existingMessage);
     }
 
     @Override
