@@ -73,4 +73,14 @@ public class ServiceRepository implements IServiceRepository {
                 .setParameter("id", id)
                 .getResultList();
     }
+
+    @Override
+    public boolean isApprovedByAdmin(Integer idService) {
+        Long count = em.createQuery(
+                        "SELECT COUNT(s) FROM ServiceEntity s WHERE s.id = :id AND s.admin IS NOT NULL", Long.class)
+                .setParameter("id", idService)
+                .getSingleResult();
+
+        return count > 0;
+    }
 }
