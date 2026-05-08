@@ -66,4 +66,11 @@ public class ServiceRepository implements IServiceRepository {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public List<ServiceEntity> findAllServicesFromExpertId(Integer id) {
+        return em.createQuery("SELECT s FROM ServiceEntity s WHERE s.expert.id = :id", ServiceEntity.class)
+                .setParameter("id", id)
+                .getResultList();
+    }
 }

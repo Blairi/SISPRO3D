@@ -30,7 +30,11 @@ public class ServiceServiceImpl implements ServiceService {
 
     @Override
     public ServiceDTO findById(Integer id) {
-        return ServiceMapper.toDTO(serviceRepository.findById(id));
+        ServiceEntity existingService = serviceRepository.findById(id);
+        if (existingService == null) {
+            throw new RuntimeException("Servicio no encontrado con id: " + id);
+        }
+        return ServiceMapper.toDTO(existingService);
     }
 
     @Override
@@ -60,5 +64,10 @@ public class ServiceServiceImpl implements ServiceService {
             throw new RuntimeException("Servicio no encontrado con id: " + id);
         }
         serviceRepository.delete(existingService);
+    }
+
+    @Override
+    public List<ServiceDTO> getServicesByExpertId(Integer id) {
+        return ServiceMapper.toDtoList(serviceRepository.findAllServicesFromExpertId(id));
     }
 }
