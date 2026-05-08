@@ -17,4 +17,15 @@ public class ExpertDTO {
     private String portfolioUrl;
     private String bio;
     private int yearsExperience;
+
+    @Override
+    public String toString() {
+        return "ExpertDTO{" +
+                "id=" + account.getIdUser() +
+                ", specialty='" + specialty + '\'' +
+                ", portfolioUrl='" + portfolioUrl + '\'' +
+                ", bio='" + bio + '\'' +
+                ", yearsExperience=" + yearsExperience +
+                '}';
+    }
 }
