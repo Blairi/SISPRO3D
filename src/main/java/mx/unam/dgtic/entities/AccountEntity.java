@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import mx.unam.dgtic.domain.UserType;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -21,7 +22,7 @@ public class AccountEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_user")
-    private int idUser;
+    private Integer idUser;
 
     @NotBlank
     @Size(max = 50)
@@ -53,6 +54,7 @@ public class AccountEntity {
     @Enumerated(EnumType.STRING)
     private UserType type; // ADMIN, CLIENT, EXPERT
 
+    @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

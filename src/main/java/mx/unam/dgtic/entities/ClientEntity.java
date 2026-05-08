@@ -14,7 +14,7 @@ import lombok.Setter;
 public class ClientEntity {
     @Id
     @Column(name = "id_user")
-    private int idUser;
+    private Integer idUser;
 
     @OneToOne
     @NotNull
