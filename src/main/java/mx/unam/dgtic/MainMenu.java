@@ -7,7 +7,7 @@ import mx.unam.dgtic.controller.ServiceController;
 import java.math.BigDecimal;
 import java.util.Scanner;
 
-public class Main {
+public class MainMenu {
 
     static Scanner scanner = new Scanner(System.in);
     static AccountController accountController = new AccountController();
