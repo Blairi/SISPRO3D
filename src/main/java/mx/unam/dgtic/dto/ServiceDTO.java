@@ -26,7 +26,19 @@ public class ServiceDTO {
     private LocalDateTime updatedAt;
     private int deliveryTimeDays;
 
-    public ServiceDTO(int id) {
-        this.id = id;
+    @Override
+    public String toString() {
+        return "ServiceDTO{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", description='" + description + '\'' +
+                ", basePrice=" + basePrice +
+                ", adminId=" + (admin != null && admin.getAccount() != null ? admin.getAccount().getIdUser() : "null") +
+                ", expertId=" + (expert != null && expert.getAccount() != null ? expert.getAccount().getIdUser() : "null") +
+                ", category=" + category +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                ", deliveryTimeDays=" + deliveryTimeDays +
+                '}';
     }
 }
