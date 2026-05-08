@@ -41,6 +41,19 @@
             <version>8.0.0.Final</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.glassfish.expressly</groupId>
+            <artifactId>expressly</artifactId>
+            <version>5.0.0</version>
+        </dependency>
+
+        <!-- Para hashear password -->
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
+        </dependency>
+
         <!-- MariaDB JDBC Driver -->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
