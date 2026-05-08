@@ -70,4 +70,9 @@ public class ServiceServiceImpl implements ServiceService {
     public List<ServiceDTO> getServicesByExpertId(Integer id) {
         return ServiceMapper.toDtoList(serviceRepository.findAllServicesFromExpertId(id));
     }
+
+    @Override
+    public boolean serviceIsApprovedByAdmin(Integer id) {
+        return serviceRepository.isApprovedByAdmin(id);
+    }
 }
