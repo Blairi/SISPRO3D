@@ -1,8 +1,8 @@
 package com.sispro3d.unam;
 
-import com.sispro3d.unam.controller.AccountController;
-import com.sispro3d.unam.domain.UserType;
-import com.sispro3d.unam.dto.AccountDTO;
+import com.sispro3d.unam.user.controller.AccountController;
+import com.sispro3d.unam.user.domain.UserType;
+import com.sispro3d.unam.user.dto.AccountDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
