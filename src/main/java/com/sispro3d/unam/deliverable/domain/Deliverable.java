@@ -1,13 +1,13 @@
 package com.sispro3d.unam.deliverable.domain;
 
 import com.sispro3d.unam.workorder.domain.WorkOrder;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class Deliverable {

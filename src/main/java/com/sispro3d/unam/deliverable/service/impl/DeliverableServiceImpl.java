@@ -1,95 +1,99 @@
 package com.sispro3d.unam.deliverable.service.impl;
 
-import com.sispro3d.unam.core.dao.GenericDAO;
+import com.sispro3d.unam.core.dto.WorkOrderRef;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
-import com.sispro3d.unam.deliverable.dto.DeliverableDTO;
+import com.sispro3d.unam.deliverable.dto.DeliverableRequest;
+import com.sispro3d.unam.deliverable.dto.DeliverableResponse;
+import com.sispro3d.unam.deliverable.repository.DeliverableRepository;
 import com.sispro3d.unam.deliverable.service.DeliverableService;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
-import com.sispro3d.unam.workorder.dto.WorkOrderDTO;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class DeliverableServiceImpl implements DeliverableService {
 
-    private final GenericDAO<Deliverable> deliverableDAO;
+    private final DeliverableRepository deliverableRepository;
 
-    public DeliverableServiceImpl(GenericDAO<Deliverable> deliverableDAO) {
-        this.deliverableDAO = deliverableDAO;
+    public DeliverableServiceImpl(DeliverableRepository deliverableRepository) {
+        this.deliverableRepository = deliverableRepository;
     }
 
     @Override
-    public List<DeliverableDTO> findAll() {
-        return deliverableDAO.findAll()
+    public List<DeliverableResponse> findAll() {
+        return deliverableRepository.findAll()
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public Optional<DeliverableDTO> findById(int id) {
-        return deliverableDAO.findById(id)
-                .map(this::toResponseDTO);
+    public Optional<DeliverableResponse> findById(Long id) {
+        return deliverableRepository.findById(id.intValue())
+                .map(this::toResponse);
     }
 
     @Override
-    public DeliverableDTO create(DeliverableDTO dto) {
-        Deliverable deliverable = toEntity(dto);
-        int generatedId = deliverableDAO.insert(deliverable);
-        deliverable.setId(generatedId);
-        return toResponseDTO(deliverable);
+    public DeliverableResponse create(DeliverableRequest request) {
+        Deliverable deliverable = toEntity(request);
+        Deliverable saved = deliverableRepository.save(deliverable);
+        return toResponse(saved);
     }
 
     @Override
-    public DeliverableDTO update(int id, DeliverableDTO dto) {
-        deliverableDAO.findById(id)
+    public DeliverableResponse update(Long id, DeliverableRequest request) {
+        int pk = id.intValue();
+        deliverableRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Entregable no encontrado con id: " + id));
 
-        Deliverable deliverable = toEntity(dto);
-        deliverable.setId(id);
-        deliverableDAO.update(deliverable);
-        return toResponseDTO(deliverable);
+        Deliverable deliverable = toEntity(request);
+        deliverable.setId(pk);
+        Deliverable updated = deliverableRepository.update(deliverable);
+        return toResponse(updated);
     }
 
     @Override
-    public void delete(int id) {
-        deliverableDAO.findById(id)
+    public void delete(Long id) {
+        int pk = id.intValue();
+        deliverableRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Entregable no encontrado con id: " + id));
-        deliverableDAO.delete(id);
+        deliverableRepository.deleteById(pk);
     }
 
-    private Deliverable toEntity(DeliverableDTO dto) {
+    @Override
+    public boolean existsById(Long id) {
+        return deliverableRepository.existsById(id.intValue());
+    }
+
+    private Deliverable toEntity(DeliverableRequest request) {
         Deliverable deliverable = new Deliverable();
-        deliverable.setName(dto.getName());
-        deliverable.setUrlFile(dto.getUrlFile());
-        deliverable.setFileType(dto.getFileType());
-
-        if (dto.getWorkOrder() != null) {
-            WorkOrder workOrder = new WorkOrder(dto.getWorkOrder().getId());
-            deliverable.setWorkOrder(workOrder);
-        }
-
+        deliverable.setName(request.getName());
+        deliverable.setUrlFile(request.getUrlFile());
+        deliverable.setFileType(request.getFileType());
+        deliverable.setWorkOrder(new WorkOrder(request.getWorkOrderId()));
         return deliverable;
     }
 
-    private DeliverableDTO toResponseDTO(Deliverable deliverable) {
-        DeliverableDTO dto = new DeliverableDTO();
-        dto.setId(deliverable.getId());
-        dto.setName(deliverable.getName());
-        dto.setUrlFile(deliverable.getUrlFile());
-        dto.setFileType(deliverable.getFileType());
-        dto.setCreatedAt(deliverable.getCreatedAt());
+    private DeliverableResponse toResponse(Deliverable deliverable) {
+        DeliverableResponse.DeliverableResponseBuilder builder = DeliverableResponse.builder()
+                .id(deliverable.getId())
+                .name(deliverable.getName())
+                .urlFile(deliverable.getUrlFile())
+                .fileType(deliverable.getFileType())
+                .createdAt(deliverable.getCreatedAt());
 
         if (deliverable.getWorkOrder() != null) {
-            WorkOrderDTO woDTO = new WorkOrderDTO();
-            woDTO.setId(deliverable.getWorkOrder().getId());
-            woDTO.setStatus(deliverable.getWorkOrder().getStatus());
-            woDTO.setStartedAt(deliverable.getWorkOrder().getStartedAt());
-            woDTO.setCompletedAt(deliverable.getWorkOrder().getCompletedAt());
-            woDTO.setCreatedAt(deliverable.getWorkOrder().getCreatedAt());
-            dto.setWorkOrder(woDTO);
+            builder.workOrder(WorkOrderRef.builder()
+                    .id(deliverable.getWorkOrder().getId())
+                    .status(deliverable.getWorkOrder().getStatus())
+                    .startedAt(deliverable.getWorkOrder().getStartedAt())
+                    .completedAt(deliverable.getWorkOrder().getCompletedAt())
+                    .createdAt(deliverable.getWorkOrder().getCreatedAt())
+                    .build());
         }
 
-        return dto;
+        return builder.build();
     }
 }

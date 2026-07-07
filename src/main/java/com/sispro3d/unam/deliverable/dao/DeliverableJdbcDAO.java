@@ -1,16 +1,19 @@
 package com.sispro3d.unam.deliverable.dao;
 
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
+import org.springframework.stereotype.Repository;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class DeliverableJdbcDAO implements GenericDAO<Deliverable> {
+@Repository
+public class DeliverableJdbcDAO extends AbstractJdbcDAO<Deliverable> implements GenericDAO<Deliverable> {
 
     private static final String FIND_ALL = """
             SELECT 
@@ -31,108 +34,42 @@ public class DeliverableJdbcDAO implements GenericDAO<Deliverable> {
 
     @Override
     public List<Deliverable> findAll() {
-        List<Deliverable> deliverables = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                deliverables.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todos los entregables", e);
-        }
-        return deliverables;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todos los entregables");
     }
 
     @Override
     public Optional<Deliverable> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar entregable con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar entregable con id");
     }
 
     @Override
     public int insert(Deliverable deliverable) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-
-                ps.setString(1, deliverable.getName());
-                ps.setString(2, deliverable.getUrlFile());
-                ps.setString(3, deliverable.getFileType());
-                ps.setInt(4, deliverable.getWorkOrder().getId());
-
-                ps.executeUpdate();
-
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        int generatedId = keys.getInt(1);
-                        deliverable.setId(generatedId);
-                        conn.commit();
-                        return generatedId;
-                    }
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar entregable: " + deliverable.getName(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert entregable", e);
-        }
-        return 0;
+        return insertWithGeneratedKeys(INSERT,
+                ps -> {
+                    ps.setString(1, deliverable.getName());
+                    ps.setString(2, deliverable.getUrlFile());
+                    ps.setString(3, deliverable.getFileType());
+                    ps.setInt(4, deliverable.getWorkOrder().getId());
+                },
+                deliverable, Deliverable::setId, "Error al insertar entregable: " + deliverable.getName());
     }
 
     @Override
     public void update(Deliverable deliverable) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setString(1, deliverable.getName());
-                ps.setString(2, deliverable.getUrlFile());
-                ps.setString(3, deliverable.getFileType());
-                ps.setInt(4, deliverable.getWorkOrder().getId());
-                ps.setInt(5, deliverable.getId());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar entregable con id: " + deliverable.getId(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update entregable", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setString(1, deliverable.getName());
+                    ps.setString(2, deliverable.getUrlFile());
+                    ps.setString(3, deliverable.getFileType());
+                    ps.setInt(4, deliverable.getWorkOrder().getId());
+                    ps.setInt(5, deliverable.getId());
+                },
+                "Error al actualizar entregable con id: " + deliverable.getId());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar entregable con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete entregable", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar entregable con id: " + id);
     }
 
     private Deliverable mapRow(ResultSet rs) throws SQLException {
