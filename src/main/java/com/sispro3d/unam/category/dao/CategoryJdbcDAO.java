@@ -1,15 +1,17 @@
 package com.sispro3d.unam.category.dao;
 
 import com.sispro3d.unam.category.domain.Category;
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
+import org.springframework.stereotype.Repository;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-public class CategoryJdbcDAO implements GenericDAO<Category> {
+@Repository
+public class CategoryJdbcDAO extends AbstractJdbcDAO<Category> implements GenericDAO<Category> {
 
     private static final String FIND_ALL   = "SELECT id, name, description FROM category";
     private static final String FIND_BY_ID = "SELECT id, name, description FROM category WHERE id = ?";
@@ -19,105 +21,38 @@ public class CategoryJdbcDAO implements GenericDAO<Category> {
 
     @Override
     public List<Category> findAll() {
-        List<Category> categories = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                categories.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todas las categorías", e);
-        }
-        return categories;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todas las categorías");
     }
 
     @Override
     public Optional<Category> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar categoría con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar categoría con id");
     }
 
     @Override
     public int insert(Category category) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-
-                ps.setString(1, category.getName());
-                ps.setString(2, category.getDescription());
-
-                ps.executeUpdate();
-
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        int generatedId = keys.getInt(1);
-                        category.setId(generatedId);
-                        conn.commit();
-                        return generatedId;
-                    }
-                }
-
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar categoría: " + category.getName(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert categoría", e);
-        }
-        return 0;
+        return insertWithGeneratedKeys(INSERT,
+                ps -> {
+                    ps.setString(1, category.getName());
+                    ps.setString(2, category.getDescription());
+                },
+                category, Category::setId, "Error al insertar categoría: " + category.getName());
     }
 
     @Override
     public void update(Category category) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setString(1, category.getName());
-                ps.setString(2, category.getDescription());
-                ps.setInt(3, category.getId());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar categoría con id: " + category.getId(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update categoría", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setString(1, category.getName());
+                    ps.setString(2, category.getDescription());
+                    ps.setInt(3, category.getId());
+                },
+                "Error al actualizar categoría con id: " + category.getId());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar categoría con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete categoría", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar categoría con id: " + id);
     }
 
     private Category mapRow(ResultSet rs) throws SQLException {
