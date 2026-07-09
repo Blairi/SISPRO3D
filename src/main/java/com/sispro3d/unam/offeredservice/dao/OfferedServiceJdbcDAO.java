@@ -9,12 +9,15 @@ import com.sispro3d.unam.user.domain.Admin;
 import com.sispro3d.unam.user.domain.Expert;
 import com.sispro3d.unam.user.domain.UserType;
 
+import org.springframework.stereotype.Repository;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public class OfferedServiceJdbcDAO extends AbstractJdbcDAO<OfferedService> implements GenericDAO<OfferedService> {
 
     private static final String FIND_ALL = """

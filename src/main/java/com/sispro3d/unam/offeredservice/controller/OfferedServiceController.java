@@ -1,27 +1,28 @@
 package com.sispro3d.unam.offeredservice.controller;
 
-import com.sispro3d.unam.offeredservice.dao.OfferedServiceJdbcDAO;
-import com.sispro3d.unam.offeredservice.dto.OfferedServiceDTO;
+import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
-import com.sispro3d.unam.offeredservice.service.impl.OfferedServiceServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.Optional;
 
+@Controller
 public class OfferedServiceController {
+
+    @Autowired
     private OfferedServiceService offeredServiceService;
 
-    public OfferedServiceController() {
-        this.offeredServiceService = new OfferedServiceServiceImpl(new OfferedServiceJdbcDAO());
-    }
-
-    public void displayService(int id) {
+    public void displayService(long id) {
         System.out.println("Displaying offered service with id = " + id);
-        Optional<OfferedServiceDTO> serviceDTO = offeredServiceService.findById(id);
+        Optional<OfferedServiceResponse> serviceDTO = offeredServiceService.findById(id);
         System.out.println("serviceDTO = " + serviceDTO);
     }
 
     public void displayAllServices() {
         System.out.println("Displaying all offered services:");
-        offeredServiceService.findAll().forEach(System.out::println);
+        List<OfferedServiceResponse> services = offeredServiceService.findAll();
+        services.forEach(System.out::println);
     }
 }
