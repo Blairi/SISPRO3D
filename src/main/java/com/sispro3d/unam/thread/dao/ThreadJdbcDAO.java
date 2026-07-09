@@ -1,16 +1,17 @@
 package com.sispro3d.unam.thread.dao;
 
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.thread.domain.Thread;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class ThreadJdbcDAO implements GenericDAO<Thread> {
+public class ThreadJdbcDAO extends AbstractJdbcDAO<Thread> implements GenericDAO<Thread> {
 
     private static final String FIND_ALL = """
             SELECT 
@@ -28,101 +29,34 @@ public class ThreadJdbcDAO implements GenericDAO<Thread> {
 
     @Override
     public List<Thread> findAll() {
-        List<Thread> threads = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                threads.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todos los hilos", e);
-        }
-        return threads;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todos los hilos");
     }
 
     @Override
     public Optional<Thread> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar hilo con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar hilo con id");
     }
 
     @Override
     public int insert(Thread thread) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-
-                ps.setInt(1, thread.getWorkOrder().getId());
-                ps.executeUpdate();
-
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        int generatedId = keys.getInt(1);
-                        thread.setId(generatedId);
-                        conn.commit();
-                        return generatedId;
-                    }
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar hilo", e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert hilo", e);
-        }
-        return 0;
+        return insertWithGeneratedKeys(INSERT,
+                ps -> ps.setInt(1, thread.getWorkOrder().getId()),
+                thread, Thread::setId, "Error al insertar hilo");
     }
 
     @Override
     public void update(Thread thread) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setInt(1, thread.getWorkOrder().getId());
-                ps.setInt(2, thread.getId());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar hilo con id: " + thread.getId(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update hilo", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setInt(1, thread.getWorkOrder().getId());
+                    ps.setInt(2, thread.getId());
+                },
+                "Error al actualizar hilo con id: " + thread.getId());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar hilo con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete hilo", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar hilo con id: " + id);
     }
 
     private Thread mapRow(ResultSet rs) throws SQLException {

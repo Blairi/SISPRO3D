@@ -1,18 +1,19 @@
 package com.sispro3d.unam.message.dao;
 
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.message.domain.Message;
 import com.sispro3d.unam.thread.domain.Thread;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.UserType;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class MessageJdbcDAO implements GenericDAO<Message> {
+public class MessageJdbcDAO extends AbstractJdbcDAO<Message> implements GenericDAO<Message> {
 
     private static final String FIND_ALL = """
             SELECT 
@@ -32,114 +33,46 @@ public class MessageJdbcDAO implements GenericDAO<Message> {
 
     @Override
     public List<Message> findAll() {
-        List<Message> messages = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                messages.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todos los mensajes", e);
-        }
-        return messages;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todos los mensajes");
     }
 
     @Override
     public Optional<Message> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar mensaje con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar mensaje con id");
     }
 
     @Override
     public int insert(Message message) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-
-                ps.setInt(1, message.getThread().getId());
-                ps.setInt(2, message.getAccount().getIdUser());
-                ps.setString(3, message.getContent());
-
-                ps.executeUpdate();
-
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        int generatedId = keys.getInt(1);
-                        message.setId(generatedId);
-                        conn.commit();
-                        return generatedId;
-                    }
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar mensaje", e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert mensaje", e);
-        }
-        return 0;
+        return insertWithGeneratedKeys(INSERT,
+                ps -> {
+                    ps.setInt(1, message.getThread().getId());
+                    ps.setInt(2, message.getAccount().getIdUser());
+                    ps.setString(3, message.getContent());
+                },
+                message, Message::setId, "Error al insertar mensaje");
     }
 
     @Override
     public void update(Message message) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setInt(1, message.getThread().getId());
-                ps.setInt(2, message.getAccount().getIdUser());
-                ps.setString(3, message.getContent());
-                ps.setInt(4, message.getId());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar mensaje con id: " + message.getId(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update mensaje", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setInt(1, message.getThread().getId());
+                    ps.setInt(2, message.getAccount().getIdUser());
+                    ps.setString(3, message.getContent());
+                    ps.setInt(4, message.getId());
+                },
+                "Error al actualizar mensaje con id: " + message.getId());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar mensaje con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete mensaje", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar mensaje con id: " + id);
     }
 
     private Message mapRow(ResultSet rs) throws SQLException {
-        // Mapear Thread
         Thread thread = new Thread();
         thread.setId(rs.getInt("thread_id"));
 
-        // Mapear Account
         Account account = new Account();
         account.setIdUser(rs.getInt("id_user"));
         account.setName(rs.getString("name"));

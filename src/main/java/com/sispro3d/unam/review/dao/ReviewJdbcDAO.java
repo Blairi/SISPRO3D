@@ -1,18 +1,19 @@
 package com.sispro3d.unam.review.dao;
 
 import com.sispro3d.unam.category.domain.Category;
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.review.domain.Review;
 import com.sispro3d.unam.user.domain.*;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class ReviewJdbcDAO implements GenericDAO<Review> {
+public class ReviewJdbcDAO extends AbstractJdbcDAO<Review> implements GenericDAO<Review> {
 
     private static final String FIND_ALL = """
             SELECT 
@@ -55,108 +56,42 @@ public class ReviewJdbcDAO implements GenericDAO<Review> {
 
     @Override
     public List<Review> findAll() {
-        List<Review> reviews = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                reviews.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todas las reseñas", e);
-        }
-        return reviews;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todas las reseñas");
     }
 
     @Override
     public Optional<Review> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar reseña con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar reseña con id");
     }
 
     @Override
     public int insert(Review review) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-
-                ps.setInt(1, review.getRating());
-                ps.setString(2, review.getComment());
-                ps.setInt(3, review.getClient().getAccount().getIdUser());
-                ps.setInt(4, review.getOfferedService().getId());
-
-                ps.executeUpdate();
-
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        int generatedId = keys.getInt(1);
-                        review.setId(generatedId);
-                        conn.commit();
-                        return generatedId;
-                    }
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar reseña", e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert reseña", e);
-        }
-        return 0;
+        return insertWithGeneratedKeys(INSERT,
+                ps -> {
+                    ps.setInt(1, review.getRating());
+                    ps.setString(2, review.getComment());
+                    ps.setInt(3, review.getClient().getAccount().getIdUser());
+                    ps.setInt(4, review.getOfferedService().getId());
+                },
+                review, Review::setId, "Error al insertar reseña");
     }
 
     @Override
     public void update(Review review) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setInt(1, review.getRating());
-                ps.setString(2, review.getComment());
-                ps.setInt(3, review.getClient().getAccount().getIdUser());
-                ps.setInt(4, review.getOfferedService().getId());
-                ps.setInt(5, review.getId());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar reseña con id: " + review.getId(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update reseña", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setInt(1, review.getRating());
+                    ps.setString(2, review.getComment());
+                    ps.setInt(3, review.getClient().getAccount().getIdUser());
+                    ps.setInt(4, review.getOfferedService().getId());
+                    ps.setInt(5, review.getId());
+                },
+                "Error al actualizar reseña con id: " + review.getId());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar reseña con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete reseña", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar reseña con id: " + id);
     }
 
     private Review mapRow(ResultSet rs) throws SQLException {
@@ -197,7 +132,7 @@ public class ReviewJdbcDAO implements GenericDAO<Review> {
         offeredService.setDeliveryTimeDays(rs.getInt("delivery_time_days"));
 
         Timestamp serviceCreatedAt = rs.getTimestamp("service_created_at");
-        if (serviceCreatedAt != null)         offeredService.setCreatedAt(serviceCreatedAt.toLocalDateTime());
+        if (serviceCreatedAt != null) offeredService.setCreatedAt(serviceCreatedAt.toLocalDateTime());
 
         Timestamp serviceUpdatedAt = rs.getTimestamp("service_updated_at");
         if (serviceUpdatedAt != null) offeredService.setUpdatedAt(serviceUpdatedAt.toLocalDateTime());

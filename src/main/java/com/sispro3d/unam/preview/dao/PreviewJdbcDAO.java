@@ -1,16 +1,17 @@
 package com.sispro3d.unam.preview.dao;
 
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.preview.domain.Preview;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class PreviewJdbcDAO implements GenericDAO<Preview> {
+public class PreviewJdbcDAO extends AbstractJdbcDAO<Preview> implements GenericDAO<Preview> {
 
     private static final String FIND_ALL = """
             SELECT 
@@ -29,106 +30,40 @@ public class PreviewJdbcDAO implements GenericDAO<Preview> {
 
     @Override
     public List<Preview> findAll() {
-        List<Preview> previews = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                previews.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todas las vistas previas", e);
-        }
-        return previews;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todas las vistas previas");
     }
 
     @Override
     public Optional<Preview> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar vista previa con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar vista previa con id");
     }
 
     @Override
     public int insert(Preview preview) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-
-                ps.setString(1, preview.getCaption());
-                ps.setString(2, preview.getUrlFile());
-                ps.setInt(3, preview.getDeliverable().getId());
-
-                ps.executeUpdate();
-
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        int generatedId = keys.getInt(1);
-                        preview.setId(generatedId);
-                        conn.commit();
-                        return generatedId;
-                    }
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar vista previa", e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert vista previa", e);
-        }
-        return 0;
+        return insertWithGeneratedKeys(INSERT,
+                ps -> {
+                    ps.setString(1, preview.getCaption());
+                    ps.setString(2, preview.getUrlFile());
+                    ps.setInt(3, preview.getDeliverable().getId());
+                },
+                preview, Preview::setId, "Error al insertar vista previa");
     }
 
     @Override
     public void update(Preview preview) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setString(1, preview.getCaption());
-                ps.setString(2, preview.getUrlFile());
-                ps.setInt(3, preview.getDeliverable().getId());
-                ps.setInt(4, preview.getId());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar vista previa con id: " + preview.getId(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update vista previa", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setString(1, preview.getCaption());
+                    ps.setString(2, preview.getUrlFile());
+                    ps.setInt(3, preview.getDeliverable().getId());
+                    ps.setInt(4, preview.getId());
+                },
+                "Error al actualizar vista previa con id: " + preview.getId());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar vista previa con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete vista previa", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar vista previa con id: " + id);
     }
 
     private Preview mapRow(ResultSet rs) throws SQLException {

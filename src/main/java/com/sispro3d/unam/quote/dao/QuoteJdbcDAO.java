@@ -1,18 +1,20 @@
 package com.sispro3d.unam.quote.dao;
 
 import com.sispro3d.unam.category.domain.Category;
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.quote.domain.Quote;
 import com.sispro3d.unam.user.domain.*;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class QuoteJdbcDAO implements GenericDAO<Quote> {
+public class QuoteJdbcDAO extends AbstractJdbcDAO<Quote> implements GenericDAO<Quote> {
 
     private static final String FIND_ALL = """
             SELECT 
@@ -55,112 +57,46 @@ public class QuoteJdbcDAO implements GenericDAO<Quote> {
 
     @Override
     public List<Quote> findAll() {
-        List<Quote> quotes = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                quotes.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todas las cotizaciones", e);
-        }
-        return quotes;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todas las cotizaciones");
     }
 
     @Override
     public Optional<Quote> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar cotización con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar cotización con id");
     }
 
     @Override
     public int insert(Quote quote) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-
-                ps.setString(1, quote.getStatus());
-                ps.setBigDecimal(2, quote.getTotalAmount());
-                ps.setDate(3, Date.valueOf(quote.getValidUntil()));
-                ps.setString(4, quote.getDescription());
-                ps.setInt(5, quote.getClient().getAccount().getIdUser());
-                ps.setInt(6, quote.getOfferedService().getId());
-
-                ps.executeUpdate();
-
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        int generatedId = keys.getInt(1);
-                        quote.setId(generatedId);
-                        conn.commit();
-                        return generatedId;
-                    }
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar cotización", e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert cotización", e);
-        }
-        return 0;
+        return insertWithGeneratedKeys(INSERT,
+                ps -> {
+                    ps.setString(1, quote.getStatus());
+                    ps.setBigDecimal(2, quote.getTotalAmount());
+                    ps.setDate(3, Date.valueOf(quote.getValidUntil()));
+                    ps.setString(4, quote.getDescription());
+                    ps.setInt(5, quote.getClient().getAccount().getIdUser());
+                    ps.setInt(6, quote.getOfferedService().getId());
+                },
+                quote, Quote::setId, "Error al insertar cotización");
     }
 
     @Override
     public void update(Quote quote) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setString(1, quote.getStatus());
-                ps.setBigDecimal(2, quote.getTotalAmount());
-                ps.setDate(3, Date.valueOf(quote.getValidUntil()));
-                ps.setString(4, quote.getDescription());
-                ps.setInt(5, quote.getClient().getAccount().getIdUser());
-                ps.setInt(6, quote.getOfferedService().getId());
-                ps.setInt(7, quote.getId());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar cotización con id: " + quote.getId(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update cotización", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setString(1, quote.getStatus());
+                    ps.setBigDecimal(2, quote.getTotalAmount());
+                    ps.setDate(3, Date.valueOf(quote.getValidUntil()));
+                    ps.setString(4, quote.getDescription());
+                    ps.setInt(5, quote.getClient().getAccount().getIdUser());
+                    ps.setInt(6, quote.getOfferedService().getId());
+                    ps.setInt(7, quote.getId());
+                },
+                "Error al actualizar cotización con id: " + quote.getId());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar cotización con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete cotización", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar cotización con id: " + id);
     }
 
     private Quote mapRow(ResultSet rs) throws SQLException {
@@ -203,7 +139,7 @@ public class QuoteJdbcDAO implements GenericDAO<Quote> {
         offeredService.setDeliveryTimeDays(rs.getInt("delivery_time_days"));
 
         Timestamp serviceCreatedAt = rs.getTimestamp("service_created_at");
-        if (serviceCreatedAt != null)         offeredService.setCreatedAt(serviceCreatedAt.toLocalDateTime());
+        if (serviceCreatedAt != null) offeredService.setCreatedAt(serviceCreatedAt.toLocalDateTime());
 
         Timestamp serviceUpdatedAt = rs.getTimestamp("service_updated_at");
         if (serviceUpdatedAt != null) offeredService.setUpdatedAt(serviceUpdatedAt.toLocalDateTime());

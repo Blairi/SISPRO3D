@@ -1,150 +1,85 @@
 package com.sispro3d.unam.workorder.dao;
 
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.quote.domain.Quote;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
+import org.springframework.stereotype.Repository;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class WorkOrderJdbcDAO implements GenericDAO<WorkOrder> {
+@Repository
+public class WorkOrderJdbcDAO extends AbstractJdbcDAO<WorkOrder> implements GenericDAO<WorkOrder> {
 
     private static final String FIND_ALL = """
             SELECT 
                 w.id, w.status, w.started_at, w.completed_at, w.created_at,
-                q.id as quote_id, q.total_amount, q.valid_until, q.description, q.created_at as quote_created_at, q.status as quote_status
+                q.id as id_quote, q.total_amount, q.valid_until, q.description, q.created_at as quote_created_at, q.status as quote_status
             FROM work_order w
-            LEFT JOIN quote q ON w.quote_id = q.id
+            LEFT JOIN quote q ON w.id_quote = q.id
             """;
 
     private static final String FIND_BY_ID = FIND_ALL + "WHERE w.id = ?";
 
-    private static final String INSERT = "INSERT INTO work_order (status, quote_id) VALUES (?, ?)";
-    private static final String UPDATE = "UPDATE work_order SET status = ?, started_at = ?, completed_at = ?, quote_id = ? WHERE id = ?";
+    private static final String INSERT = "INSERT INTO work_order (status, id_quote) VALUES (?, ?)";
+    private static final String UPDATE = "UPDATE work_order SET status = ?, started_at = ?, completed_at = ?, id_quote = ? WHERE id = ?";
     private static final String DELETE = "DELETE FROM work_order WHERE id = ?";
 
     @Override
     public List<WorkOrder> findAll() {
-        List<WorkOrder> workOrders = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                workOrders.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todas las órdenes de trabajo", e);
-        }
-        return workOrders;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todas las órdenes de trabajo");
     }
 
     @Override
     public Optional<WorkOrder> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar orden de trabajo con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar orden de trabajo con id");
     }
 
     @Override
     public int insert(WorkOrder workOrder) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-
-                ps.setString(1, workOrder.getStatus());
-                ps.setObject(2, workOrder.getQuote() != null ? workOrder.getQuote().getId() : null);
-
-                ps.executeUpdate();
-
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        int generatedId = keys.getInt(1);
-                        workOrder.setId(generatedId);
-                        conn.commit();
-                        return generatedId;
-                    }
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar orden de trabajo", e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert orden de trabajo", e);
-        }
-        return 0;
+        return insertWithGeneratedKeys(INSERT,
+                ps -> {
+                    ps.setString(1, workOrder.getStatus());
+                    ps.setObject(2, workOrder.getQuote() != null ? workOrder.getQuote().getId() : null);
+                },
+                workOrder, WorkOrder::setId, "Error al insertar orden de trabajo");
     }
 
     @Override
     public void update(WorkOrder workOrder) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setString(1, workOrder.getStatus());
-                Timestamp startedAt = null;
-                if (workOrder.getStartedAt() != null) {
-                    startedAt = Timestamp.valueOf(workOrder.getStartedAt());
-                }
-                ps.setObject(2, startedAt);
-
-                Timestamp completedAt = null;
-                if (workOrder.getCompletedAt() != null) {
-                    completedAt = Timestamp.valueOf(workOrder.getCompletedAt());
-                }
-                ps.setObject(3, completedAt);
-
-                ps.setObject(4, workOrder.getQuote() != null ? workOrder.getQuote().getId() : null);
-                ps.setInt(5, workOrder.getId());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar orden de trabajo con id: " + workOrder.getId(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update orden de trabajo", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setString(1, workOrder.getStatus());
+                    Timestamp startedAt = null;
+                    if (workOrder.getStartedAt() != null) {
+                        startedAt = Timestamp.valueOf(workOrder.getStartedAt());
+                    }
+                    ps.setObject(2, startedAt);
+                    Timestamp completedAt = null;
+                    if (workOrder.getCompletedAt() != null) {
+                        completedAt = Timestamp.valueOf(workOrder.getCompletedAt());
+                    }
+                    ps.setObject(3, completedAt);
+                    ps.setObject(4, workOrder.getQuote() != null ? workOrder.getQuote().getId() : null);
+                    ps.setInt(5, workOrder.getId());
+                },
+                "Error al actualizar orden de trabajo con id: " + workOrder.getId());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar orden de trabajo con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete orden de trabajo", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar orden de trabajo con id: " + id);
     }
 
     private WorkOrder mapRow(ResultSet rs) throws SQLException {
         Quote quote = null;
-        if (rs.getObject("quote_id") != null) {
+        if (rs.getObject("id_quote") != null) {
             quote = new Quote();
-            quote.setId(rs.getInt("quote_id"));
+            quote.setId(rs.getInt("id_quote"));
             quote.setStatus(rs.getString("quote_status"));
             quote.setTotalAmount(rs.getBigDecimal("total_amount"));
             quote.setValidUntil(rs.getDate("valid_until").toLocalDate());

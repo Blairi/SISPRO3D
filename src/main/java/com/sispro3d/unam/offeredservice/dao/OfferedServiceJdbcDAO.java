@@ -1,20 +1,21 @@
 package com.sispro3d.unam.offeredservice.dao;
 
 import com.sispro3d.unam.category.domain.Category;
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Admin;
 import com.sispro3d.unam.user.domain.Expert;
 import com.sispro3d.unam.user.domain.UserType;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class OfferedServiceJdbcDAO implements GenericDAO<OfferedService> {
+public class OfferedServiceJdbcDAO extends AbstractJdbcDAO<OfferedService> implements GenericDAO<OfferedService> {
 
     private static final String FIND_ALL = """
             SELECT 
@@ -69,114 +70,48 @@ public class OfferedServiceJdbcDAO implements GenericDAO<OfferedService> {
 
     @Override
     public List<OfferedService> findAll() {
-        List<OfferedService> services = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                services.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todos los servicios", e);
-        }
-        return services;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todos los servicios");
     }
 
     @Override
     public Optional<OfferedService> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar servicio con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar servicio con id");
     }
 
     @Override
     public int insert(OfferedService service) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
-
-                ps.setString(1, service.getTitle());
-                ps.setString(2, service.getDescription());
-                ps.setBigDecimal(3, service.getBasePrice());
-                ps.setObject(4, service.getAdmin() != null ? service.getAdmin().getAccount().getIdUser() : null);
-                ps.setInt(5, service.getExpert().getAccount().getIdUser());
-                ps.setInt(6, service.getCategory().getId());
-                ps.setInt(7, service.getDeliveryTimeDays());
-
-                ps.executeUpdate();
-
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        int generatedId = keys.getInt(1);
-                        service.setId(generatedId);
-                        conn.commit();
-                        return generatedId;
-                    }
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar servicio: " + service.getTitle(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert servicio", e);
-        }
-        return 0;
+        return insertWithGeneratedKeys(INSERT,
+                ps -> {
+                    ps.setString(1, service.getTitle());
+                    ps.setString(2, service.getDescription());
+                    ps.setBigDecimal(3, service.getBasePrice());
+                    ps.setObject(4, service.getAdmin() != null ? service.getAdmin().getAccount().getIdUser() : null);
+                    ps.setInt(5, service.getExpert().getAccount().getIdUser());
+                    ps.setInt(6, service.getCategory().getId());
+                    ps.setInt(7, service.getDeliveryTimeDays());
+                },
+                service, OfferedService::setId, "Error al insertar servicio: " + service.getTitle());
     }
 
     @Override
     public void update(OfferedService service) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setString(1, service.getTitle());
-                ps.setString(2, service.getDescription());
-                ps.setBigDecimal(3, service.getBasePrice());
-                ps.setObject(4, service.getAdmin() != null ? service.getAdmin().getAccount().getIdUser() : null);
-                ps.setInt(5, service.getExpert().getAccount().getIdUser());
-                ps.setInt(6, service.getCategory().getId());
-                ps.setInt(7, service.getDeliveryTimeDays());
-                ps.setInt(8, service.getId());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar servicio con id: " + service.getId(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update servicio", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setString(1, service.getTitle());
+                    ps.setString(2, service.getDescription());
+                    ps.setBigDecimal(3, service.getBasePrice());
+                    ps.setObject(4, service.getAdmin() != null ? service.getAdmin().getAccount().getIdUser() : null);
+                    ps.setInt(5, service.getExpert().getAccount().getIdUser());
+                    ps.setInt(6, service.getCategory().getId());
+                    ps.setInt(7, service.getDeliveryTimeDays());
+                    ps.setInt(8, service.getId());
+                },
+                "Error al actualizar servicio con id: " + service.getId());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar servicio con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete servicio", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar servicio con id: " + id);
     }
 
     private OfferedService mapRow(ResultSet rs) throws SQLException {

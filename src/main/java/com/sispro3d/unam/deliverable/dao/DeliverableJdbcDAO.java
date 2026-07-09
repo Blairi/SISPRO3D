@@ -18,18 +18,18 @@ public class DeliverableJdbcDAO extends AbstractJdbcDAO<Deliverable> implements 
     private static final String FIND_ALL = """
             SELECT 
                 d.id, d.name, d.url_file, d.created_at, d.file_type,
-                w.id as workorder_id, w.status, w.started_at, w.completed_at, w.created_at as workorder_created_at,
-                q.id as quote_id, q.total_amount, q.valid_until, q.description as quote_description,
+                w.id as id_order, w.status, w.started_at, w.completed_at, w.created_at as workorder_created_at,
+                q.id as id_quote, q.total_amount, q.valid_until, q.description as quote_description,
                 q.created_at as quote_created_at, q.status as quote_status
             FROM deliverable d
-            JOIN work_order w ON d.workorder_id = w.id
-            JOIN quote q ON w.quote_id = q.id
+            JOIN work_order w ON d.id_order = w.id
+            JOIN quote q ON w.id_quote = q.id
             """;
 
     private static final String FIND_BY_ID = FIND_ALL + "WHERE d.id = ?";
 
-    private static final String INSERT = "INSERT INTO deliverable (name, url_file, file_type, workorder_id) VALUES (?, ?, ?, ?)";
-    private static final String UPDATE = "UPDATE deliverable SET name = ?, url_file = ?, file_type = ?, workorder_id = ? WHERE id = ?";
+    private static final String INSERT = "INSERT INTO deliverable (name, url_file, file_type, id_order) VALUES (?, ?, ?, ?)";
+    private static final String UPDATE = "UPDATE deliverable SET name = ?, url_file = ?, file_type = ?, id_order = ? WHERE id = ?";
     private static final String DELETE = "DELETE FROM deliverable WHERE id = ?";
 
     @Override
@@ -74,7 +74,7 @@ public class DeliverableJdbcDAO extends AbstractJdbcDAO<Deliverable> implements 
 
     private Deliverable mapRow(ResultSet rs) throws SQLException {
         WorkOrder workOrder = new WorkOrder();
-        workOrder.setId(rs.getInt("workorder_id"));
+        workOrder.setId(rs.getInt("id_order"));
         workOrder.setStatus(rs.getString("status"));
         Timestamp startedAt = rs.getTimestamp("started_at");
         if (startedAt != null) workOrder.setStartedAt(startedAt.toLocalDateTime());
