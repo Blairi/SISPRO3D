@@ -1,85 +1,87 @@
 package com.sispro3d.unam.user.service.impl;
 
-import com.sispro3d.unam.core.dao.GenericDAO;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Client;
-import com.sispro3d.unam.user.dto.AccountDTO;
-import com.sispro3d.unam.user.dto.ClientDTO;
+import com.sispro3d.unam.user.dto.ClientRequest;
+import com.sispro3d.unam.user.dto.ClientResponse;
+import com.sispro3d.unam.user.repository.ClientRepository;
 import com.sispro3d.unam.user.service.ClientService;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class ClientServiceImpl implements ClientService {
 
-    private final GenericDAO<Client> clientDAO;
+    private final ClientRepository clientRepository;
 
-    public ClientServiceImpl(GenericDAO<Client> clientDAO) {
-        this.clientDAO = clientDAO;
+    public ClientServiceImpl(ClientRepository clientRepository) {
+        this.clientRepository = clientRepository;
     }
 
     @Override
-    public List<ClientDTO> findAll() {
-        return clientDAO.findAll()
+    public List<ClientResponse> findAll() {
+        return clientRepository.findAll()
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public Optional<ClientDTO> findById(int id) {
-        return clientDAO.findById(id)
-                .map(this::toResponseDTO);
+    public Optional<ClientResponse> findById(Long id) {
+        return clientRepository.findById(id.intValue())
+                .map(this::toResponse);
     }
 
     @Override
-    public ClientDTO create(ClientDTO dto) {
-        Client client = toEntity(dto);
-        int generatedId = clientDAO.insert(client);
-        client.getAccount().setIdUser(generatedId);
-        return toResponseDTO(client);
+    public ClientResponse create(ClientRequest request) {
+        Client client = toEntity(request);
+        Client saved = clientRepository.save(client);
+        return toResponse(saved);
     }
 
     @Override
-    public ClientDTO update(int id, ClientDTO dto) {
-        clientDAO.findById(id)
+    public ClientResponse update(Long id, ClientRequest request) {
+        int pk = id.intValue();
+        clientRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id: " + id));
 
-        Client client = toEntity(dto);
-        client.getAccount().setIdUser(id);
-        clientDAO.update(client);
-        return toResponseDTO(client);
+        Client client = toEntity(request);
+        client.getAccount().setIdUser(pk);
+        Client updated = clientRepository.update(client);
+        return toResponse(updated);
     }
 
     @Override
-    public void delete(int id) {
-        clientDAO.findById(id)
+    public void delete(Long id) {
+        int pk = id.intValue();
+        clientRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id: " + id));
-        clientDAO.delete(id);
+        clientRepository.deleteById(pk);
     }
 
-    private Client toEntity(ClientDTO dto) {
+    @Override
+    public boolean existsById(Long id) {
+        return clientRepository.existsById(id.intValue());
+    }
+
+    private Client toEntity(ClientRequest request) {
         Client client = new Client();
-        if (dto.getAccount() != null) {
-            client.setAccount(new Account(dto.getAccount().getIdUser()));
-        }
+        client.setAccount(new Account(request.getAccountId()));
         return client;
     }
 
-    private ClientDTO toResponseDTO(Client client) {
-        ClientDTO dto = new ClientDTO();
+    private ClientResponse toResponse(Client client) {
+        ClientResponse.ClientResponseBuilder builder = ClientResponse.builder();
+
         if (client.getAccount() != null) {
-            AccountDTO accountDTO = new AccountDTO();
-            accountDTO.setIdUser(client.getAccount().getIdUser());
-            accountDTO.setName(client.getAccount().getName());
-            accountDTO.setLastName(client.getAccount().getLastName());
-            accountDTO.setEmail(client.getAccount().getEmail());
-            accountDTO.setPhone(client.getAccount().getPhone());
-            accountDTO.setPassword(client.getAccount().getPassword());
-            accountDTO.setType(client.getAccount().getType());
-            accountDTO.setCreatedAt(client.getAccount().getCreatedAt());
-            dto.setAccount(accountDTO);
+            builder.id(client.getAccount().getIdUser())
+                    .name(client.getAccount().getName())
+                    .lastName(client.getAccount().getLastName())
+                    .email(client.getAccount().getEmail());
         }
-        return dto;
+
+        return builder.build();
     }
 }

@@ -1,17 +1,20 @@
 package com.sispro3d.unam.user.dao;
 
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Client;
 import com.sispro3d.unam.user.domain.UserType;
+import org.springframework.stereotype.Repository;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class ClientJdbcDAO implements GenericDAO<Client> {
+@Repository
+public class ClientJdbcDAO extends AbstractJdbcDAO<Client> implements GenericDAO<Client> {
 
     private static final String FIND_ALL = """
             SELECT 
@@ -31,97 +34,33 @@ public class ClientJdbcDAO implements GenericDAO<Client> {
             """;
 
     private static final String INSERT = "INSERT INTO client (account_id) VALUES (?)";
-    private static final String UPDATE = "UPDATE client SET account_id = ? WHERE account_id = ?";
     private static final String DELETE = "DELETE FROM client WHERE account_id = ?";
 
     @Override
     public List<Client> findAll() {
-        List<Client> clients = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                clients.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todos los clientes", e);
-        }
-        return clients;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todos los clientes");
     }
 
     @Override
     public Optional<Client> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar cliente con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar cliente con id");
     }
 
     @Override
     public int insert(Client client) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT)) {
-
-                ps.setInt(1, client.getAccount().getIdUser());
-                ps.executeUpdate();
-                conn.commit();
-                return client.getAccount().getIdUser();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar cliente: " + client.getAccount().getEmail(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert cliente", e);
-        }
+        executeUpdate(INSERT,
+                ps -> ps.setInt(1, client.getAccount().getIdUser()),
+                "Error al insertar cliente: " + client.getAccount().getEmail());
+        return client.getAccount().getIdUser();
     }
 
     @Override
     public void update(Client client) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setInt(1, client.getAccount().getIdUser());
-                ps.setInt(2, client.getAccount().getIdUser());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar cliente con id: " + client.getAccount().getIdUser(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update cliente", e);
-        }
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar cliente con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete cliente", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar cliente con id: " + id);
     }
 
     private Client mapRow(ResultSet rs) throws SQLException {

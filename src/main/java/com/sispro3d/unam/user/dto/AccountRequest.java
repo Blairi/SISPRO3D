@@ -1,25 +1,18 @@
-package com.sispro3d.unam.user.domain;
+package com.sispro3d.unam.user.dto;
 
+import com.sispro3d.unam.user.domain.UserType;
 import lombok.*;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class Account {
-    private int idUser;
+@Builder
+public class AccountRequest {
     private String name;
     private String lastName;
     private String email;
     private String phone;
     private String password;
     private UserType type;
-    private LocalDateTime createdAt;
-
-    public Account(int idUser) {
-        this.idUser = idUser;
-    }
 }

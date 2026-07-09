@@ -2,9 +2,9 @@ package com.sispro3d.unam;
 
 import com.sispro3d.unam.user.controller.AccountController;
 import com.sispro3d.unam.user.domain.UserType;
-import com.sispro3d.unam.user.dto.AccountDTO;
+import com.sispro3d.unam.user.dto.AccountRequest;
+import com.sispro3d.unam.user.dto.AccountResponse;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /*
@@ -23,12 +23,14 @@ public class Main {
         accountController.displayAllAccounts();
 
         // b. Agregar un registro
-        AccountDTO newAccount = new AccountDTO(
-                0, "Axel",
-                "Nuevo", "axel@unam.mx",
-                "+52 55321233", "dummy@password",
-                UserType.ADMIN, LocalDateTime.now()
-        );
+        AccountRequest newAccount = AccountRequest.builder()
+                .name("Axel")
+                .lastName("Nuevo")
+                .email("axel@unam.mx")
+                .phone("+52 55321233")
+                .password("dummy@password")
+                .type(UserType.ADMIN)
+                .build();
         System.out.println("Nueva cuenta creada: newAccount = " + newAccount);
         accountController.createAccount(newAccount);
 
@@ -36,11 +38,18 @@ public class Main {
         accountController.displayAllAccounts();
 
         // d. Editar algún registro
-        List<AccountDTO> accounts = accountController.getAllAccounts();
-        AccountDTO accountToEdit = accounts.getLast();
+        List<AccountResponse> accounts = accountController.getAllAccounts();
+        AccountResponse accountToEdit = accounts.getLast();
         System.out.println("Editando una cuenta accountToEdit = " + accountToEdit);
-        accountToEdit.setName("NOBRE NUEVO EDITADO");
-        accountController.updateAccount(accountToEdit.getIdUser(), accountToEdit);
+        AccountRequest updatedRequest = AccountRequest.builder()
+                .name("NOBRE NUEVO EDITADO")
+                .lastName(accountToEdit.getLastName())
+                .email(accountToEdit.getEmail())
+                .phone(accountToEdit.getPhone())
+                .password(accountToEdit.getPassword())
+                .type(accountToEdit.getType())
+                .build();
+        accountController.updateAccount(accountToEdit.getIdUser(), updatedRequest);
 
         // e. Listar registros para verificar la edición
         accountController.displayAllAccounts();

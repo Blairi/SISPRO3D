@@ -1,8 +1,9 @@
 package com.sispro3d.unam.user.service.impl;
 
-import com.sispro3d.unam.core.dao.GenericDAO;
 import com.sispro3d.unam.user.domain.Account;
-import com.sispro3d.unam.user.dto.AccountDTO;
+import com.sispro3d.unam.user.dto.AccountRequest;
+import com.sispro3d.unam.user.dto.AccountResponse;
+import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.user.service.AccountService;
 import org.springframework.stereotype.Service;
 
@@ -12,77 +13,79 @@ import java.util.Optional;
 @Service
 public class AccountServiceImpl implements AccountService {
 
-    private final GenericDAO<Account> accountDAO;
+    private final AccountRepository accountRepository;
 
-    public AccountServiceImpl(GenericDAO<Account> accountDAO) {
-        this.accountDAO = accountDAO;
+    public AccountServiceImpl(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
     }
 
     @Override
-    public List<AccountDTO> findAll() {
-        return accountDAO.findAll()
+    public List<AccountResponse> findAll() {
+        return accountRepository.findAll()
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public Optional<AccountDTO> findById(int id) {
-        return accountDAO.findById(id)
-                .map(this::toResponseDTO);
+    public Optional<AccountResponse> findById(Long id) {
+        return accountRepository.findById(id.intValue())
+                .map(this::toResponse);
     }
 
     @Override
-    public AccountDTO create(AccountDTO dto) {
-        Account account = toEntity(dto);
-        int generatedId = accountDAO.insert(account);
-        account.setIdUser(generatedId);
-        return toResponseDTO(account);
+    public AccountResponse create(AccountRequest request) {
+        Account account = toEntity(request);
+        Account saved = accountRepository.save(account);
+        return toResponse(saved);
     }
 
     @Override
-    public AccountDTO update(int id, AccountDTO dto) {
-        accountDAO.findById(id)
+    public AccountResponse update(Long id, AccountRequest request) {
+        int pk = id.intValue();
+        accountRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Account no encontrado con id: " + id));
 
-        Account account = toEntity(dto);
-        account.setIdUser(id);
-        accountDAO.update(account);
-        return toResponseDTO(account);
+        Account account = toEntity(request);
+        account.setIdUser(pk);
+        Account updated = accountRepository.update(account);
+        return toResponse(updated);
     }
 
     @Override
-    public void delete(int id) {
-        accountDAO.findById(id)
+    public void delete(Long id) {
+        int pk = id.intValue();
+        accountRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Account no encontrado con id: " + id));
-        accountDAO.delete(id);
+        accountRepository.deleteById(pk);
     }
 
-    // ------------------------------------------------------------------
-    //  Mappers
-    // ------------------------------------------------------------------
+    @Override
+    public boolean existsById(Long id) {
+        return accountRepository.existsById(id.intValue());
+    }
 
-    private Account toEntity(AccountDTO dto) {
+    private Account toEntity(AccountRequest request) {
         Account account = new Account();
-        account.setName(dto.getName());
-        account.setLastName(dto.getLastName());
-        account.setEmail(dto.getEmail());
-        account.setPhone(dto.getPhone());
-        account.setPassword(dto.getPassword());
-        account.setType(dto.getType());
+        account.setName(request.getName());
+        account.setLastName(request.getLastName());
+        account.setEmail(request.getEmail());
+        account.setPhone(request.getPhone());
+        account.setPassword(request.getPassword());
+        account.setType(request.getType());
         return account;
     }
 
-    private AccountDTO toResponseDTO(Account account) {
-        AccountDTO dto = new AccountDTO();
-        dto.setIdUser(account.getIdUser());
-        dto.setName(account.getName());
-        dto.setLastName(account.getLastName());
-        dto.setEmail(account.getEmail());
-        dto.setPhone(account.getPhone());
-        dto.setPassword(account.getPassword());
-        dto.setType(account.getType());
-        dto.setCreatedAt(account.getCreatedAt());
-        return dto;
+    private AccountResponse toResponse(Account account) {
+        return AccountResponse.builder()
+                .idUser(account.getIdUser())
+                .name(account.getName())
+                .lastName(account.getLastName())
+                .email(account.getEmail())
+                .phone(account.getPhone())
+                .password(account.getPassword())
+                .type(account.getType())
+                .createdAt(account.getCreatedAt())
+                .build();
     }
 }

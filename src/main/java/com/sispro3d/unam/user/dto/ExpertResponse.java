@@ -1,20 +1,19 @@
-package com.sispro3d.unam.user.domain;
+package com.sispro3d.unam.user.dto;
 
 import lombok.*;
 
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class Expert {
-    private Account account;
+@Builder
+public class ExpertResponse {
+    private int id;
+    private String name;
+    private String lastName;
+    private String email;
     private String specialty;
     private String portfolioUrl;
     private String bio;
     private int yearsExperience;
-
-    public Expert(int idUser) {
-        this.account = new Account(idUser);
-    }
 }

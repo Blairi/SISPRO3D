@@ -1,14 +1,8 @@
 package com.sispro3d.unam.user.service;
 
-import com.sispro3d.unam.user.dto.AdminDTO;
+import com.sispro3d.unam.core.service.CrudService;
+import com.sispro3d.unam.user.dto.AdminRequest;
+import com.sispro3d.unam.user.dto.AdminResponse;
 
-import java.util.List;
-import java.util.Optional;
-
-public interface AdminService {
-    List<AdminDTO> findAll();
-    Optional<AdminDTO> findById(int id);
-    AdminDTO create(AdminDTO dto);
-    AdminDTO update(int id, AdminDTO dto);
-    void delete(int id);
+public interface AdminService extends CrudService<AdminRequest, AdminResponse, Long> {
 }

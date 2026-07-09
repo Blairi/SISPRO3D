@@ -1,17 +1,20 @@
 package com.sispro3d.unam.user.dao;
 
+import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.db.ConnectionHandler;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Expert;
 import com.sispro3d.unam.user.domain.UserType;
+import org.springframework.stereotype.Repository;
 
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
-public class ExpertJdbcDAO implements GenericDAO<Expert> {
+@Repository
+public class ExpertJdbcDAO extends AbstractJdbcDAO<Expert> implements GenericDAO<Expert> {
 
     private static final String FIND_ALL = """
             SELECT 
@@ -33,105 +36,49 @@ public class ExpertJdbcDAO implements GenericDAO<Expert> {
             """;
 
     private static final String INSERT = "INSERT INTO expert (account_id, specialty, portfolio_url, bio, years_experience) VALUES (?, ?, ?, ?, ?)";
-    private static final String UPDATE = "UPDATE expert SET account_id = ?, specialty = ?, portfolio_url = ?, bio = ?, years_experience = ? WHERE account_id = ?";
+    private static final String UPDATE = "UPDATE expert SET specialty = ?, portfolio_url = ?, bio = ?, years_experience = ? WHERE account_id = ?";
     private static final String DELETE = "DELETE FROM expert WHERE account_id = ?";
 
     @Override
     public List<Expert> findAll() {
-        List<Expert> experts = new ArrayList<>();
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_ALL);
-             ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                experts.add(mapRow(rs));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al obtener todos los expertos", e);
-        }
-        return experts;
+        return findAll(FIND_ALL, this::mapRow, "Error al obtener todos los expertos");
     }
 
     @Override
     public Optional<Expert> findById(int id) {
-        try (Connection conn = ConnectionHandler.getConnection();
-             PreparedStatement ps = conn.prepareStatement(FIND_BY_ID)) {
-
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error al buscar experto con id: " + id, e);
-        }
-        return Optional.empty();
+        return findById(FIND_BY_ID, id, this::mapRow, "Error al buscar experto con id");
     }
 
     @Override
     public int insert(Expert expert) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(INSERT)) {
-
-                ps.setInt(1, expert.getAccount().getIdUser());
-                ps.setString(2, expert.getSpecialty());
-                ps.setString(3, expert.getPortfolioUrl());
-                ps.setString(4, expert.getBio());
-                ps.setInt(5, expert.getYearsExperience());
-                ps.executeUpdate();
-                conn.commit();
-                return expert.getAccount().getIdUser();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al insertar experto: " + expert.getAccount().getEmail(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en insert experto", e);
-        }
+        executeUpdate(INSERT,
+                ps -> {
+                    ps.setInt(1, expert.getAccount().getIdUser());
+                    ps.setString(2, expert.getSpecialty());
+                    ps.setString(3, expert.getPortfolioUrl());
+                    ps.setString(4, expert.getBio());
+                    ps.setInt(5, expert.getYearsExperience());
+                },
+                "Error al insertar experto: " + expert.getAccount().getEmail());
+        return expert.getAccount().getIdUser();
     }
 
     @Override
     public void update(Expert expert) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(UPDATE)) {
-
-                ps.setInt(1, expert.getAccount().getIdUser());
-                ps.setString(2, expert.getSpecialty());
-                ps.setString(3, expert.getPortfolioUrl());
-                ps.setString(4, expert.getBio());
-                ps.setInt(5, expert.getYearsExperience());
-                ps.setInt(6, expert.getAccount().getIdUser());
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al actualizar experto con id: " + expert.getAccount().getIdUser(), e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en update experto", e);
-        }
+        executeUpdate(UPDATE,
+                ps -> {
+                    ps.setString(1, expert.getSpecialty());
+                    ps.setString(2, expert.getPortfolioUrl());
+                    ps.setString(3, expert.getBio());
+                    ps.setInt(4, expert.getYearsExperience());
+                    ps.setInt(5, expert.getAccount().getIdUser());
+                },
+                "Error al actualizar experto con id: " + expert.getAccount().getIdUser());
     }
 
     @Override
     public void delete(int id) {
-        try (Connection conn = ConnectionHandler.getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps = conn.prepareStatement(DELETE)) {
-
-                ps.setInt(1, id);
-                ps.executeUpdate();
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw new RuntimeException("Error al eliminar experto con id: " + id, e);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error de conexión en delete experto", e);
-        }
+        deleteById(DELETE, id, "Error al eliminar experto con id: " + id);
     }
 
     private Expert mapRow(ResultSet rs) throws SQLException {

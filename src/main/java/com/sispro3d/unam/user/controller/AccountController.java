@@ -1,6 +1,7 @@
 package com.sispro3d.unam.user.controller;
 
-import com.sispro3d.unam.user.dto.AccountDTO;
+import com.sispro3d.unam.user.dto.AccountRequest;
+import com.sispro3d.unam.user.dto.AccountResponse;
 import com.sispro3d.unam.user.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,35 +15,35 @@ public class AccountController {
     @Autowired
     private AccountService accountService;
 
-    public void displayAccount(int id) {
+    public void displayAccount(long id) {
         System.out.println("Displaying account with id = " + id);
-        Optional<AccountDTO> accountDTO = accountService.findById(id);
+        Optional<AccountResponse> accountDTO = accountService.findById(id);
         System.out.println("accountDTO = " + accountDTO);
     }
 
     public void displayAllAccounts() {
         System.out.println("Displaying all accounts:");
-        List<AccountDTO> accounts = accountService.findAll();
+        List<AccountResponse> accounts = accountService.findAll();
         accounts.forEach(System.out::println);
     }
 
-    public Optional<AccountDTO> getAccount(int id) {
+    public Optional<AccountResponse> getAccount(long id) {
         return accountService.findById(id);
     }
 
-    public List<AccountDTO> getAllAccounts() {
+    public List<AccountResponse> getAllAccounts() {
         return accountService.findAll();
     }
 
-    public void createAccount(AccountDTO newAccount) {
-        accountService.create(newAccount);
+    public AccountResponse createAccount(AccountRequest request) {
+        return accountService.create(request);
     }
 
-    public void updateAccount(int id, AccountDTO accountDTO) {
-        accountService.update(id, accountDTO);
+    public AccountResponse updateAccount(long id, AccountRequest request) {
+        return accountService.update(id, request);
     }
 
-    public void deleteAccount(int id) {
+    public void deleteAccount(long id) {
         accountService.delete(id);
     }
 }

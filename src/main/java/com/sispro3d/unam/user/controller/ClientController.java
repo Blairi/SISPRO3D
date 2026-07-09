@@ -1,27 +1,28 @@
 package com.sispro3d.unam.user.controller;
 
-import com.sispro3d.unam.user.dao.ClientJdbcDAO;
-import com.sispro3d.unam.user.dto.ClientDTO;
+import com.sispro3d.unam.user.dto.ClientResponse;
 import com.sispro3d.unam.user.service.ClientService;
-import com.sispro3d.unam.user.service.impl.ClientServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.Optional;
 
+@Controller
 public class ClientController {
+
+    @Autowired
     private ClientService clientService;
 
-    public ClientController() {
-        this.clientService = new ClientServiceImpl(new ClientJdbcDAO());
-    }
-
-    public void displayClient(int id) {
+    public void displayClient(long id) {
         System.out.println("Displaying client with id = " + id);
-        Optional<ClientDTO> clientDTO = clientService.findById(id);
+        Optional<ClientResponse> clientDTO = clientService.findById(id);
         System.out.println("clientDTO = " + clientDTO);
     }
 
     public void displayAllClients() {
         System.out.println("Displaying all clients:");
-        clientService.findAll().forEach(System.out::println);
+        List<ClientResponse> clients = clientService.findAll();
+        clients.forEach(System.out::println);
     }
 }

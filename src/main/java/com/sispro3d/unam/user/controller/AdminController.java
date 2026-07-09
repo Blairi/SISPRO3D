@@ -1,27 +1,28 @@
 package com.sispro3d.unam.user.controller;
 
-import com.sispro3d.unam.user.dao.AdminJdbcDAO;
-import com.sispro3d.unam.user.dto.AdminDTO;
+import com.sispro3d.unam.user.dto.AdminResponse;
 import com.sispro3d.unam.user.service.AdminService;
-import com.sispro3d.unam.user.service.impl.AdminServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.Optional;
 
+@Controller
 public class AdminController {
+
+    @Autowired
     private AdminService adminService;
 
-    public AdminController() {
-        this.adminService = new AdminServiceImpl(new AdminJdbcDAO());
-    }
-
-    public void displayAdmin(int id) {
+    public void displayAdmin(long id) {
         System.out.println("Displaying admin with id = " + id);
-        Optional<AdminDTO> adminDTO = adminService.findById(id);
+        Optional<AdminResponse> adminDTO = adminService.findById(id);
         System.out.println("adminDTO = " + adminDTO);
     }
 
     public void displayAllAdmins() {
         System.out.println("Displaying all admins:");
-        adminService.findAll().forEach(System.out::println);
+        List<AdminResponse> admins = adminService.findAll();
+        admins.forEach(System.out::println);
     }
 }

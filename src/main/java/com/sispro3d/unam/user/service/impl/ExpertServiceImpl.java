@@ -1,93 +1,96 @@
 package com.sispro3d.unam.user.service.impl;
 
-import com.sispro3d.unam.core.dao.GenericDAO;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Expert;
-import com.sispro3d.unam.user.dto.AccountDTO;
-import com.sispro3d.unam.user.dto.ExpertDTO;
+import com.sispro3d.unam.user.dto.ExpertRequest;
+import com.sispro3d.unam.user.dto.ExpertResponse;
+import com.sispro3d.unam.user.repository.ExpertRepository;
 import com.sispro3d.unam.user.service.ExpertService;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class ExpertServiceImpl implements ExpertService {
 
-    private final GenericDAO<Expert> expertDAO;
+    private final ExpertRepository expertRepository;
 
-    public ExpertServiceImpl(GenericDAO<Expert> expertDAO) {
-        this.expertDAO = expertDAO;
+    public ExpertServiceImpl(ExpertRepository expertRepository) {
+        this.expertRepository = expertRepository;
     }
 
     @Override
-    public List<ExpertDTO> findAll() {
-        return expertDAO.findAll()
+    public List<ExpertResponse> findAll() {
+        return expertRepository.findAll()
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public Optional<ExpertDTO> findById(int id) {
-        return expertDAO.findById(id)
-                .map(this::toResponseDTO);
+    public Optional<ExpertResponse> findById(Long id) {
+        return expertRepository.findById(id.intValue())
+                .map(this::toResponse);
     }
 
     @Override
-    public ExpertDTO create(ExpertDTO dto) {
-        Expert expert = toEntity(dto);
-        int generatedId = expertDAO.insert(expert);
-        expert.getAccount().setIdUser(generatedId);
-        return toResponseDTO(expert);
+    public ExpertResponse create(ExpertRequest request) {
+        Expert expert = toEntity(request);
+        Expert saved = expertRepository.save(expert);
+        return toResponse(saved);
     }
 
     @Override
-    public ExpertDTO update(int id, ExpertDTO dto) {
-        expertDAO.findById(id)
+    public ExpertResponse update(Long id, ExpertRequest request) {
+        int pk = id.intValue();
+        expertRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Experto no encontrado con id: " + id));
 
-        Expert expert = toEntity(dto);
-        expert.getAccount().setIdUser(id);
-        expertDAO.update(expert);
-        return toResponseDTO(expert);
+        Expert expert = toEntity(request);
+        expert.getAccount().setIdUser(pk);
+        Expert updated = expertRepository.update(expert);
+        return toResponse(updated);
     }
 
     @Override
-    public void delete(int id) {
-        expertDAO.findById(id)
+    public void delete(Long id) {
+        int pk = id.intValue();
+        expertRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Experto no encontrado con id: " + id));
-        expertDAO.delete(id);
+        expertRepository.deleteById(pk);
     }
 
-    private Expert toEntity(ExpertDTO dto) {
+    @Override
+    public boolean existsById(Long id) {
+        return expertRepository.existsById(id.intValue());
+    }
+
+    private Expert toEntity(ExpertRequest request) {
         Expert expert = new Expert();
-        if (dto.getAccount() != null) {
-            expert.setAccount(new Account(dto.getAccount().getIdUser()));
-        }
-        expert.setSpecialty(dto.getSpecialty());
-        expert.setPortfolioUrl(dto.getPortfolioUrl());
-        expert.setBio(dto.getBio());
-        expert.setYearsExperience(dto.getYearsExperience());
+        expert.setAccount(new Account(request.getAccountId()));
+        expert.setSpecialty(request.getSpecialty());
+        expert.setPortfolioUrl(request.getPortfolioUrl());
+        expert.setBio(request.getBio());
+        expert.setYearsExperience(request.getYearsExperience());
         return expert;
     }
 
-    private ExpertDTO toResponseDTO(Expert expert) {
-        ExpertDTO dto = new ExpertDTO();
+    private ExpertResponse toResponse(Expert expert) {
+        ExpertResponse.ExpertResponseBuilder builder = ExpertResponse.builder();
+
         if (expert.getAccount() != null) {
-            AccountDTO accountDTO = new AccountDTO();
-            accountDTO.setIdUser(expert.getAccount().getIdUser());
-            accountDTO.setName(expert.getAccount().getName());
-            accountDTO.setLastName(expert.getAccount().getLastName());
-            accountDTO.setEmail(expert.getAccount().getEmail());
-            accountDTO.setPhone(expert.getAccount().getPhone());
-            accountDTO.setPassword(expert.getAccount().getPassword());
-            accountDTO.setType(expert.getAccount().getType());
-            accountDTO.setCreatedAt(expert.getAccount().getCreatedAt());
-            dto.setAccount(accountDTO);
+            builder.id(expert.getAccount().getIdUser())
+                    .name(expert.getAccount().getName())
+                    .lastName(expert.getAccount().getLastName())
+                    .email(expert.getAccount().getEmail());
         }
-        dto.setSpecialty(expert.getSpecialty());
-        dto.setPortfolioUrl(expert.getPortfolioUrl());
-        dto.setBio(expert.getBio());
-        dto.setYearsExperience(expert.getYearsExperience());
-        return dto;
+
+        builder.specialty(expert.getSpecialty())
+                .portfolioUrl(expert.getPortfolioUrl())
+                .bio(expert.getBio())
+                .yearsExperience(expert.getYearsExperience());
+
+        return builder.build();
     }
 }

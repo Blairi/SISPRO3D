@@ -1,88 +1,87 @@
 package com.sispro3d.unam.user.service.impl;
 
 import com.sispro3d.unam.user.domain.Account;
-import com.sispro3d.unam.core.dao.GenericDAO;
 import com.sispro3d.unam.user.domain.Admin;
-import com.sispro3d.unam.user.dto.AdminDTO;
-import com.sispro3d.unam.user.dto.AccountDTO;
+import com.sispro3d.unam.user.dto.AdminRequest;
+import com.sispro3d.unam.user.dto.AdminResponse;
+import com.sispro3d.unam.user.repository.AdminRepository;
 import com.sispro3d.unam.user.service.AdminService;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class AdminServiceImpl implements AdminService {
 
-    private final GenericDAO<Admin> adminDAO;
+    private final AdminRepository adminRepository;
 
-    public AdminServiceImpl(GenericDAO<Admin> adminDAO) {
-        this.adminDAO = adminDAO;
+    public AdminServiceImpl(AdminRepository adminRepository) {
+        this.adminRepository = adminRepository;
     }
 
     @Override
-    public List<AdminDTO> findAll() {
-        return adminDAO.findAll()
+    public List<AdminResponse> findAll() {
+        return adminRepository.findAll()
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public Optional<AdminDTO> findById(int id) {
-        return adminDAO.findById(id)
-                .map(this::toResponseDTO);
+    public Optional<AdminResponse> findById(Long id) {
+        return adminRepository.findById(id.intValue())
+                .map(this::toResponse);
     }
 
     @Override
-    public AdminDTO create(AdminDTO dto) {
-        Admin admin = toEntity(dto);
-        int generatedId = adminDAO.insert(admin);
-        admin.getAccount().setIdUser(generatedId);
-        return toResponseDTO(admin);
+    public AdminResponse create(AdminRequest request) {
+        Admin admin = toEntity(request);
+        Admin saved = adminRepository.save(admin);
+        return toResponse(saved);
     }
 
     @Override
-    public AdminDTO update(int id, AdminDTO dto) {
-        adminDAO.findById(id)
+    public AdminResponse update(Long id, AdminRequest request) {
+        int pk = id.intValue();
+        adminRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Admin no encontrado con id: " + id));
 
-        Admin admin = toEntity(dto);
-        admin.getAccount().setIdUser(id);
-        adminDAO.update(admin);
-        return toResponseDTO(admin);
+        Admin admin = toEntity(request);
+        admin.getAccount().setIdUser(pk);
+        Admin updated = adminRepository.update(admin);
+        return toResponse(updated);
     }
 
     @Override
-    public void delete(int id) {
-        adminDAO.findById(id)
+    public void delete(Long id) {
+        int pk = id.intValue();
+        adminRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Admin no encontrado con id: " + id));
-        adminDAO.delete(id);
+        adminRepository.deleteById(pk);
     }
 
-    private Admin toEntity(AdminDTO dto) {
+    @Override
+    public boolean existsById(Long id) {
+        return adminRepository.existsById(id.intValue());
+    }
+
+    private Admin toEntity(AdminRequest request) {
         Admin admin = new Admin();
-        if (dto.getAccount() != null) {
-            // Conversion handled, admin account is set from DTO
-            admin.setAccount(dto.getAccount() != null ? 
-                new Account(dto.getAccount().getIdUser()) :
-                new Account());
-        }
+        admin.setAccount(new Account(request.getAccountId()));
         return admin;
     }
 
-    private AdminDTO toResponseDTO(Admin admin) {
-        AdminDTO dto = new AdminDTO();
+    private AdminResponse toResponse(Admin admin) {
+        AdminResponse.AdminResponseBuilder builder = AdminResponse.builder();
+
         if (admin.getAccount() != null) {
-            AccountDTO accountDTO = new AccountDTO();
-            accountDTO.setIdUser(admin.getAccount().getIdUser());
-            accountDTO.setName(admin.getAccount().getName());
-            accountDTO.setLastName(admin.getAccount().getLastName());
-            accountDTO.setEmail(admin.getAccount().getEmail());
-            accountDTO.setPhone(admin.getAccount().getPhone());
-            accountDTO.setPassword(admin.getAccount().getPassword());
-            accountDTO.setType(admin.getAccount().getType());
-            accountDTO.setCreatedAt(admin.getAccount().getCreatedAt());
-            dto.setAccount(accountDTO);
+            builder.id(admin.getAccount().getIdUser())
+                    .name(admin.getAccount().getName())
+                    .lastName(admin.getAccount().getLastName())
+                    .email(admin.getAccount().getEmail());
         }
-        return dto;
+
+        return builder.build();
     }
 }

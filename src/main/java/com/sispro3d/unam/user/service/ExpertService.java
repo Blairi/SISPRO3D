@@ -1,14 +1,8 @@
 package com.sispro3d.unam.user.service;
 
-import com.sispro3d.unam.user.dto.ExpertDTO;
+import com.sispro3d.unam.core.service.CrudService;
+import com.sispro3d.unam.user.dto.ExpertRequest;
+import com.sispro3d.unam.user.dto.ExpertResponse;
 
-import java.util.List;
-import java.util.Optional;
-
-public interface ExpertService {
-    List<ExpertDTO> findAll();
-    Optional<ExpertDTO> findById(int id);
-    ExpertDTO create(ExpertDTO dto);
-    ExpertDTO update(int id, ExpertDTO dto);
-    void delete(int id);
+public interface ExpertService extends CrudService<ExpertRequest, ExpertResponse, Long> {
 }

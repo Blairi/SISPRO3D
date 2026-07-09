@@ -1,17 +1,16 @@
 package com.sispro3d.unam.user.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import com.sispro3d.unam.user.domain.UserType;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccountDTO {
+@Builder
+public class AccountResponse {
     private int idUser;
     private String name;
     private String lastName;
