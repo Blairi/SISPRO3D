@@ -23,50 +23,50 @@ public class OfferedServiceJdbcDAO extends AbstractJdbcDAO<OfferedService> imple
     private static final String FIND_ALL = """
             SELECT 
                 s.id, s.title, s.description, s.base_price,
-                a.account_id as admin_account_id, acc1.id_user as admin_id_user, acc1.name as admin_name, 
+                a.id_user as admin_account_id, acc1.id_user as admin_id_user, acc1.name as admin_name, 
                 acc1.lastName as admin_lastName, acc1.email as admin_email, acc1.phone as admin_phone, 
                 acc1.password as admin_password, acc1.type as admin_type, acc1.created_at as admin_created_at,
-                e.account_id as expert_account_id, acc2.id_user as expert_id_user, acc2.name as expert_name,
+                e.id_user as expert_account_id, acc2.id_user as expert_id_user, acc2.name as expert_name,
                 acc2.lastName as expert_lastName, acc2.email as expert_email, acc2.phone as expert_phone,
                 acc2.password as expert_password, acc2.type as expert_type, acc2.created_at as expert_created_at,
                 e.specialty, e.portfolio_url, e.bio, e.years_experience,
                 c.id as category_id, c.name as category_name, c.description as category_description,
                 s.created_at, s.updated_at, s.delivery_time_days
             FROM service s
-            LEFT JOIN admin a ON s.admin_id = a.account_id
-            LEFT JOIN account acc1 ON a.account_id = acc1.id_user
-            JOIN expert e ON s.expert_id = e.account_id
-            JOIN account acc2 ON e.account_id = acc2.id_user
+            LEFT JOIN admin a ON s.id_admin = a.id_user
+            LEFT JOIN account acc1 ON a.id_user = acc1.id_user
+            JOIN expert e ON s.id_expert = e.id_user
+            JOIN account acc2 ON e.id_user = acc2.id_user
             JOIN category c ON s.category_id = c.id
             """;
 
     private static final String FIND_BY_ID = """
             SELECT 
                 s.id, s.title, s.description, s.base_price,
-                a.account_id as admin_account_id, acc1.id_user as admin_id_user, acc1.name as admin_name, 
+                a.id_user as admin_account_id, acc1.id_user as admin_id_user, acc1.name as admin_name, 
                 acc1.lastName as admin_lastName, acc1.email as admin_email, acc1.phone as admin_phone, 
                 acc1.password as admin_password, acc1.type as admin_type, acc1.created_at as admin_created_at,
-                e.account_id as expert_account_id, acc2.id_user as expert_id_user, acc2.name as expert_name,
+                e.id_user as expert_account_id, acc2.id_user as expert_id_user, acc2.name as expert_name,
                 acc2.lastName as expert_lastName, acc2.email as expert_email, acc2.phone as expert_phone,
                 acc2.password as expert_password, acc2.type as expert_type, acc2.created_at as expert_created_at,
                 e.specialty, e.portfolio_url, e.bio, e.years_experience,
                 c.id as category_id, c.name as category_name, c.description as category_description,
                 s.created_at, s.updated_at, s.delivery_time_days
             FROM service s
-            LEFT JOIN admin a ON s.admin_id = a.account_id
-            LEFT JOIN account acc1 ON a.account_id = acc1.id_user
-            JOIN expert e ON s.expert_id = e.account_id
-            JOIN account acc2 ON e.account_id = acc2.id_user
+            LEFT JOIN admin a ON s.id_admin = a.id_user
+            LEFT JOIN account acc1 ON a.id_user = acc1.id_user
+            JOIN expert e ON s.id_expert = e.id_user
+            JOIN account acc2 ON e.id_user = acc2.id_user
             JOIN category c ON s.category_id = c.id
             WHERE s.id = ?
             """;
 
     private static final String INSERT = """
-            INSERT INTO service (title, description, base_price, admin_id, expert_id, category_id, delivery_time_days) 
+            INSERT INTO service (title, description, base_price, id_admin, id_expert, category_id, delivery_time_days) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """;
     private static final String UPDATE = """
-            UPDATE service SET title = ?, description = ?, base_price = ?, admin_id = ?, expert_id = ?, 
+            UPDATE service SET title = ?, description = ?, base_price = ?, id_admin = ?, id_expert = ?, 
             category_id = ?, delivery_time_days = ? WHERE id = ?
             """;
     private static final String DELETE = "DELETE FROM service WHERE id = ?";

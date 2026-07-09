@@ -35,9 +35,9 @@ public class ExpertJdbcDAO extends AbstractJdbcDAO<Expert> implements GenericDAO
             WHERE e.account_id = ?
             """;
 
-    private static final String INSERT = "INSERT INTO expert (account_id, specialty, portfolio_url, bio, years_experience) VALUES (?, ?, ?, ?, ?)";
-    private static final String UPDATE = "UPDATE expert SET specialty = ?, portfolio_url = ?, bio = ?, years_experience = ? WHERE account_id = ?";
-    private static final String DELETE = "DELETE FROM expert WHERE account_id = ?";
+    private static final String INSERT = "INSERT INTO expert (id_user, specialty, portfolio_url, bio, years_experience) VALUES (?, ?, ?, ?, ?)";
+    private static final String UPDATE = "UPDATE expert SET specialty = ?, portfolio_url = ?, bio = ?, years_experience = ? WHERE id_user = ?";
+    private static final String DELETE = "DELETE FROM expert WHERE id_user = ?";
 
     @Override
     public List<Expert> findAll() {

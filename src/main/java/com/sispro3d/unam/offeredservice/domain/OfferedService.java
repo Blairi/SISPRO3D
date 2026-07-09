@@ -3,9 +3,7 @@ package com.sispro3d.unam.offeredservice.domain;
 import com.sispro3d.unam.category.domain.Category;
 import com.sispro3d.unam.user.domain.Admin;
 import com.sispro3d.unam.user.domain.Expert;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
