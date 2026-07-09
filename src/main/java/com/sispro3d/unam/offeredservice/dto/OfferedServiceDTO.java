@@ -1,8 +1,8 @@
 package com.sispro3d.unam.offeredservice.dto;
 
-import com.sispro3d.unam.category.dto.CategoryDTO;
-import com.sispro3d.unam.user.dto.AdminDTO;
-import com.sispro3d.unam.user.dto.ExpertDTO;
+import com.sispro3d.unam.core.dto.AdminRef;
+import com.sispro3d.unam.core.dto.CategoryRef;
+import com.sispro3d.unam.core.dto.ExpertRef;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,9 +18,9 @@ public class OfferedServiceDTO {
     private String title;
     private String description;
     private BigDecimal basePrice;
-    private AdminDTO admin; // null mientras no lo aprueba
-    private ExpertDTO expert;
-    private CategoryDTO category;
+    private AdminRef admin; // null mientras no lo aprueba
+    private ExpertRef expert;
+    private CategoryRef category;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private int deliveryTimeDays;

@@ -1,11 +1,11 @@
 package com.sispro3d.unam.thread.service.impl;
 
 import com.sispro3d.unam.core.dao.GenericDAO;
+import com.sispro3d.unam.core.dto.WorkOrderRef;
 import com.sispro3d.unam.thread.domain.Thread;
 import com.sispro3d.unam.thread.dto.ThreadDTO;
 import com.sispro3d.unam.thread.service.ThreadService;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
-import com.sispro3d.unam.workorder.dto.WorkOrderDTO;
 
 import java.util.List;
 import java.util.Optional;
@@ -74,13 +74,14 @@ public class ThreadServiceImpl implements ThreadService {
         dto.setId(thread.getId());
 
         if (thread.getWorkOrder() != null) {
-            WorkOrderDTO woDTO = new WorkOrderDTO();
-            woDTO.setId(thread.getWorkOrder().getId());
-            woDTO.setStatus(thread.getWorkOrder().getStatus());
-            woDTO.setStartedAt(thread.getWorkOrder().getStartedAt());
-            woDTO.setCompletedAt(thread.getWorkOrder().getCompletedAt());
-            woDTO.setCreatedAt(thread.getWorkOrder().getCreatedAt());
-            dto.setWorkOrder(woDTO);
+            WorkOrderRef woRef = WorkOrderRef.builder()
+                    .id(thread.getWorkOrder().getId())
+                    .status(thread.getWorkOrder().getStatus())
+                    .startedAt(thread.getWorkOrder().getStartedAt())
+                    .completedAt(thread.getWorkOrder().getCompletedAt())
+                    .createdAt(thread.getWorkOrder().getCreatedAt())
+                    .build();
+            dto.setWorkOrder(woRef);
         }
 
         return dto;

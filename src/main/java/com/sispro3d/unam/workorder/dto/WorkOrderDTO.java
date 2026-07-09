@@ -1,6 +1,6 @@
 package com.sispro3d.unam.workorder.dto;
 
-import com.sispro3d.unam.quote.dto.QuoteDTO;
+import com.sispro3d.unam.core.dto.QuoteRef;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,7 +16,7 @@ public class WorkOrderDTO {
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
     private LocalDateTime createdAt;
-    private QuoteDTO quote;
+    private QuoteRef quote;
 
     public WorkOrderDTO(int id) {
         this.id = id;

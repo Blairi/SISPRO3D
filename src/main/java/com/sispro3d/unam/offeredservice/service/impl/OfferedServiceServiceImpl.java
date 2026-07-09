@@ -1,17 +1,16 @@
 package com.sispro3d.unam.offeredservice.service.impl;
 
 import com.sispro3d.unam.category.domain.Category;
-import com.sispro3d.unam.category.dto.CategoryDTO;
 import com.sispro3d.unam.core.dao.GenericDAO;
+import com.sispro3d.unam.core.dto.AdminRef;
+import com.sispro3d.unam.core.dto.CategoryRef;
+import com.sispro3d.unam.core.dto.ExpertRef;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceDTO;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Admin;
 import com.sispro3d.unam.user.domain.Expert;
-import com.sispro3d.unam.user.dto.AccountDTO;
-import com.sispro3d.unam.user.dto.AdminDTO;
-import com.sispro3d.unam.user.dto.ExpertDTO;
 
 import java.util.List;
 import java.util.Optional;
@@ -71,15 +70,15 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         service.setBasePrice(dto.getBasePrice());
         service.setDeliveryTimeDays(dto.getDeliveryTimeDays());
 
-        if (dto.getAdmin() != null && dto.getAdmin().getAccount() != null) {
+        if (dto.getAdmin() != null) {
             Admin admin = new Admin();
-            admin.setAccount(new Account(dto.getAdmin().getAccount().getIdUser()));
+            admin.setAccount(new Account(dto.getAdmin().getId()));
             service.setAdmin(admin);
         }
 
-        if (dto.getExpert() != null && dto.getExpert().getAccount() != null) {
+        if (dto.getExpert() != null) {
             Expert expert = new Expert();
-            expert.setAccount(new Account(dto.getExpert().getAccount().getIdUser()));
+            expert.setAccount(new Account(dto.getExpert().getId()));
             expert.setSpecialty(dto.getExpert().getSpecialty());
             expert.setPortfolioUrl(dto.getExpert().getPortfolioUrl());
             expert.setBio(dto.getExpert().getBio());
@@ -88,7 +87,8 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         }
 
         if (dto.getCategory() != null) {
-            Category category = new Category(dto.getCategory().getId());
+            Category category = new Category();
+            category.setId(dto.getCategory().getId());
             category.setName(dto.getCategory().getName());
             category.setDescription(dto.getCategory().getDescription());
             service.setCategory(category);
@@ -107,48 +107,41 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         dto.setCreatedAt(service.getCreatedAt());
         dto.setUpdatedAt(service.getUpdatedAt());
 
-        if (service.getAdmin() != null) {
-            AdminDTO adminDTO = new AdminDTO();
-            if (service.getAdmin().getAccount() != null) {
-                AccountDTO accountDTO = mapAccountToDTO(service.getAdmin().getAccount());
-                adminDTO.setAccount(accountDTO);
-            }
-            dto.setAdmin(adminDTO);
+        if (service.getAdmin() != null && service.getAdmin().getAccount() != null) {
+            AdminRef adminRef = AdminRef.builder()
+                    .id(service.getAdmin().getAccount().getIdUser())
+                    .name(service.getAdmin().getAccount().getName())
+                    .lastName(service.getAdmin().getAccount().getLastName())
+                    .email(service.getAdmin().getAccount().getEmail())
+                    .build();
+            dto.setAdmin(adminRef);
         }
 
-        if (service.getExpert() != null) {
-            ExpertDTO expertDTO = new ExpertDTO();
-            if (service.getExpert().getAccount() != null) {
-                AccountDTO accountDTO = mapAccountToDTO(service.getExpert().getAccount());
-                expertDTO.setAccount(accountDTO);
-            }
-            expertDTO.setSpecialty(service.getExpert().getSpecialty());
-            expertDTO.setPortfolioUrl(service.getExpert().getPortfolioUrl());
-            expertDTO.setBio(service.getExpert().getBio());
-            expertDTO.setYearsExperience(service.getExpert().getYearsExperience());
-            dto.setExpert(expertDTO);
+        if (service.getExpert() != null && service.getExpert().getAccount() != null) {
+            ExpertRef expertRef = ExpertRef.builder()
+                    .id(service.getExpert().getAccount().getIdUser())
+                    .name(service.getExpert().getAccount().getName())
+                    .lastName(service.getExpert().getAccount().getLastName())
+                    .email(service.getExpert().getAccount().getEmail())
+                    .specialty(service.getExpert().getSpecialty())
+                    .portfolioUrl(service.getExpert().getPortfolioUrl())
+                    .bio(service.getExpert().getBio())
+                    .yearsExperience(service.getExpert().getYearsExperience())
+                    .build();
+            dto.setExpert(expertRef);
         }
 
         if (service.getCategory() != null) {
-            CategoryDTO categoryDTO = new CategoryDTO(service.getCategory().getId(),
-                    service.getCategory().getName(),
-                    service.getCategory().getDescription());
-            dto.setCategory(categoryDTO);
+            CategoryRef categoryRef = CategoryRef.builder()
+                    .id(service.getCategory().getId())
+                    .name(service.getCategory().getName())
+                    .description(service.getCategory().getDescription())
+                    .build();
+            dto.setCategory(categoryRef);
         }
 
         return dto;
     }
 
-    private AccountDTO mapAccountToDTO(Account account) {
-        AccountDTO dto = new AccountDTO();
-        dto.setIdUser(account.getIdUser());
-        dto.setName(account.getName());
-        dto.setLastName(account.getLastName());
-        dto.setEmail(account.getEmail());
-        dto.setPhone(account.getPhone());
-        dto.setPassword(account.getPassword());
-        dto.setType(account.getType());
-        dto.setCreatedAt(account.getCreatedAt());
-        return dto;
-    }
+
 }

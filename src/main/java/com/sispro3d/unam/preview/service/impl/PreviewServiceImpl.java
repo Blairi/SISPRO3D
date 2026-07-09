@@ -1,8 +1,8 @@
 package com.sispro3d.unam.preview.service.impl;
 
 import com.sispro3d.unam.core.dao.GenericDAO;
+import com.sispro3d.unam.core.dto.DeliverableRef;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
-import com.sispro3d.unam.deliverable.dto.DeliverableDTO;
 import com.sispro3d.unam.preview.domain.Preview;
 import com.sispro3d.unam.preview.dto.PreviewDTO;
 import com.sispro3d.unam.preview.service.PreviewService;
@@ -78,13 +78,14 @@ public class PreviewServiceImpl implements PreviewService {
         dto.setUrlFile(preview.getUrlFile());
 
         if (preview.getDeliverable() != null) {
-            DeliverableDTO delDTO = new DeliverableDTO();
-            delDTO.setId(preview.getDeliverable().getId());
-            delDTO.setName(preview.getDeliverable().getName());
-            delDTO.setUrlFile(preview.getDeliverable().getUrlFile());
-            delDTO.setFileType(preview.getDeliverable().getFileType());
-            delDTO.setCreatedAt(preview.getDeliverable().getCreatedAt());
-            dto.setDeliverable(delDTO);
+            DeliverableRef delRef = DeliverableRef.builder()
+                    .id(preview.getDeliverable().getId())
+                    .name(preview.getDeliverable().getName())
+                    .urlFile(preview.getDeliverable().getUrlFile())
+                    .fileType(preview.getDeliverable().getFileType())
+                    .createdAt(preview.getDeliverable().getCreatedAt())
+                    .build();
+            dto.setDeliverable(delRef);
         }
 
         return dto;

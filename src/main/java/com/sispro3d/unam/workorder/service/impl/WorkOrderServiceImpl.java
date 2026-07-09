@@ -1,8 +1,8 @@
 package com.sispro3d.unam.workorder.service.impl;
 
 import com.sispro3d.unam.core.dao.GenericDAO;
+import com.sispro3d.unam.core.dto.QuoteRef;
 import com.sispro3d.unam.quote.domain.Quote;
-import com.sispro3d.unam.quote.dto.QuoteDTO;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
 import com.sispro3d.unam.workorder.dto.WorkOrderDTO;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
@@ -81,14 +81,15 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         dto.setCreatedAt(workOrder.getCreatedAt());
 
         if (workOrder.getQuote() != null) {
-            QuoteDTO quoteDTO = new QuoteDTO();
-            quoteDTO.setId(workOrder.getQuote().getId());
-            quoteDTO.setStatus(workOrder.getQuote().getStatus());
-            quoteDTO.setTotalAmount(workOrder.getQuote().getTotalAmount());
-            quoteDTO.setValidUntil(workOrder.getQuote().getValidUntil());
-            quoteDTO.setDescription(workOrder.getQuote().getDescription());
-            quoteDTO.setCreatedAt(workOrder.getQuote().getCreatedAt());
-            dto.setQuote(quoteDTO);
+            QuoteRef quoteRef = QuoteRef.builder()
+                    .id(workOrder.getQuote().getId())
+                    .status(workOrder.getQuote().getStatus())
+                    .totalAmount(workOrder.getQuote().getTotalAmount())
+                    .validUntil(workOrder.getQuote().getValidUntil())
+                    .description(workOrder.getQuote().getDescription())
+                    .createdAt(workOrder.getQuote().getCreatedAt())
+                    .build();
+            dto.setQuote(quoteRef);
         }
 
         return dto;

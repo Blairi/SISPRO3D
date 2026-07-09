@@ -2,6 +2,8 @@ package com.sispro3d.unam.core.dto;
 
 import lombok.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
@@ -9,11 +11,11 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
-public class WorkOrderRef {
+public class QuoteRef {
     private int id;
     private String status;
-    private LocalDateTime startedAt;
-    private LocalDateTime completedAt;
+    private BigDecimal totalAmount;
+    private LocalDate validUntil;
+    private String description;
     private LocalDateTime createdAt;
 }

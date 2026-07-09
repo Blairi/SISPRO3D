@@ -1,15 +1,14 @@
 package com.sispro3d.unam.review.service.impl;
 
 import com.sispro3d.unam.core.dao.GenericDAO;
+import com.sispro3d.unam.core.dto.ClientRef;
+import com.sispro3d.unam.core.dto.OfferedServiceRef;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
-import com.sispro3d.unam.offeredservice.dto.OfferedServiceDTO;
 import com.sispro3d.unam.review.domain.Review;
 import com.sispro3d.unam.review.dto.ReviewDTO;
 import com.sispro3d.unam.review.service.ReviewService;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Client;
-import com.sispro3d.unam.user.dto.AccountDTO;
-import com.sispro3d.unam.user.dto.ClientDTO;
 
 import java.util.List;
 import java.util.Optional;
@@ -67,14 +66,14 @@ public class ReviewServiceImpl implements ReviewService {
         review.setRating(dto.getRating());
         review.setComment(dto.getComment());
 
-        if (dto.getClient() != null && dto.getClient().getAccount() != null) {
+        if (dto.getClient() != null) {
             Client client = new Client();
-            client.setAccount(new Account(dto.getClient().getAccount().getIdUser()));
+            client.setAccount(new Account(dto.getClient().getId()));
             review.setClient(client);
         }
 
         if (dto.getOfferedService() != null) {
-            review.setOfferedService(mapOfferedServiceByDTO(dto.getOfferedService()));
+            review.setOfferedService(mapOfferedServiceByRef(dto.getOfferedService()));
         }
 
         return review;
@@ -87,53 +86,42 @@ public class ReviewServiceImpl implements ReviewService {
         dto.setComment(review.getComment());
         dto.setCreatedAt(review.getCreatedAt());
 
-        if (review.getClient() != null) {
-            ClientDTO clientDTO = new ClientDTO();
-            if (review.getClient().getAccount() != null) {
-                clientDTO.setAccount(mapAccountToDTO(review.getClient().getAccount()));
-            }
-            dto.setClient(clientDTO);
+        if (review.getClient() != null && review.getClient().getAccount() != null) {
+            ClientRef clientRef = ClientRef.builder()
+                    .id(review.getClient().getAccount().getIdUser())
+                    .name(review.getClient().getAccount().getName())
+                    .lastName(review.getClient().getAccount().getLastName())
+                    .email(review.getClient().getAccount().getEmail())
+                    .build();
+            dto.setClient(clientRef);
         }
 
         if (review.getOfferedService() != null) {
-            dto.setOfferedService(mapOfferedServiceToDTO(review.getOfferedService()));
+            dto.setOfferedService(mapOfferedServiceToRef(review.getOfferedService()));
         }
 
         return dto;
     }
 
-    private OfferedService mapOfferedServiceByDTO(OfferedServiceDTO offeredServiceDTO) {
+    private OfferedService mapOfferedServiceByRef(OfferedServiceRef ref) {
         OfferedService offeredService = new OfferedService();
-        offeredService.setId(offeredServiceDTO.getId());
-        offeredService.setTitle(offeredServiceDTO.getTitle());
-        offeredService.setDescription(offeredServiceDTO.getDescription());
-        offeredService.setBasePrice(offeredServiceDTO.getBasePrice());
-        offeredService.setDeliveryTimeDays(offeredServiceDTO.getDeliveryTimeDays());
+        offeredService.setId(ref.getId());
+        offeredService.setTitle(ref.getTitle());
+        offeredService.setDescription(ref.getDescription());
+        offeredService.setBasePrice(ref.getBasePrice());
+        offeredService.setDeliveryTimeDays(ref.getDeliveryTimeDays());
         return offeredService;
     }
 
-    private OfferedServiceDTO mapOfferedServiceToDTO(OfferedService offeredService) {
-        OfferedServiceDTO dto = new OfferedServiceDTO();
-        dto.setId(offeredService.getId());
-        dto.setTitle(offeredService.getTitle());
-        dto.setDescription(offeredService.getDescription());
-        dto.setBasePrice(offeredService.getBasePrice());
-        dto.setDeliveryTimeDays(offeredService.getDeliveryTimeDays());
-        dto.setCreatedAt(offeredService.getCreatedAt());
-        dto.setUpdatedAt(offeredService.getUpdatedAt());
-        return dto;
-    }
-
-    private AccountDTO mapAccountToDTO(Account account) {
-        AccountDTO dto = new AccountDTO();
-        dto.setIdUser(account.getIdUser());
-        dto.setName(account.getName());
-        dto.setLastName(account.getLastName());
-        dto.setEmail(account.getEmail());
-        dto.setPhone(account.getPhone());
-        dto.setPassword(account.getPassword());
-        dto.setType(account.getType());
-        dto.setCreatedAt(account.getCreatedAt());
-        return dto;
+    private OfferedServiceRef mapOfferedServiceToRef(OfferedService offeredService) {
+        return OfferedServiceRef.builder()
+                .id(offeredService.getId())
+                .title(offeredService.getTitle())
+                .description(offeredService.getDescription())
+                .basePrice(offeredService.getBasePrice())
+                .deliveryTimeDays(offeredService.getDeliveryTimeDays())
+                .createdAt(offeredService.getCreatedAt())
+                .updatedAt(offeredService.getUpdatedAt())
+                .build();
     }
 }

@@ -1,7 +1,7 @@
 package com.sispro3d.unam.quote.dto;
 
-import com.sispro3d.unam.offeredservice.dto.OfferedServiceDTO;
-import com.sispro3d.unam.user.dto.ClientDTO;
+import com.sispro3d.unam.core.dto.ClientRef;
+import com.sispro3d.unam.core.dto.OfferedServiceRef;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,8 +20,8 @@ public class QuoteDTO {
     private LocalDate validUntil;
     private String description;
     private LocalDateTime createdAt;
-    private ClientDTO client;
-    private OfferedServiceDTO offeredService;
+    private ClientRef client;
+    private OfferedServiceRef offeredService;
 
     public QuoteDTO(int id) {
         this.id = id;
