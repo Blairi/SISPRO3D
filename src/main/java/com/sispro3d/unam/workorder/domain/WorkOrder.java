@@ -1,13 +1,13 @@
 package com.sispro3d.unam.workorder.domain;
 
 import com.sispro3d.unam.quote.domain.Quote;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class WorkOrder {
@@ -17,8 +17,4 @@ public class WorkOrder {
     private LocalDateTime completedAt;
     private LocalDateTime createdAt;
     private Quote quote;
-
-    public WorkOrder(int id) {
-        this.id = id;
-    }
 }

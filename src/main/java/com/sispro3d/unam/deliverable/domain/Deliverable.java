@@ -17,8 +17,4 @@ public class Deliverable {
     private LocalDateTime createdAt;
     private String fileType;
     private WorkOrder workOrder;
-
-    public Deliverable(int id) {
-        this.id = id;
-    }
 }

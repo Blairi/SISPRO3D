@@ -1,11 +1,11 @@
 package com.sispro3d.unam.preview.domain;
 
 import com.sispro3d.unam.deliverable.domain.Deliverable;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class Preview {
