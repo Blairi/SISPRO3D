@@ -1,17 +1,14 @@
 package com.sispro3d.unam.offeredservice.service.impl;
 
 import com.sispro3d.unam.category.domain.Category;
-import com.sispro3d.unam.core.dto.AdminRef;
+import com.sispro3d.unam.core.dto.AccountRef;
 import com.sispro3d.unam.core.dto.CategoryRef;
-import com.sispro3d.unam.core.dto.ExpertRef;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceRequest;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
 import com.sispro3d.unam.user.domain.Account;
-import com.sispro3d.unam.user.domain.Admin;
-import com.sispro3d.unam.user.domain.Expert;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -80,14 +77,10 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         service.setDeliveryTimeDays(request.getDeliveryTimeDays());
 
         if (request.getAdminId() != null) {
-            Admin admin = new Admin();
-            admin.setAccount(new Account(request.getAdminId()));
-            service.setAdmin(admin);
+            service.setAdmin(new Account(request.getAdminId()));
         }
 
-        Expert expert = new Expert();
-        expert.setAccount(new Account(request.getExpertId()));
-        service.setExpert(expert);
+        service.setExpert(new Account(request.getExpertId()));
 
         Category category = new Category();
         category.setId(request.getCategoryId());
@@ -106,37 +99,34 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
                 .createdAt(service.getCreatedAt())
                 .updatedAt(service.getUpdatedAt());
 
-        if (service.getAdmin() != null && service.getAdmin().getAccount() != null) {
-            AdminRef adminRef = AdminRef.builder()
-                    .id(service.getAdmin().getAccount().getIdUser())
-                    .name(service.getAdmin().getAccount().getName())
-                    .lastName(service.getAdmin().getAccount().getLastName())
-                    .email(service.getAdmin().getAccount().getEmail())
-                    .build();
-            builder.admin(adminRef);
+        if (service.getAdmin() != null) {
+            builder.admin(AccountRef.builder()
+                    .idUser(service.getAdmin().getIdUser())
+                    .name(service.getAdmin().getName())
+                    .lastName(service.getAdmin().getLastName())
+                    .email(service.getAdmin().getEmail())
+                    .build());
         }
 
-        if (service.getExpert() != null && service.getExpert().getAccount() != null) {
-            ExpertRef expertRef = ExpertRef.builder()
-                    .id(service.getExpert().getAccount().getIdUser())
-                    .name(service.getExpert().getAccount().getName())
-                    .lastName(service.getExpert().getAccount().getLastName())
-                    .email(service.getExpert().getAccount().getEmail())
+        if (service.getExpert() != null) {
+            builder.expert(AccountRef.builder()
+                    .idUser(service.getExpert().getIdUser())
+                    .name(service.getExpert().getName())
+                    .lastName(service.getExpert().getLastName())
+                    .email(service.getExpert().getEmail())
                     .specialty(service.getExpert().getSpecialty())
                     .portfolioUrl(service.getExpert().getPortfolioUrl())
                     .bio(service.getExpert().getBio())
                     .yearsExperience(service.getExpert().getYearsExperience())
-                    .build();
-            builder.expert(expertRef);
+                    .build());
         }
 
         if (service.getCategory() != null) {
-            CategoryRef categoryRef = CategoryRef.builder()
+            builder.category(CategoryRef.builder()
                     .id(service.getCategory().getId())
                     .name(service.getCategory().getName())
                     .description(service.getCategory().getDescription())
-                    .build();
-            builder.category(categoryRef);
+                    .build());
         }
 
         return builder.build();

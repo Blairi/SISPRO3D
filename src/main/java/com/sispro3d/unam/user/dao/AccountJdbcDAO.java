@@ -3,7 +3,7 @@ package com.sispro3d.unam.user.dao;
 import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
 import com.sispro3d.unam.user.domain.Account;
-import com.sispro3d.unam.user.domain.UserType;
+import com.sispro3d.unam.user.domain.Role;
 import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
@@ -15,10 +15,10 @@ import java.util.Optional;
 @Repository
 public class AccountJdbcDAO extends AbstractJdbcDAO<Account> implements GenericDAO<Account> {
 
-    private static final String FIND_ALL   = "SELECT id_user, name, lastName, email, phone, password, type, created_at FROM account";
-    private static final String FIND_BY_ID = "SELECT id_user, name, lastName, email, phone, password, type, created_at FROM account WHERE id_user = ?";
-    private static final String INSERT     = "INSERT INTO account (name, lastName, email, phone, password, type) VALUES (?, ?, ?, ?, ?, ?)";
-    private static final String UPDATE     = "UPDATE account SET name = ?, lastName = ?, email = ?, phone = ?, password = ?, type = ? WHERE id_user = ?";
+    private static final String FIND_ALL   = "SELECT id_user, name, lastName, email, phone, password, role, specialty, portfolio_url, bio, years_experience, created_at FROM account";
+    private static final String FIND_BY_ID = "SELECT id_user, name, lastName, email, phone, password, role, specialty, portfolio_url, bio, years_experience, created_at FROM account WHERE id_user = ?";
+    private static final String INSERT     = "INSERT INTO account (name, lastName, email, phone, password, role, specialty, portfolio_url, bio, years_experience) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static final String UPDATE     = "UPDATE account SET name = ?, lastName = ?, email = ?, phone = ?, password = ?, role = ?, specialty = ?, portfolio_url = ?, bio = ?, years_experience = ? WHERE id_user = ?";
     private static final String DELETE     = "DELETE FROM account WHERE id_user = ?";
 
     @Override
@@ -40,7 +40,11 @@ public class AccountJdbcDAO extends AbstractJdbcDAO<Account> implements GenericD
                     ps.setString(3, account.getEmail());
                     ps.setString(4, account.getPhone());
                     ps.setString(5, account.getPassword());
-                    ps.setString(6, account.getType().name());
+                    ps.setString(6, account.getRole().name());
+                    ps.setString(7, account.getSpecialty());
+                    ps.setString(8, account.getPortfolioUrl());
+                    ps.setString(9, account.getBio());
+                    ps.setObject(10, account.getYearsExperience());
                 },
                 account, Account::setIdUser, "Error al insertar account: " + account.getEmail());
     }
@@ -54,8 +58,12 @@ public class AccountJdbcDAO extends AbstractJdbcDAO<Account> implements GenericD
                     ps.setString(3, account.getEmail());
                     ps.setString(4, account.getPhone());
                     ps.setString(5, account.getPassword());
-                    ps.setString(6, account.getType().name());
-                    ps.setInt(7, account.getIdUser());
+                    ps.setString(6, account.getRole().name());
+                    ps.setString(7, account.getSpecialty());
+                    ps.setString(8, account.getPortfolioUrl());
+                    ps.setString(9, account.getBio());
+                    ps.setObject(10, account.getYearsExperience());
+                    ps.setInt(11, account.getIdUser());
                 },
                 "Error al actualizar account con id: " + account.getIdUser());
     }
@@ -73,7 +81,11 @@ public class AccountJdbcDAO extends AbstractJdbcDAO<Account> implements GenericD
         account.setEmail(rs.getString("email"));
         account.setPhone(rs.getString("phone"));
         account.setPassword(rs.getString("password"));
-        account.setType(UserType.valueOf(rs.getString("type")));
+        account.setRole(Role.valueOf(rs.getString("role")));
+        account.setSpecialty(rs.getString("specialty"));
+        account.setPortfolioUrl(rs.getString("portfolio_url"));
+        account.setBio(rs.getString("bio"));
+        account.setYearsExperience((Integer) rs.getObject("years_experience"));
         Timestamp ts = rs.getTimestamp("created_at");
         if (ts != null) account.setCreatedAt(ts.toLocalDateTime());
         return account;

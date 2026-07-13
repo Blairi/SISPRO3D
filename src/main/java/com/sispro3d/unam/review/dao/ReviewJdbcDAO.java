@@ -5,7 +5,10 @@ import com.sispro3d.unam.core.dao.AbstractJdbcDAO;
 import com.sispro3d.unam.core.dao.GenericDAO;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.review.domain.Review;
-import com.sispro3d.unam.user.domain.*;
+import com.sispro3d.unam.user.domain.Account;
+import com.sispro3d.unam.user.domain.Role;
+
+import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,32 +16,28 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public class ReviewJdbcDAO extends AbstractJdbcDAO<Review> implements GenericDAO<Review> {
 
     private static final String FIND_ALL = """
             SELECT 
                 r.id, r.rating, r.comment, r.created_at,
-                c.account_id as client_account_id, acc1.id_user as client_id_user, acc1.name as client_name,
-                acc1.lastName as client_lastName, acc1.email as client_email, acc1.phone as client_phone,
-                acc1.password as client_password, acc1.type as client_type, acc1.created_at as client_created_at,
+                c.id_user as client_id_user, c.name as client_name,
+                c.lastName as client_lastName, c.email as client_email, c.phone as client_phone,
+                c.password as client_password, c.role as client_role, c.created_at as client_created_at,
                 s.id as service_id, s.title, s.description, s.base_price, s.delivery_time_days,
                 s.created_at as service_created_at, s.updated_at as service_updated_at,
-                a.account_id as admin_account_id, acc2.id_user as admin_id_user, acc2.name as admin_name,
-                acc2.lastName as admin_lastName, acc2.email as admin_email, acc2.phone as admin_phone,
-                acc2.password as admin_password, acc2.type as admin_type, acc2.created_at as admin_created_at,
-                e.account_id as expert_account_id, acc3.id_user as expert_id_user, acc3.name as expert_name,
-                acc3.lastName as expert_lastName, acc3.email as expert_email, acc3.phone as expert_phone,
-                acc3.password as expert_password, acc3.type as expert_type, acc3.created_at as expert_created_at,
+                a.id_user as admin_id_user, a.name as admin_name,
+                a.lastName as admin_lastName, a.email as admin_email,
+                e.id_user as expert_id_user, e.name as expert_name,
+                e.lastName as expert_lastName, e.email as expert_email,
                 e.specialty, e.portfolio_url, e.bio, e.years_experience,
                 cat.id as category_id, cat.name as category_name, cat.description as category_description
             FROM review r
-            JOIN client c ON r.client_id = c.account_id
-            JOIN account acc1 ON c.account_id = acc1.id_user
+            JOIN account c ON r.client_id = c.id_user
             JOIN service s ON r.service_id = s.id
-            LEFT JOIN admin a ON s.admin_id = a.account_id
-            LEFT JOIN account acc2 ON a.account_id = acc2.id_user
-            JOIN expert e ON s.expert_id = e.account_id
-            JOIN account acc3 ON e.account_id = acc3.id_user
+            LEFT JOIN account a ON s.id_admin = a.id_user
+            JOIN account e ON s.id_expert = e.id_user
             JOIN category cat ON s.category_id = cat.id
             """;
 
@@ -70,7 +69,7 @@ public class ReviewJdbcDAO extends AbstractJdbcDAO<Review> implements GenericDAO
                 ps -> {
                     ps.setInt(1, review.getRating());
                     ps.setString(2, review.getComment());
-                    ps.setInt(3, review.getClient().getAccount().getIdUser());
+                    ps.setInt(3, review.getClient().getIdUser());
                     ps.setInt(4, review.getOfferedService().getId());
                 },
                 review, Review::setId, "Error al insertar reseña");
@@ -82,7 +81,7 @@ public class ReviewJdbcDAO extends AbstractJdbcDAO<Review> implements GenericDAO
                 ps -> {
                     ps.setInt(1, review.getRating());
                     ps.setString(2, review.getComment());
-                    ps.setInt(3, review.getClient().getAccount().getIdUser());
+                    ps.setInt(3, review.getClient().getIdUser());
                     ps.setInt(4, review.getOfferedService().getId());
                     ps.setInt(5, review.getId());
                 },
@@ -95,19 +94,16 @@ public class ReviewJdbcDAO extends AbstractJdbcDAO<Review> implements GenericDAO
     }
 
     private Review mapRow(ResultSet rs) throws SQLException {
-        Account clientAccount = new Account();
-        clientAccount.setIdUser(rs.getInt("client_id_user"));
-        clientAccount.setName(rs.getString("client_name"));
-        clientAccount.setLastName(rs.getString("client_lastName"));
-        clientAccount.setEmail(rs.getString("client_email"));
-        clientAccount.setPhone(rs.getString("client_phone"));
-        clientAccount.setPassword(rs.getString("client_password"));
-        clientAccount.setType(UserType.valueOf(rs.getString("client_type")));
+        Account client = new Account();
+        client.setIdUser(rs.getInt("client_id_user"));
+        client.setName(rs.getString("client_name"));
+        client.setLastName(rs.getString("client_lastName"));
+        client.setEmail(rs.getString("client_email"));
+        client.setPhone(rs.getString("client_phone"));
+        client.setPassword(rs.getString("client_password"));
+        client.setRole(Role.valueOf(rs.getString("client_role")));
         Timestamp clientCreatedAt = rs.getTimestamp("client_created_at");
-        if (clientCreatedAt != null) clientAccount.setCreatedAt(clientCreatedAt.toLocalDateTime());
-
-        Client client = new Client();
-        client.setAccount(clientAccount);
+        if (clientCreatedAt != null) client.setCreatedAt(clientCreatedAt.toLocalDateTime());
 
         OfferedService offeredService = mapService(rs);
 
@@ -138,39 +134,23 @@ public class ReviewJdbcDAO extends AbstractJdbcDAO<Review> implements GenericDAO
         if (serviceUpdatedAt != null) offeredService.setUpdatedAt(serviceUpdatedAt.toLocalDateTime());
 
         if (rs.getObject("admin_id_user") != null) {
-            Account adminAccount = new Account();
-            adminAccount.setIdUser(rs.getInt("admin_id_user"));
-            adminAccount.setName(rs.getString("admin_name"));
-            adminAccount.setLastName(rs.getString("admin_lastName"));
-            adminAccount.setEmail(rs.getString("admin_email"));
-            adminAccount.setPhone(rs.getString("admin_phone"));
-            adminAccount.setPassword(rs.getString("admin_password"));
-            adminAccount.setType(UserType.valueOf(rs.getString("admin_type")));
-            Timestamp adminCreatedAt = rs.getTimestamp("admin_created_at");
-            if (adminCreatedAt != null) adminAccount.setCreatedAt(adminCreatedAt.toLocalDateTime());
-
-            Admin admin = new Admin();
-            admin.setAccount(adminAccount);
+            Account admin = new Account();
+            admin.setIdUser(rs.getInt("admin_id_user"));
+            admin.setName(rs.getString("admin_name"));
+            admin.setLastName(rs.getString("admin_lastName"));
+            admin.setEmail(rs.getString("admin_email"));
             offeredService.setAdmin(admin);
         }
 
-        Account expertAccount = new Account();
-        expertAccount.setIdUser(rs.getInt("expert_id_user"));
-        expertAccount.setName(rs.getString("expert_name"));
-        expertAccount.setLastName(rs.getString("expert_lastName"));
-        expertAccount.setEmail(rs.getString("expert_email"));
-        expertAccount.setPhone(rs.getString("expert_phone"));
-        expertAccount.setPassword(rs.getString("expert_password"));
-        expertAccount.setType(UserType.valueOf(rs.getString("expert_type")));
-        Timestamp expertCreatedAt = rs.getTimestamp("expert_created_at");
-        if (expertCreatedAt != null) expertAccount.setCreatedAt(expertCreatedAt.toLocalDateTime());
-
-        Expert expert = new Expert();
-        expert.setAccount(expertAccount);
+        Account expert = new Account();
+        expert.setIdUser(rs.getInt("expert_id_user"));
+        expert.setName(rs.getString("expert_name"));
+        expert.setLastName(rs.getString("expert_lastName"));
+        expert.setEmail(rs.getString("expert_email"));
         expert.setSpecialty(rs.getString("specialty"));
         expert.setPortfolioUrl(rs.getString("portfolio_url"));
         expert.setBio(rs.getString("bio"));
-        expert.setYearsExperience(rs.getInt("years_experience"));
+        expert.setYearsExperience((Integer) rs.getObject("years_experience"));
         offeredService.setExpert(expert);
 
         Category category = new Category();

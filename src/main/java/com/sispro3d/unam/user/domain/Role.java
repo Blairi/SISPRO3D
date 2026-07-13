@@ -1,5 +1,5 @@
 package com.sispro3d.unam.user.domain;
 
-public enum UserType {
+public enum Role {
     ADMIN, CLIENT, EXPERT
 }

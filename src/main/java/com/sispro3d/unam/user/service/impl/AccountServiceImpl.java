@@ -72,7 +72,11 @@ public class AccountServiceImpl implements AccountService {
         account.setEmail(request.getEmail());
         account.setPhone(request.getPhone());
         account.setPassword(request.getPassword());
-        account.setType(request.getType());
+        account.setRole(request.getRole());
+        account.setSpecialty(request.getSpecialty());
+        account.setPortfolioUrl(request.getPortfolioUrl());
+        account.setBio(request.getBio());
+        account.setYearsExperience(request.getYearsExperience());
         return account;
     }
 
@@ -84,7 +88,11 @@ public class AccountServiceImpl implements AccountService {
                 .email(account.getEmail())
                 .phone(account.getPhone())
                 .password(account.getPassword())
-                .type(account.getType())
+                .role(account.getRole())
+                .specialty(account.getSpecialty())
+                .portfolioUrl(account.getPortfolioUrl())
+                .bio(account.getBio())
+                .yearsExperience(account.getYearsExperience())
                 .createdAt(account.getCreatedAt())
                 .build();
     }

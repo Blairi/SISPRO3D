@@ -1,8 +1,7 @@
 package com.sispro3d.unam.offeredservice.dto;
 
-import com.sispro3d.unam.core.dto.AdminRef;
+import com.sispro3d.unam.core.dto.AccountRef;
 import com.sispro3d.unam.core.dto.CategoryRef;
-import com.sispro3d.unam.core.dto.ExpertRef;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,8 +23,8 @@ public class OfferedServiceResponse {
     private String title;
     private String description;
     private BigDecimal basePrice;
-    private AdminRef admin;
-    private ExpertRef expert;
+    private AccountRef admin;
+    private AccountRef expert;
     private CategoryRef category;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

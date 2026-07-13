@@ -1,6 +1,6 @@
 package com.sispro3d.unam.user.dto;
 
-import com.sispro3d.unam.user.domain.UserType;
+import com.sispro3d.unam.user.domain.Role;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -17,6 +17,10 @@ public class AccountResponse {
     private String email;
     private String phone;
     private String password;
-    private UserType type;
+    private Role role;
+    private String specialty;
+    private String portfolioUrl;
+    private String bio;
+    private Integer yearsExperience;
     private LocalDateTime createdAt;
 }

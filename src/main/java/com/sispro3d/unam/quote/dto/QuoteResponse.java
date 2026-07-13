@@ -1,29 +1,31 @@
 package com.sispro3d.unam.quote.dto;
 
-import com.sispro3d.unam.core.dto.ClientRef;
+import com.sispro3d.unam.core.dto.AccountRef;
 import com.sispro3d.unam.core.dto.OfferedServiceRef;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuoteDTO {
+@Builder
+public class QuoteResponse {
     private int id;
-    private String status; // PENDING, ACCEPTED, REJECTED, EXPIRED
+    private String status;
     private BigDecimal totalAmount;
     private LocalDate validUntil;
     private String description;
     private LocalDateTime createdAt;
-    private ClientRef client;
+    private AccountRef client;
     private OfferedServiceRef offeredService;
-
-    public QuoteDTO(int id) {
-        this.id = id;
-    }
 }

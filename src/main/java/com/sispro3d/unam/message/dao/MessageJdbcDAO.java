@@ -5,7 +5,7 @@ import com.sispro3d.unam.core.dao.GenericDAO;
 import com.sispro3d.unam.message.domain.Message;
 import com.sispro3d.unam.thread.domain.Thread;
 import com.sispro3d.unam.user.domain.Account;
-import com.sispro3d.unam.user.domain.UserType;
+import com.sispro3d.unam.user.domain.Role;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,7 +19,7 @@ public class MessageJdbcDAO extends AbstractJdbcDAO<Message> implements GenericD
             SELECT 
                 m.id, m.content, m.time_stamp,
                 t.id as thread_id, t.workorder_id,
-                acc.id_user, acc.name, acc.lastName, acc.email, acc.phone, acc.password, acc.type, acc.created_at
+                 acc.id_user, acc.name, acc.lastName, acc.email, acc.phone, acc.password, acc.role, acc.created_at
             FROM message m
             JOIN thread t ON m.thread_id = t.id
             JOIN account acc ON m.account_id = acc.id_user
@@ -80,7 +80,7 @@ public class MessageJdbcDAO extends AbstractJdbcDAO<Message> implements GenericD
         account.setEmail(rs.getString("email"));
         account.setPhone(rs.getString("phone"));
         account.setPassword(rs.getString("password"));
-        account.setType(UserType.valueOf(rs.getString("type")));
+        account.setRole(Role.valueOf(rs.getString("role")));
         Timestamp createdAt = rs.getTimestamp("created_at");
         if (createdAt != null) account.setCreatedAt(createdAt.toLocalDateTime());
 

@@ -1,6 +1,6 @@
 package com.sispro3d.unam.core.dto;
 
-import com.sispro3d.unam.user.domain.UserType;
+import com.sispro3d.unam.user.domain.Role;
 import lombok.*;
 
 @Getter
@@ -14,5 +14,9 @@ public class AccountRef {
     private String lastName;
     private String email;
     private String phone;
-    private UserType type;
+    private Role role;
+    private String specialty;
+    private String portfolioUrl;
+    private String bio;
+    private Integer yearsExperience;
 }

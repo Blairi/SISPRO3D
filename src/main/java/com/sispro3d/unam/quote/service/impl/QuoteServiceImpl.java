@@ -1,131 +1,115 @@
 package com.sispro3d.unam.quote.service.impl;
 
-import com.sispro3d.unam.core.dao.GenericDAO;
-import com.sispro3d.unam.core.dto.ClientRef;
+import com.sispro3d.unam.core.dto.AccountRef;
 import com.sispro3d.unam.core.dto.OfferedServiceRef;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.quote.domain.Quote;
-import com.sispro3d.unam.quote.dto.QuoteDTO;
+import com.sispro3d.unam.quote.dto.QuoteRequest;
+import com.sispro3d.unam.quote.dto.QuoteResponse;
+import com.sispro3d.unam.quote.repository.QuoteRepository;
 import com.sispro3d.unam.quote.service.QuoteService;
 import com.sispro3d.unam.user.domain.Account;
-import com.sispro3d.unam.user.domain.Client;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class QuoteServiceImpl implements QuoteService {
 
-    private final GenericDAO<Quote> quoteDAO;
+    private final QuoteRepository quoteRepository;
 
-    public QuoteServiceImpl(GenericDAO<Quote> quoteDAO) {
-        this.quoteDAO = quoteDAO;
+    public QuoteServiceImpl(QuoteRepository quoteRepository) {
+        this.quoteRepository = quoteRepository;
     }
 
     @Override
-    public List<QuoteDTO> findAll() {
-        return quoteDAO.findAll()
+    public List<QuoteResponse> findAll() {
+        return quoteRepository.findAll()
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public Optional<QuoteDTO> findById(int id) {
-        return quoteDAO.findById(id)
-                .map(this::toResponseDTO);
+    public Optional<QuoteResponse> findById(Long id) {
+        return quoteRepository.findById(id.intValue())
+                .map(this::toResponse);
     }
 
     @Override
-    public QuoteDTO create(QuoteDTO dto) {
-        Quote quote = toEntity(dto);
-        int generatedId = quoteDAO.insert(quote);
-        quote.setId(generatedId);
-        return toResponseDTO(quote);
+    public QuoteResponse create(QuoteRequest request) {
+        Quote quote = toEntity(request);
+        Quote saved = quoteRepository.save(quote);
+        return toResponse(saved);
     }
 
     @Override
-    public QuoteDTO update(int id, QuoteDTO dto) {
-        quoteDAO.findById(id)
+    public QuoteResponse update(Long id, QuoteRequest request) {
+        int pk = id.intValue();
+        quoteRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Cotización no encontrada con id: " + id));
 
-        Quote quote = toEntity(dto);
-        quote.setId(id);
-        quoteDAO.update(quote);
-        return toResponseDTO(quote);
+        Quote quote = toEntity(request);
+        quote.setId(pk);
+        Quote updated = quoteRepository.update(quote);
+        return toResponse(updated);
     }
 
     @Override
-    public void delete(int id) {
-        quoteDAO.findById(id)
+    public void delete(Long id) {
+        int pk = id.intValue();
+        quoteRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Cotización no encontrada con id: " + id));
-        quoteDAO.delete(id);
+        quoteRepository.deleteById(pk);
     }
 
-    private Quote toEntity(QuoteDTO dto) {
+    @Override
+    public boolean existsById(Long id) {
+        return quoteRepository.existsById(id.intValue());
+    }
+
+    private Quote toEntity(QuoteRequest request) {
         Quote quote = new Quote();
-        quote.setStatus(dto.getStatus());
-        quote.setTotalAmount(dto.getTotalAmount());
-        quote.setValidUntil(dto.getValidUntil());
-        quote.setDescription(dto.getDescription());
-
-        if (dto.getClient() != null) {
-            Client client = new Client();
-            client.setAccount(new Account(dto.getClient().getId()));
-            quote.setClient(client);
-        }
-
-        if (dto.getOfferedService() != null) {
-            quote.setOfferedService(mapOfferedServiceByRef(dto.getOfferedService()));
-        }
-
+        quote.setStatus(request.getStatus());
+        quote.setTotalAmount(request.getTotalAmount());
+        quote.setValidUntil(request.getValidUntil());
+        quote.setDescription(request.getDescription());
+        quote.setClient(new Account(request.getClientId()));
+        quote.setOfferedService(new OfferedService(request.getOfferedServiceId()));
         return quote;
     }
 
-    private QuoteDTO toResponseDTO(Quote quote) {
-        QuoteDTO dto = new QuoteDTO();
-        dto.setId(quote.getId());
-        dto.setStatus(quote.getStatus());
-        dto.setTotalAmount(quote.getTotalAmount());
-        dto.setValidUntil(quote.getValidUntil());
-        dto.setDescription(quote.getDescription());
-        dto.setCreatedAt(quote.getCreatedAt());
+    private QuoteResponse toResponse(Quote quote) {
+        QuoteResponse.QuoteResponseBuilder builder = QuoteResponse.builder()
+                .id(quote.getId())
+                .status(quote.getStatus())
+                .totalAmount(quote.getTotalAmount())
+                .validUntil(quote.getValidUntil())
+                .description(quote.getDescription())
+                .createdAt(quote.getCreatedAt());
 
-        if (quote.getClient() != null && quote.getClient().getAccount() != null) {
-            ClientRef clientRef = ClientRef.builder()
-                    .id(quote.getClient().getAccount().getIdUser())
-                    .name(quote.getClient().getAccount().getName())
-                    .lastName(quote.getClient().getAccount().getLastName())
-                    .email(quote.getClient().getAccount().getEmail())
-                    .build();
-            dto.setClient(clientRef);
+        if (quote.getClient() != null) {
+            builder.client(AccountRef.builder()
+                    .idUser(quote.getClient().getIdUser())
+                    .name(quote.getClient().getName())
+                    .lastName(quote.getClient().getLastName())
+                    .email(quote.getClient().getEmail())
+                    .build());
         }
 
         if (quote.getOfferedService() != null) {
-            dto.setOfferedService(mapOfferedServiceToRef(quote.getOfferedService()));
+            builder.offeredService(OfferedServiceRef.builder()
+                    .id(quote.getOfferedService().getId())
+                    .title(quote.getOfferedService().getTitle())
+                    .description(quote.getOfferedService().getDescription())
+                    .basePrice(quote.getOfferedService().getBasePrice())
+                    .deliveryTimeDays(quote.getOfferedService().getDeliveryTimeDays())
+                    .createdAt(quote.getOfferedService().getCreatedAt())
+                    .updatedAt(quote.getOfferedService().getUpdatedAt())
+                    .build());
         }
 
-        return dto;
-    }
-
-    private OfferedService mapOfferedServiceByRef(OfferedServiceRef ref) {
-        OfferedService offeredService = new OfferedService();
-        offeredService.setId(ref.getId());
-        offeredService.setTitle(ref.getTitle());
-        offeredService.setDescription(ref.getDescription());
-        offeredService.setBasePrice(ref.getBasePrice());
-        offeredService.setDeliveryTimeDays(ref.getDeliveryTimeDays());
-        return offeredService;
-    }
-
-    private OfferedServiceRef mapOfferedServiceToRef(OfferedService offeredService) {
-        return OfferedServiceRef.builder()
-                .id(offeredService.getId())
-                .title(offeredService.getTitle())
-                .description(offeredService.getDescription())
-                .basePrice(offeredService.getBasePrice())
-                .deliveryTimeDays(offeredService.getDeliveryTimeDays())
-                .createdAt(offeredService.getCreatedAt())
-                .updatedAt(offeredService.getUpdatedAt())
-                .build();
+        return builder.build();
     }
 }

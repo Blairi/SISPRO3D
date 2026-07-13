@@ -1,6 +1,6 @@
 package com.sispro3d.unam.user.service;
 
-import com.sispro3d.unam.user.domain.UserType;
+import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -30,7 +30,7 @@ class AccountServiceTest {
                 .email("test-axel@unam.mx")
                 .phone("+52 55555555")
                 .password("test-password")
-                .type(UserType.ADMIN)
+                .role(Role.ADMIN)
                 .build());
     }
 
@@ -83,7 +83,7 @@ class AccountServiceTest {
                         .email("test-actualizado@unam.mx")
                         .phone(created.getPhone())
                         .password(created.getPassword())
-                        .type(created.getType())
+                        .role(created.getType())
                         .build());
 
         assertThat(updated.getName()).isEqualTo("Test-Actualizado");

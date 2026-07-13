@@ -1,6 +1,6 @@
 package com.sispro3d.unam.review.dto;
 
-import com.sispro3d.unam.core.dto.ClientRef;
+import com.sispro3d.unam.core.dto.AccountRef;
 import com.sispro3d.unam.core.dto.OfferedServiceRef;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ReviewDTO {
     private int id;
-    private int rating; // 1 a 5
+    private int rating;
     private String comment;
-    private ClientRef client;
+    private AccountRef client;
     private OfferedServiceRef offeredService;
     private LocalDateTime createdAt;
 

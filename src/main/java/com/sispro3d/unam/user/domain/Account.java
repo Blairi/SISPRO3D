@@ -16,7 +16,11 @@ public class Account {
     private String email;
     private String phone;
     private String password;
-    private UserType type;
+    private Role role;
+    private String specialty;
+    private String portfolioUrl;
+    private String bio;
+    private Integer yearsExperience;
     private LocalDateTime createdAt;
 
     public Account(int idUser) {

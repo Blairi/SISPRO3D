@@ -1,21 +1,25 @@
 package com.sispro3d.unam.review.domain;
 
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
-import com.sispro3d.unam.user.domain.Client;
+import com.sispro3d.unam.user.domain.Account;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class Review {
     private int id;
-    private int rating; // 1 a 5
+    private int rating;
     private String comment;
-    private Client client;
+    private Account client;
     private OfferedService offeredService;
     private LocalDateTime createdAt;
 

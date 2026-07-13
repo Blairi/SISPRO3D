@@ -97,7 +97,7 @@ public class MessageServiceImpl implements MessageService {
                     .lastName(message.getAccount().getLastName())
                     .email(message.getAccount().getEmail())
                     .phone(message.getAccount().getPhone())
-                    .type(message.getAccount().getType())
+                    .role(message.getAccount().getRole())
                     .build();
             dto.setAccount(accountRef);
         }

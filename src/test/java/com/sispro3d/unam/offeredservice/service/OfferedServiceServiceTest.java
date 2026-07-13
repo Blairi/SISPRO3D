@@ -5,10 +5,7 @@ import com.sispro3d.unam.category.dto.CategoryResponse;
 import com.sispro3d.unam.category.service.CategoryService;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceRequest;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
-import com.sispro3d.unam.user.dao.ExpertJdbcDAO;
-import com.sispro3d.unam.user.domain.Account;
-import com.sispro3d.unam.user.domain.Expert;
-import com.sispro3d.unam.user.domain.UserType;
+import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
 import com.sispro3d.unam.user.service.AccountService;
@@ -36,9 +33,6 @@ class OfferedServiceServiceTest {
     @Autowired
     private AccountService accountService;
 
-    @Autowired
-    private ExpertJdbcDAO expertJdbcDAO;
-
     private CategoryResponse category;
     private int expertId;
     private OfferedServiceResponse created;
@@ -56,17 +50,10 @@ class OfferedServiceServiceTest {
                 .email("test-experto-servicio@unam.mx")
                 .phone("+52 11111111")
                 .password("test-pass")
-                .type(UserType.EXPERT)
+                .role(Role.EXPERT)
+                .specialty("Test-Especialidad")
                 .build());
         expertId = expertAccount.getIdUser();
-
-        Expert expert = new Expert();
-        expert.setAccount(new Account(expertId));
-        expert.setSpecialty("Test-Especialidad");
-        expert.setPortfolioUrl("http://test.com");
-        expert.setBio("Test-Bio");
-        expert.setYearsExperience(5);
-        expertJdbcDAO.insert(expert);
 
         created = offeredServiceService.create(OfferedServiceRequest.builder()
                 .title("Test-Servicio")
@@ -82,10 +69,6 @@ class OfferedServiceServiceTest {
     void tearDown() {
         try {
             offeredServiceService.delete((long) created.getId());
-        } catch (Exception ignored) {
-        }
-        try {
-            expertJdbcDAO.delete(expertId);
         } catch (Exception ignored) {
         }
         try {

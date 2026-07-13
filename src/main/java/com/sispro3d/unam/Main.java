@@ -1,7 +1,7 @@
 package com.sispro3d.unam;
 
 import com.sispro3d.unam.user.controller.AccountController;
-import com.sispro3d.unam.user.domain.UserType;
+import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
 
@@ -29,7 +29,7 @@ public class Main {
                 .email("axel@unam.mx")
                 .phone("+52 55321233")
                 .password("dummy@password")
-                .type(UserType.ADMIN)
+                .role(Role.ADMIN)
                 .build();
         System.out.println("Nueva cuenta creada: newAccount = " + newAccount);
         accountController.createAccount(newAccount);
@@ -47,7 +47,7 @@ public class Main {
                 .email(accountToEdit.getEmail())
                 .phone(accountToEdit.getPhone())
                 .password(accountToEdit.getPassword())
-                .type(accountToEdit.getType())
+                .role(accountToEdit.getRole())
                 .build();
         accountController.updateAccount(accountToEdit.getIdUser(), updatedRequest);
 

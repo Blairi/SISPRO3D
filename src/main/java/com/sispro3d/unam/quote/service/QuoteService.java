@@ -1,14 +1,8 @@
 package com.sispro3d.unam.quote.service;
 
-import com.sispro3d.unam.quote.dto.QuoteDTO;
+import com.sispro3d.unam.core.service.CrudService;
+import com.sispro3d.unam.quote.dto.QuoteRequest;
+import com.sispro3d.unam.quote.dto.QuoteResponse;
 
-import java.util.List;
-import java.util.Optional;
-
-public interface QuoteService {
-    List<QuoteDTO> findAll();
-    Optional<QuoteDTO> findById(int id);
-    QuoteDTO create(QuoteDTO dto);
-    QuoteDTO update(int id, QuoteDTO dto);
-    void delete(int id);
+public interface QuoteService extends CrudService<QuoteRequest, QuoteResponse, Long> {
 }

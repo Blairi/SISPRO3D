@@ -1,9 +1,12 @@
 package com.sispro3d.unam.offeredservice.domain;
 
 import com.sispro3d.unam.category.domain.Category;
-import com.sispro3d.unam.user.domain.Admin;
-import com.sispro3d.unam.user.domain.Expert;
-import lombok.*;
+import com.sispro3d.unam.user.domain.Account;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -18,8 +21,8 @@ public class OfferedService {
     private String title;
     private String description;
     private BigDecimal basePrice;
-    private Admin admin; // null mientras no lo aprueba
-    private Expert expert;
+    private Account admin;
+    private Account expert;
     private Category category;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
