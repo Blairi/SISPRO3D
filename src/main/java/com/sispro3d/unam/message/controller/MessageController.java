@@ -1,27 +1,28 @@
 package com.sispro3d.unam.message.controller;
 
-import com.sispro3d.unam.message.dao.MessageJdbcDAO;
-import com.sispro3d.unam.message.dto.MessageDTO;
+import com.sispro3d.unam.message.dto.MessageResponse;
 import com.sispro3d.unam.message.service.MessageService;
-import com.sispro3d.unam.message.service.impl.MessageServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.Optional;
 
+@Controller
 public class MessageController {
+
+    @Autowired
     private MessageService messageService;
 
-    public MessageController() {
-        this.messageService = new MessageServiceImpl(new MessageJdbcDAO());
-    }
-
-    public void displayMessage(int id) {
+    public void displayMessage(long id) {
         System.out.println("Displaying message with id = " + id);
-        Optional<MessageDTO> messageDTO = messageService.findById(id);
-        System.out.println("messageDTO = " + messageDTO);
+        Optional<MessageResponse> message = messageService.findById(id);
+        System.out.println("message = " + message);
     }
 
     public void displayAllMessages() {
         System.out.println("Displaying all messages:");
-        messageService.findAll().forEach(System.out::println);
+        List<MessageResponse> messages = messageService.findAll();
+        messages.forEach(System.out::println);
     }
 }

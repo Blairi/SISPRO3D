@@ -1,27 +1,28 @@
 package com.sispro3d.unam.workorder.controller;
 
-import com.sispro3d.unam.workorder.dao.WorkOrderJdbcDAO;
-import com.sispro3d.unam.workorder.dto.WorkOrderDTO;
+import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
-import com.sispro3d.unam.workorder.service.impl.WorkOrderServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.Optional;
 
+@Controller
 public class WorkOrderController {
+
+    @Autowired
     private WorkOrderService workOrderService;
 
-    public WorkOrderController() {
-        this.workOrderService = new WorkOrderServiceImpl(new WorkOrderJdbcDAO());
-    }
-
-    public void displayWorkOrder(int id) {
+    public void displayWorkOrder(long id) {
         System.out.println("Displaying work order with id = " + id);
-        Optional<WorkOrderDTO> workOrderDTO = workOrderService.findById(id);
-        System.out.println("workOrderDTO = " + workOrderDTO);
+        Optional<WorkOrderResponse> workOrder = workOrderService.findById(id);
+        System.out.println("workOrder = " + workOrder);
     }
 
     public void displayAllWorkOrders() {
         System.out.println("Displaying all work orders:");
-        workOrderService.findAll().forEach(System.out::println);
+        List<WorkOrderResponse> workOrders = workOrderService.findAll();
+        workOrders.forEach(System.out::println);
     }
 }

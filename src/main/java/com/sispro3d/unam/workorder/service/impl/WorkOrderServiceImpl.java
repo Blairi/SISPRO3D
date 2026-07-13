@@ -1,97 +1,104 @@
 package com.sispro3d.unam.workorder.service.impl;
 
-import com.sispro3d.unam.core.dao.GenericDAO;
 import com.sispro3d.unam.core.dto.QuoteRef;
 import com.sispro3d.unam.quote.domain.Quote;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
-import com.sispro3d.unam.workorder.dto.WorkOrderDTO;
+import com.sispro3d.unam.workorder.dto.WorkOrderRequest;
+import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
+import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class WorkOrderServiceImpl implements WorkOrderService {
 
-    private final GenericDAO<WorkOrder> workOrderDAO;
+    private final WorkOrderRepository workOrderRepository;
 
-    public WorkOrderServiceImpl(GenericDAO<WorkOrder> workOrderDAO) {
-        this.workOrderDAO = workOrderDAO;
+    public WorkOrderServiceImpl(WorkOrderRepository workOrderRepository) {
+        this.workOrderRepository = workOrderRepository;
     }
 
     @Override
-    public List<WorkOrderDTO> findAll() {
-        return workOrderDAO.findAll()
+    public List<WorkOrderResponse> findAll() {
+        return workOrderRepository.findAll()
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public Optional<WorkOrderDTO> findById(int id) {
-        return workOrderDAO.findById(id)
-                .map(this::toResponseDTO);
+    public Optional<WorkOrderResponse> findById(Long id) {
+        return workOrderRepository.findById(id.intValue())
+                .map(this::toResponse);
     }
 
     @Override
-    public WorkOrderDTO create(WorkOrderDTO dto) {
-        WorkOrder workOrder = toEntity(dto);
-        int generatedId = workOrderDAO.insert(workOrder);
-        workOrder.setId(generatedId);
-        return toResponseDTO(workOrder);
+    public WorkOrderResponse create(WorkOrderRequest request) {
+        WorkOrder workOrder = toEntity(request);
+        WorkOrder saved = workOrderRepository.save(workOrder);
+        return toResponse(saved);
     }
 
     @Override
-    public WorkOrderDTO update(int id, WorkOrderDTO dto) {
-        workOrderDAO.findById(id)
+    public WorkOrderResponse update(Long id, WorkOrderRequest request) {
+        int pk = id.intValue();
+        workOrderRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Orden de trabajo no encontrada con id: " + id));
 
-        WorkOrder workOrder = toEntity(dto);
-        workOrder.setId(id);
-        workOrderDAO.update(workOrder);
-        return toResponseDTO(workOrder);
+        WorkOrder workOrder = toEntity(request);
+        workOrder.setId(pk);
+        WorkOrder updated = workOrderRepository.update(workOrder);
+        return toResponse(updated);
     }
 
     @Override
-    public void delete(int id) {
-        workOrderDAO.findById(id)
+    public void delete(Long id) {
+        int pk = id.intValue();
+        workOrderRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Orden de trabajo no encontrada con id: " + id));
-        workOrderDAO.delete(id);
+        workOrderRepository.deleteById(pk);
     }
 
-    private WorkOrder toEntity(WorkOrderDTO dto) {
+    @Override
+    public boolean existsById(Long id) {
+        return workOrderRepository.existsById(id.intValue());
+    }
+
+    private WorkOrder toEntity(WorkOrderRequest request) {
         WorkOrder workOrder = new WorkOrder();
-        workOrder.setStatus(dto.getStatus());
-        workOrder.setStartedAt(dto.getStartedAt());
-        workOrder.setCompletedAt(dto.getCompletedAt());
+        workOrder.setStatus(request.getStatus());
+        workOrder.setStartedAt(request.getStartedAt());
+        workOrder.setCompletedAt(request.getCompletedAt());
 
-        if (dto.getQuote() != null) {
-            Quote quote = new Quote(dto.getQuote().getId());
-            workOrder.setQuote(quote);
+        if (request.getQuoteId() != null) {
+            workOrder.setQuote(new Quote(request.getQuoteId()));
         }
 
         return workOrder;
     }
 
-    private WorkOrderDTO toResponseDTO(WorkOrder workOrder) {
-        WorkOrderDTO dto = new WorkOrderDTO();
-        dto.setId(workOrder.getId());
-        dto.setStatus(workOrder.getStatus());
-        dto.setStartedAt(workOrder.getStartedAt());
-        dto.setCompletedAt(workOrder.getCompletedAt());
-        dto.setCreatedAt(workOrder.getCreatedAt());
+    private WorkOrderResponse toResponse(WorkOrder workOrder) {
+        WorkOrderResponse.WorkOrderResponseBuilder builder = WorkOrderResponse.builder()
+                .id(workOrder.getId())
+                .status(workOrder.getStatus())
+                .startedAt(workOrder.getStartedAt())
+                .completedAt(workOrder.getCompletedAt())
+                .createdAt(workOrder.getCreatedAt());
 
         if (workOrder.getQuote() != null) {
-            QuoteRef quoteRef = QuoteRef.builder()
+            builder.quote(QuoteRef.builder()
                     .id(workOrder.getQuote().getId())
                     .status(workOrder.getQuote().getStatus())
                     .totalAmount(workOrder.getQuote().getTotalAmount())
                     .validUntil(workOrder.getQuote().getValidUntil())
                     .description(workOrder.getQuote().getDescription())
                     .createdAt(workOrder.getQuote().getCreatedAt())
-                    .build();
-            dto.setQuote(quoteRef);
+                    .build());
         }
 
-        return dto;
+        return builder.build();
     }
 }

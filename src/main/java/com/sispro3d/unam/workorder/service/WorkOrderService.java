@@ -1,14 +1,8 @@
 package com.sispro3d.unam.workorder.service;
 
-import com.sispro3d.unam.workorder.dto.WorkOrderDTO;
+import com.sispro3d.unam.core.service.CrudService;
+import com.sispro3d.unam.workorder.dto.WorkOrderRequest;
+import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
 
-import java.util.List;
-import java.util.Optional;
-
-public interface WorkOrderService {
-    List<WorkOrderDTO> findAll();
-    Optional<WorkOrderDTO> findById(int id);
-    WorkOrderDTO create(WorkOrderDTO dto);
-    WorkOrderDTO update(int id, WorkOrderDTO dto);
-    void delete(int id);
+public interface WorkOrderService extends CrudService<WorkOrderRequest, WorkOrderResponse, Long> {
 }

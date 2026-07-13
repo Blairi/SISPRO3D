@@ -1,27 +1,28 @@
 package com.sispro3d.unam.review.controller;
 
-import com.sispro3d.unam.review.dao.ReviewJdbcDAO;
-import com.sispro3d.unam.review.dto.ReviewDTO;
+import com.sispro3d.unam.review.dto.ReviewResponse;
 import com.sispro3d.unam.review.service.ReviewService;
-import com.sispro3d.unam.review.service.impl.ReviewServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.Optional;
 
+@Controller
 public class ReviewController {
+
+    @Autowired
     private ReviewService reviewService;
 
-    public ReviewController() {
-        this.reviewService = new ReviewServiceImpl(new ReviewJdbcDAO());
-    }
-
-    public void displayReview(int id) {
+    public void displayReview(long id) {
         System.out.println("Displaying review with id = " + id);
-        Optional<ReviewDTO> reviewDTO = reviewService.findById(id);
-        System.out.println("reviewDTO = " + reviewDTO);
+        Optional<ReviewResponse> review = reviewService.findById(id);
+        System.out.println("review = " + review);
     }
 
     public void displayAllReviews() {
         System.out.println("Displaying all reviews:");
-        reviewService.findAll().forEach(System.out::println);
+        List<ReviewResponse> reviews = reviewService.findAll();
+        reviews.forEach(System.out::println);
     }
 }

@@ -11,6 +11,9 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public class ThreadJdbcDAO extends AbstractJdbcDAO<Thread> implements GenericDAO<Thread> {
 
     private static final String FIND_ALL = """

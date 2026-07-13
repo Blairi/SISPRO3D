@@ -1,90 +1,92 @@
 package com.sispro3d.unam.review.service.impl;
 
-import com.sispro3d.unam.core.dao.GenericDAO;
 import com.sispro3d.unam.core.dto.AccountRef;
 import com.sispro3d.unam.core.dto.OfferedServiceRef;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.review.domain.Review;
-import com.sispro3d.unam.review.dto.ReviewDTO;
+import com.sispro3d.unam.review.dto.ReviewRequest;
+import com.sispro3d.unam.review.dto.ReviewResponse;
+import com.sispro3d.unam.review.repository.ReviewRepository;
 import com.sispro3d.unam.review.service.ReviewService;
 import com.sispro3d.unam.user.domain.Account;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
 public class ReviewServiceImpl implements ReviewService {
 
-    private final GenericDAO<Review> reviewDAO;
+    private final ReviewRepository reviewRepository;
 
-    public ReviewServiceImpl(GenericDAO<Review> reviewDAO) {
-        this.reviewDAO = reviewDAO;
+    public ReviewServiceImpl(ReviewRepository reviewRepository) {
+        this.reviewRepository = reviewRepository;
     }
 
     @Override
-    public List<ReviewDTO> findAll() {
-        return reviewDAO.findAll()
+    public List<ReviewResponse> findAll() {
+        return reviewRepository.findAll()
                 .stream()
-                .map(this::toResponseDTO)
+                .map(this::toResponse)
                 .toList();
     }
 
     @Override
-    public Optional<ReviewDTO> findById(int id) {
-        return reviewDAO.findById(id)
-                .map(this::toResponseDTO);
+    public Optional<ReviewResponse> findById(Long id) {
+        return reviewRepository.findById(id.intValue())
+                .map(this::toResponse);
     }
 
     @Override
-    public ReviewDTO create(ReviewDTO dto) {
-        Review review = toEntity(dto);
-        int generatedId = reviewDAO.insert(review);
-        review.setId(generatedId);
-        return toResponseDTO(review);
+    public ReviewResponse create(ReviewRequest request) {
+        Review review = toEntity(request);
+        Review saved = reviewRepository.save(review);
+        return toResponse(saved);
     }
 
     @Override
-    public ReviewDTO update(int id, ReviewDTO dto) {
-        reviewDAO.findById(id)
+    public ReviewResponse update(Long id, ReviewRequest request) {
+        int pk = id.intValue();
+        reviewRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Reseña no encontrada con id: " + id));
 
-        Review review = toEntity(dto);
-        review.setId(id);
-        reviewDAO.update(review);
-        return toResponseDTO(review);
+        Review review = toEntity(request);
+        review.setId(pk);
+        Review updated = reviewRepository.update(review);
+        return toResponse(updated);
     }
 
     @Override
-    public void delete(int id) {
-        reviewDAO.findById(id)
+    public void delete(Long id) {
+        int pk = id.intValue();
+        reviewRepository.findById(pk)
                 .orElseThrow(() -> new RuntimeException("Reseña no encontrada con id: " + id));
-        reviewDAO.delete(id);
+        reviewRepository.deleteById(pk);
     }
 
-    private Review toEntity(ReviewDTO dto) {
+    @Override
+    public boolean existsById(Long id) {
+        return reviewRepository.existsById(id.intValue());
+    }
+
+    private Review toEntity(ReviewRequest request) {
         Review review = new Review();
-        review.setRating(dto.getRating());
-        review.setComment(dto.getComment());
-
-        if (dto.getClient() != null) {
-            review.setClient(new Account(dto.getClient().getIdUser()));
-        }
-
-        if (dto.getOfferedService() != null) {
-            review.setOfferedService(new OfferedService(dto.getOfferedService().getId()));
-        }
-
+        review.setRating(request.getRating());
+        review.setComment(request.getComment());
+        review.setClient(new Account(request.getClientId()));
+        review.setOfferedService(new OfferedService(request.getOfferedServiceId()));
         return review;
     }
 
-    private ReviewDTO toResponseDTO(Review review) {
-        ReviewDTO dto = new ReviewDTO();
-        dto.setId(review.getId());
-        dto.setRating(review.getRating());
-        dto.setComment(review.getComment());
-        dto.setCreatedAt(review.getCreatedAt());
+    private ReviewResponse toResponse(Review review) {
+        ReviewResponse.ReviewResponseBuilder builder = ReviewResponse.builder()
+                .id(review.getId())
+                .rating(review.getRating())
+                .comment(review.getComment())
+                .createdAt(review.getCreatedAt());
 
         if (review.getClient() != null) {
-            dto.setClient(AccountRef.builder()
+            builder.client(AccountRef.builder()
                     .idUser(review.getClient().getIdUser())
                     .name(review.getClient().getName())
                     .lastName(review.getClient().getLastName())
@@ -93,7 +95,7 @@ public class ReviewServiceImpl implements ReviewService {
         }
 
         if (review.getOfferedService() != null) {
-            dto.setOfferedService(OfferedServiceRef.builder()
+            builder.offeredService(OfferedServiceRef.builder()
                     .id(review.getOfferedService().getId())
                     .title(review.getOfferedService().getTitle())
                     .description(review.getOfferedService().getDescription())
@@ -104,6 +106,6 @@ public class ReviewServiceImpl implements ReviewService {
                     .build());
         }
 
-        return dto;
+        return builder.build();
     }
 }

@@ -1,14 +1,8 @@
 package com.sispro3d.unam.review.service;
 
-import com.sispro3d.unam.review.dto.ReviewDTO;
+import com.sispro3d.unam.core.service.CrudService;
+import com.sispro3d.unam.review.dto.ReviewRequest;
+import com.sispro3d.unam.review.dto.ReviewResponse;
 
-import java.util.List;
-import java.util.Optional;
-
-public interface ReviewService {
-    List<ReviewDTO> findAll();
-    Optional<ReviewDTO> findById(int id);
-    ReviewDTO create(ReviewDTO dto);
-    ReviewDTO update(int id, ReviewDTO dto);
-    void delete(int id);
+public interface ReviewService extends CrudService<ReviewRequest, ReviewResponse, Long> {
 }

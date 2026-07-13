@@ -1,24 +1,21 @@
 package com.sispro3d.unam.workorder.dto;
 
 import com.sispro3d.unam.core.dto.QuoteRef;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkOrderDTO {
+@Builder
+public class WorkOrderResponse {
     private int id;
-    private String status; // PENDING, IN_PROGRESS, IN_REVIEW, COMPLETED, CANCELED
+    private String status;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
     private LocalDateTime createdAt;
     private QuoteRef quote;
-
-    public WorkOrderDTO(int id) {
-        this.id = id;
-    }
 }
