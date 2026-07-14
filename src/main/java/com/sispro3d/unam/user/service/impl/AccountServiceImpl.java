@@ -1,9 +1,8 @@
 package com.sispro3d.unam.user.service.impl;
 
-import com.sispro3d.unam.user.domain.Account;
+
 import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
-import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.user.service.AccountService;
 import org.springframework.stereotype.Service;
 
@@ -13,87 +12,33 @@ import java.util.Optional;
 @Service
 public class AccountServiceImpl implements AccountService {
 
-    private final AccountRepository accountRepository;
-
-    public AccountServiceImpl(AccountRepository accountRepository) {
-        this.accountRepository = accountRepository;
-    }
-
     @Override
     public List<AccountResponse> findAll() {
-        return accountRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        return List.of();
     }
 
     @Override
-    public Optional<AccountResponse> findById(Long id) {
-        return accountRepository.findById(id.intValue())
-                .map(this::toResponse);
+    public Optional<AccountResponse> findById(Long aLong) {
+        return Optional.empty();
     }
 
     @Override
     public AccountResponse create(AccountRequest request) {
-        Account account = toEntity(request);
-        Account saved = accountRepository.save(account);
-        return toResponse(saved);
+        return null;
     }
 
     @Override
-    public AccountResponse update(Long id, AccountRequest request) {
-        int pk = id.intValue();
-        accountRepository.findById(pk)
-                .orElseThrow(() -> new RuntimeException("Account no encontrado con id: " + id));
-
-        Account account = toEntity(request);
-        account.setIdUser(pk);
-        Account updated = accountRepository.update(account);
-        return toResponse(updated);
+    public AccountResponse update(Long aLong, AccountRequest request) {
+        return null;
     }
 
     @Override
-    public void delete(Long id) {
-        int pk = id.intValue();
-        accountRepository.findById(pk)
-                .orElseThrow(() -> new RuntimeException("Account no encontrado con id: " + id));
-        accountRepository.deleteById(pk);
+    public void delete(Long aLong) {
+
     }
 
     @Override
-    public boolean existsById(Long id) {
-        return accountRepository.existsById(id.intValue());
-    }
-
-    private Account toEntity(AccountRequest request) {
-        Account account = new Account();
-        account.setName(request.getName());
-        account.setLastName(request.getLastName());
-        account.setEmail(request.getEmail());
-        account.setPhone(request.getPhone());
-        account.setPassword(request.getPassword());
-        account.setRole(request.getRole());
-        account.setSpecialty(request.getSpecialty());
-        account.setPortfolioUrl(request.getPortfolioUrl());
-        account.setBio(request.getBio());
-        account.setYearsExperience(request.getYearsExperience());
-        return account;
-    }
-
-    private AccountResponse toResponse(Account account) {
-        return AccountResponse.builder()
-                .idUser(account.getIdUser())
-                .name(account.getName())
-                .lastName(account.getLastName())
-                .email(account.getEmail())
-                .phone(account.getPhone())
-                .password(account.getPassword())
-                .role(account.getRole())
-                .specialty(account.getSpecialty())
-                .portfolioUrl(account.getPortfolioUrl())
-                .bio(account.getBio())
-                .yearsExperience(account.getYearsExperience())
-                .createdAt(account.getCreatedAt())
-                .build();
+    public boolean existsById(Long aLong) {
+        return false;
     }
 }
