@@ -11,12 +11,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class AccountResponse {
-    private int idUser;
+    private Long idUser;
     private String name;
     private String lastName;
     private String email;
     private String phone;
-    private String password;
     private Role role;
     private String specialty;
     private String portfolioUrl;
