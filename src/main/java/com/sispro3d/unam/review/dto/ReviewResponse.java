@@ -11,8 +11,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class ReviewResponse {
-    private int id;
-    private int rating;
+    private Long id;
+    private Integer rating;
     private String comment;
+    private Long clientId;
+    private Long offeredServiceId;
     private LocalDateTime createdAt;
 }

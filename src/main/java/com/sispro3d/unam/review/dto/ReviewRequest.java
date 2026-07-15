@@ -9,8 +9,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ReviewRequest {
-    private int rating;
+    private Integer rating;
     private String comment;
-    private int clientId;
-    private int offeredServiceId;
+    private Long clientId;
+    private Long offeredServiceId;
 }
