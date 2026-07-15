@@ -7,3 +7,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  # no ejecutar los insert del data.sql
+  sql:
+    init:
+      mode: never
