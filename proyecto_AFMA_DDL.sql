@@ -14,39 +14,18 @@ USE sispro3d_db;
 -- ------------------------------------------------------------
 
 CREATE TABLE account (
-    id_user    INT             NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name       VARCHAR(50)     NOT NULL,
-    lastName   VARCHAR(50)     NOT NULL,
-    email      VARCHAR(50)     NOT NULL UNIQUE,
-    phone      VARCHAR(15)     NOT NULL UNIQUE,
-    password   VARCHAR(255)    NOT NULL,
-    type       ENUM('ADMIN','CLIENT','EXPERT') NOT NULL,
-    created_at TIMESTAMP       DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE client (
-    id_user INT NOT NULL PRIMARY KEY,
-    CONSTRAINT fk_client_account
-        FOREIGN KEY (id_user) REFERENCES account(id_user)
-        ON UPDATE CASCADE ON DELETE CASCADE
-);
-
-CREATE TABLE expert (
-    id_user          INT          NOT NULL PRIMARY KEY,
-    specialty        VARCHAR(100) NOT NULL,
-    portfolio_url    VARCHAR(255),
-    bio              TEXT,
-    years_experience INT,
-    CONSTRAINT fk_expert_account
-        FOREIGN KEY (id_user) REFERENCES account(id_user)
-        ON UPDATE CASCADE ON DELETE CASCADE
-);
-
-CREATE TABLE admin (
-    id_user INT NOT NULL PRIMARY KEY,
-    CONSTRAINT fk_admin_account
-        FOREIGN KEY (id_user) REFERENCES account(id_user)
-        ON UPDATE CASCADE ON DELETE CASCADE
+    id_user          INT                               NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name             VARCHAR(50)                       NOT NULL,
+    lastName         VARCHAR(50)                       NOT NULL,
+    email            VARCHAR(50)                       NOT NULL UNIQUE,
+    phone            VARCHAR(15)                       NOT NULL UNIQUE,
+    password         VARCHAR(255)                      NOT NULL,
+    role             ENUM('ADMIN','CLIENT','EXPERT')   NOT NULL,
+    specialty        VARCHAR(100)                      NULL,
+    portfolio_url    VARCHAR(255)                      NULL,
+    bio              TEXT                              NULL,
+    years_experience INT                               NULL,
+    created_at       TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ------------------------------------------------------------
@@ -75,10 +54,10 @@ CREATE TABLE service (
     updated_at         TIMESTAMP     ON UPDATE CURRENT_TIMESTAMP,
     delivery_time_days INT,
     CONSTRAINT fk_service_admin
-        FOREIGN KEY (id_admin) REFERENCES admin(id_user)
+        FOREIGN KEY (id_admin) REFERENCES account(id_user)
         ON UPDATE CASCADE ON DELETE SET NULL,
     CONSTRAINT fk_service_expert
-        FOREIGN KEY (id_expert) REFERENCES expert(id_user)
+        FOREIGN KEY (id_expert) REFERENCES account(id_user)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_service_category
         FOREIGN KEY (category_id) REFERENCES category(id)
@@ -98,7 +77,7 @@ CREATE TABLE review (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_review_client_service UNIQUE (id_client, id_service),
     CONSTRAINT fk_review_client
-        FOREIGN KEY (id_client) REFERENCES client(id_user)
+        FOREIGN KEY (id_client) REFERENCES account(id_user)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_review_service
         FOREIGN KEY (id_service) REFERENCES service(id)
@@ -119,7 +98,7 @@ CREATE TABLE quote (
     id_client    INT           NOT NULL,
     id_service   INT           NOT NULL,
     CONSTRAINT fk_quote_client
-        FOREIGN KEY (id_client) REFERENCES client(id_user)
+        FOREIGN KEY (id_client) REFERENCES account(id_user)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_quote_service
         FOREIGN KEY (id_service) REFERENCES service(id)
@@ -213,27 +192,14 @@ CREATE TABLE message (
 --  ACCOUNT
 -- ------------------------------------------------------------
 
-INSERT INTO account (name, lastName, email, phone, password, type) VALUES
-('Ricardo',   'Solano Peña',       'ricardo.solano@render3d.mx',     '5512345678',  '$2a$10$dummyhash1', 'ADMIN'),
-('Emilio',    'Vargas Ríos',       'emilio.vargas@email.com',        '5523456789',  '$2a$10$dummyhash2', 'EXPERT'),
-('Daniela',   'Cruz Montoya',      'daniela.cruz@email.com',         '5534567890',  '$2a$10$dummyhash3', 'EXPERT'),
-('Óscar',     'Bernal Lara',       'oscar.bernal@email.com',         '5545678901',  '$2a$10$dummyhash4', 'EXPERT'),
-('Mariana',   'Stein Vidal',       'mariana.stein@estudio.com',      '5556789012',  '$2a$10$dummyhash5', 'CLIENT'),
-('Rodrigo',   'Fuentes Alcaraz',   'rodrigo.fuentes@gamedev.io',     '5567890123',  '$2a$10$dummyhash6', 'CLIENT'),
-('Lucía',     'Paredes Ibáñez',    'lucia.paredes@arquitecta.mx',    '5578901234',  '$2a$10$dummyhash7', 'CLIENT');
-
--- ------------------------------------------------------------
---  ROLES
--- ------------------------------------------------------------
-
-INSERT INTO admin (id_user) VALUES (1);
-
-INSERT INTO expert (id_user, specialty, portfolio_url, bio, years_experience) VALUES
-(2, 'Modelado orgánico y personajes',     'https://portfolio.emiliovargas.art',   'Especialista en personajes para videojuegos y cinemáticas. Trabajo con ZBrush y Blender.',         6),
-(3, 'Texturizado y lookdev',              'https://danielacruz.artstation.com',   'Artista de superficies con dominio de Substance Painter y Mari. Enfoque en realismo fotográfico.',  4),
-(4, 'Animación 3D y rigging',             'https://oscarbernal.myportfolio.com',  'Animador con experiencia en producción de cortometrajes y publicidad. Uso de Maya y Blender.',      8);
-
-INSERT INTO client (id_user) VALUES (5), (6), (7);
+INSERT INTO account (name, lastName, email, phone, password, role, specialty, portfolio_url, bio, years_experience) VALUES
+('Ricardo',   'Solano Peña',       'ricardo.solano@render3d.mx',     '5512345678',  '$2a$10$dummyhash1', 'ADMIN',  NULL, NULL, NULL, NULL),
+('Emilio',    'Vargas Ríos',       'emilio.vargas@email.com',        '5523456789',  '$2a$10$dummyhash2', 'EXPERT', 'Modelado orgánico y personajes',  'https://portfolio.emiliovargas.art',   'Especialista en personajes para videojuegos y cinemáticas. Trabajo con ZBrush y Blender.',         6),
+('Daniela',   'Cruz Montoya',      'daniela.cruz@email.com',         '5534567890',  '$2a$10$dummyhash3', 'EXPERT', 'Texturizado y lookdev',             'https://danielacruz.artstation.com',   'Artista de superficies con dominio de Substance Painter y Mari. Enfoque en realismo fotográfico.',  4),
+('Óscar',     'Bernal Lara',       'oscar.bernal@email.com',         '5545678901',  '$2a$10$dummyhash4', 'EXPERT', 'Animación 3D y rigging',            'https://oscarbernal.myportfolio.com',  'Animador con experiencia en producción de cortometrajes y publicidad. Uso de Maya y Blender.',      8),
+('Mariana',   'Stein Vidal',       'mariana.stein@estudio.com',      '5556789012',  '$2a$10$dummyhash5', 'CLIENT', NULL, NULL, NULL, NULL),
+('Rodrigo',   'Fuentes Alcaraz',   'rodrigo.fuentes@gamedev.io',     '5567890123',  '$2a$10$dummyhash6', 'CLIENT', NULL, NULL, NULL, NULL),
+('Lucía',     'Paredes Ibáñez',    'lucia.paredes@arquitecta.mx',    '5578901234',  '$2a$10$dummyhash7', 'CLIENT', NULL, NULL, NULL, NULL);
 
 -- ------------------------------------------------------------
 --  CATEGORY

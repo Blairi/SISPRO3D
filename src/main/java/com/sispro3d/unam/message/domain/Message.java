@@ -2,13 +2,13 @@ package com.sispro3d.unam.message.domain;
 
 import com.sispro3d.unam.thread.domain.Thread;
 import com.sispro3d.unam.user.domain.Account;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class Message {
