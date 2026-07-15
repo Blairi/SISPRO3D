@@ -1,11 +1,7 @@
 package com.sispro3d.unam.offeredservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,11 +13,15 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class OfferedServiceResponse {
-    private int id;
+    private Long id;
     private String title;
     private String description;
     private BigDecimal basePrice;
+    private Long expertId;
+    private Long adminId;
+    private Long categoryId;
+    private ServiceStatus status;
+    private Integer deliveryTimeDays;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private int deliveryTimeDays;
 }

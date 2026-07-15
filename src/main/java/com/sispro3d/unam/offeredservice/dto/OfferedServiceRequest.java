@@ -1,11 +1,7 @@
 package com.sispro3d.unam.offeredservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -19,8 +15,9 @@ public class OfferedServiceRequest {
     private String title;
     private String description;
     private BigDecimal basePrice;
-    private Integer adminId;
-    private int expertId;
-    private int categoryId;
-    private int deliveryTimeDays;
+    private Long expertId;
+    private Long adminId;
+    private Long categoryId;
+    private ServiceStatus status;
+    private Integer deliveryTimeDays;
 }
