@@ -5,6 +5,7 @@
 -- ------------------------------------------------------------
 --  ACCOUNT
 -- ------------------------------------------------------------
+
 INSERT INTO account (name, last_name, email, phone, password, role, specialty, portfolio_url, bio, years_experience) VALUES
 ('Ricardo',   'Solano Peña',       'ricardo.solano@render3d.mx',     '5512345678',  '$2a$10$dummyhash1', 'ADMIN',  NULL, NULL, NULL, NULL),
 ('Emilio',    'Vargas Ríos',       'emilio.vargas@email.com',        '5523456789',  '$2a$10$dummyhash2', 'EXPERT', 'Modelado orgánico y personajes',  'https://portfolio.emiliovargas.art',   'Especialista en personajes para videojuegos y cinemáticas. Trabajo con ZBrush y Blender.',         6),
@@ -17,25 +18,141 @@ INSERT INTO account (name, last_name, email, phone, password, role, specialty, p
 -- ------------------------------------------------------------
 --  CATEGORY
 -- ------------------------------------------------------------
+
 INSERT INTO category (name, description) VALUES
-('Modelado 3D',       'Creación de modelos tridimensionales de personajes, objetos y escenarios'),
-('Texturizado',       'Aplicación de texturas PBR, materiales y lookdev'),
-('Animación',         'Animación de personajes, props y cámaras'),
-('Rigging',           'Construcción de esqueletos y sistemas de control para animación'),
-('Iluminación',       'Configuración de luces y render para escenas'),
-('VFX',               'Efectos visuales: partículas, simulaciones, composición');
+('Modelado de personajes',   'Creación de personajes 3D orgánicos o estilizados para juegos, películas o ilustración'),
+('Modelado de entornos',     'Diseño y construcción de escenarios, props y arquitectura en 3D'),
+('Texturizado',              'Creación de materiales, mapas UV y texturas PBR para modelos existentes'),
+('Animación',                'Rigging, skinning y animación de personajes o elementos de escena'),
+('Renderizado',              'Configuración de iluminación, shaders y render final de alta calidad');
 
 -- ------------------------------------------------------------
 --  OFFERED_SERVICE
 -- ------------------------------------------------------------
-INSERT INTO offered_service (title, description, base_price, id_expert, id_admin, id_category, status, delivery_time_days, created_at, updated_at) VALUES
--- Emilio (expert id=2) — Modelado
-('Personaje para videojuego',    'Modelado completo de personaje stylizado, incluye low-poly y high-poly.',                    3500.00, 2, 1, 1, 'APPROVED',  14, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Criatura orgánica',            'Modelado de criatura fantasy con referencia o concept art.',                               2800.00, 2, NULL, 1, 'PENDING',   10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
--- Daniela (expert id=3) — Texturizado
-('Texturizado PBR realista',     'Texturizado completo en Substance Painter con mapas albedo, normal, roughness y AO.',       2200.00, 3, 1, 2, 'APPROVED',   7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Material tileable',            'Creación de materiales tileable para arquitectura o props.',                               1500.00, 3, NULL, 2, 'PENDING',    5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
--- Óscar (expert id=4) — Animación y rigging
-('Animación de walk cycle',      'Animación cíclica de caminata para personaje humanoid.',                                   1800.00, 4, 1, 3, 'APPROVED',   5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Rig completo con facial',      'Rigging con control facial, IK/FK switch y setup para Motor.',                             4000.00, 4, NULL, 4, 'PENDING',   21, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Animación de ataque',          'Animación de combo de 3 golpes para personaje de acción.',                                 2500.00, 4, 1, 3, 'APPROVED',   7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+INSERT INTO offered_service (title, description, base_price, id_admin, id_expert, id_category, status, delivery_time_days, created_at, updated_at) VALUES
+('Modelado de personaje estilizado',
+ 'Creación de personaje 3D estilizado listo para videojuego. Incluye malla optimizada, UVs y exportación en FBX/OBJ.',
+ 9500.00, 1, 2, 1, 'APPROVED', 20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+('Sculpt de personaje realista',
+ 'Escultura digital de alta resolución en ZBrush. Incluye retopología y mapas de desplazamiento.',
+ 18000.00, 1, 2, 1, 'APPROVED', 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+('Texturizado PBR completo',
+ 'Texturizado realista con Substance Painter. Entrega de mapas Albedo, Normal, Roughness, Metallic y AO.',
+ 6500.00, 1, 3, 3, 'APPROVED', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+('Texturizado estilizado hand-painted',
+ 'Estilo hand-painted para modelos de juego. Inspirado en estilos tipo World of Warcraft o Fortnite.',
+ 5000.00, 1, 3, 3, 'APPROVED', 12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+('Rigging y skinning de personaje',
+ 'Configuración de esqueleto, pesos de skinning y controles de animación para personaje bípedo.',
+ 7500.00, 1, 4, 4, 'APPROVED', 15, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+('Animación de ciclo de movimiento',
+ 'Paquete de animaciones: idle, caminar, correr, saltar y atacar. Entrega en FBX con 30fps.',
+ 12000.00, 1, 4, 4, 'APPROVED', 25, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+('Modelado de prop arquitectónico',
+ 'Modelado de mobiliario o elemento arquitectónico para visualización. Incluye texturizado básico.',
+ 4200.00, NULL, 3, 2, 'PENDING', 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- ------------------------------------------------------------
+--  REVIEW
+-- ------------------------------------------------------------
+
+INSERT INTO review (rating, comment, id_client, id_offered_service) VALUES
+(5, 'Emilio entregó un personaje increíble, superó todas mis expectativas. El nivel de detalle es impresionante.',  5, 1),
+(5, 'Las texturas de Daniela le dieron vida al modelo. Muy profesional y puntual con los tiempos.',                 6, 3),
+(4, 'Buen trabajo de rigging, los controles son intuitivos. Le faltó un poco más de detalle en los dedos.',         6, 5),
+(5, 'Las animaciones quedaron fluidas y naturales. Óscar entiende muy bien el peso y la física del personaje.',     7, 6);
+
+-- ------------------------------------------------------------
+--  QUOTE
+-- ------------------------------------------------------------
+
+INSERT INTO quote (status, total_amount, valid_until, description, id_client, id_service) VALUES
+('ACCEPTED',  9500.00,  '2025-06-10', 'Personaje estilizado para juego mobile, estilo cartoon. Máximo 5k polígonos.',                              5, 1),
+('ACCEPTED',  6500.00,  '2025-06-20', 'Texturizado PBR para nave espacial ya modelada. Resolución de mapas 4096x4096.',                            6, 3),
+('ACCEPTED',  7500.00,  '2025-07-01', 'Rigging para personaje femenino bípedo. Debe ser compatible con Unreal Engine 5.',                          6, 5),
+('ACCEPTED',  12000.00, '2025-07-15', 'Pack de 6 animaciones para personaje de juego de acción. Incluye animaciones de combate.',                   7, 6),
+('PENDING',   18000.00, '2025-08-01', 'Sculpt realista de criatura fantástica para cortometraje. Se requiere versión de alta y baja resolución.',   5, 2),
+('REJECTED',  4200.00,  '2025-05-15', 'Prop de escritorio moderno para visualización arquitectónica. Cliente optó por asset de tienda.',            7, 7);
+
+-- ------------------------------------------------------------
+--  WORK ORDER
+-- ------------------------------------------------------------
+
+INSERT INTO work_order (status, started_at, completed_at, id_quote) VALUES
+('COMPLETED',   '2025-04-01 09:00:00', '2025-04-19 17:00:00', 1),
+('COMPLETED',   '2025-04-10 10:00:00', '2025-04-19 16:00:00', 2),
+('IN_PROGRESS', '2025-05-05 09:00:00', NULL,                   3),
+('IN_REVIEW',   '2025-04-20 08:00:00', NULL,                   4),
+('PENDING',     NULL,                  NULL,                   5);
+
+-- ------------------------------------------------------------
+--  DELIVERABLE
+-- ------------------------------------------------------------
+
+-- Orden 1: Personaje estilizado completado
+INSERT INTO deliverable (name, url_file, file_type, id_order) VALUES
+('Modelo FBX - personaje principal',     'https://files.render3d.mx/orden1/personaje.fbx',           'model/fbx',       1),
+('Modelo OBJ - personaje principal',     'https://files.render3d.mx/orden1/personaje.obj',           'model/obj',       1),
+('Texturas empaquetadas',                'https://files.render3d.mx/orden1/texturas.zip',            'application/zip', 1),
+('Renders de presentación',              'https://files.render3d.mx/orden1/renders.zip',             'application/zip', 1);
+
+-- Orden 2: Texturizado completado
+INSERT INTO deliverable (name, url_file, file_type, id_order) VALUES
+('Mapa Albedo 4K',                       'https://files.render3d.mx/orden2/albedo_4k.png',           'image/png',       2),
+('Mapa Normal 4K',                       'https://files.render3d.mx/orden2/normal_4k.png',           'image/png',       2),
+('Mapa Roughness-Metallic 4K',           'https://files.render3d.mx/orden2/roughness_metallic.png',  'image/png',       2),
+('Proyecto Substance Painter',           'https://files.render3d.mx/orden2/nave.spp',                'application/spp', 2);
+
+-- ------------------------------------------------------------
+--  PREVIEW
+-- ------------------------------------------------------------
+
+INSERT INTO preview (caption, url_file, deliverable_id) VALUES
+('Vista frontal del personaje',          'https://files.render3d.mx/orden1/preview-frente.png',      1),
+('Vista lateral del personaje',          'https://files.render3d.mx/orden1/preview-lateral.png',     1),
+('Vista wireframe',                      'https://files.render3d.mx/orden1/preview-wireframe.png',   1),
+('Preview albedo sobre modelo',          'https://files.render3d.mx/orden2/preview-albedo.png',      5),
+('Preview render final con iluminación', 'https://files.render3d.mx/orden2/preview-render.png',      5);
+
+-- ------------------------------------------------------------
+--  THREAD
+-- ------------------------------------------------------------
+
+INSERT INTO thread (id_order) VALUES (1), (2), (3), (4), (5);
+
+-- ------------------------------------------------------------
+--  MESSAGE
+-- ------------------------------------------------------------
+
+INSERT INTO message (id_thread, user_id, content) VALUES
+-- Hilo orden 1: Personaje estilizado (completada)
+(1, 5, 'Hola Emilio, acabo de revisar el modelo y quedó espectacular. El nivel de detalle en la cara superó lo que esperaba.'),
+(1, 2, 'Gracias Mariana! Me alegra mucho. Intenté mantener las proporciones que me indicaste en el brief. ¿Algún ajuste antes de cerrar?'),
+(1, 5, 'Ninguno, todo perfecto. Puedes marcar la orden como completada.'),
+
+-- Hilo orden 2: Texturizado (completada)
+(2, 6, 'Daniela, los mapas se ven increíbles en el motor. La nave tiene exactamente el look sucio y desgastado que necesitábamos.'),
+(2, 3, 'Me alegra que funcione bien en Unreal. Usé capas de desgaste procedural en Substance para que se vea más orgánico. Cualquier variación de color me avisas.'),
+(2, 6, 'Perfecto, así lo dejaré. Muchas gracias!'),
+
+-- Hilo orden 3: Rigging en progreso
+(3, 6, 'Óscar, ¿cómo va el rigging? ¿Ya probaste los controles de la mano?'),
+(3, 4, 'Hola Rodrigo, sí, los dedos ya tienen controles individuales y un atributo de puño para animarlos rápido. Esta semana termino los controles faciales básicos.'),
+(3, 6, 'Excelente, me alegra. ¿Crees que tenga problema al importarlo a Unreal 5?'),
+(3, 4, 'No debería, estoy nombrando los huesos con la convención de UE5 desde el inicio para evitar problemas.'),
+
+-- Hilo orden 4: Animaciones en revisión
+(4, 7, 'Lucía, ya subí el paquete de animaciones para que lo revises. El ciclo de carrera lo ajusté para que se vea más pesado, como pediste.'),
+(4, 7, 'Acabo de verlas, el idle y el caminar se ven muy naturales. El salto me parece un poco rápido en la fase de caída, ¿puedes alargarlo?'),
+(4, 4, 'Claro, le agrego unos frames más a la anticipación de aterrizaje. Lo tengo listo mañana.'),
+
+-- Hilo orden 5: Sculpt pendiente
+(5, 5, 'Buenos días Ricardo, ya fue aprobada mi cotización. ¿Cuándo comenzamos con el sculpt de la criatura?'),
+(5, 2, 'Hola Mariana, esta semana reviso el brief a detalle y el lunes te mando las primeras exploraciones de silueta para que apruebes la dirección antes de esculpir.');
