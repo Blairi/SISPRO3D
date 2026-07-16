@@ -121,6 +121,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         return offeredServiceMapper.toResponse(updated);
     }
 
+    // TODO: agregar un mensaje con la razón del rechazo
     @Override
     public OfferedServiceResponse reject(Long id, Long adminId) {
         var service = offeredServiceRepository.findById(id)
