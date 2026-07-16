@@ -266,4 +266,74 @@ class OfferedServiceServiceImplTest {
         assertThat(approved.getStatus()).isEqualTo(ServiceStatus.REJECTED);
         assertThat(approved.getAdminId()).isEqualTo(admin.getIdUser());
     }
+
+    @Test
+    void approve_whenAccountIsNotAdmin_throwsException() {
+        var expert = createExpert("expert@sispro3d.com");
+        var anotherExpert = createExpert("other@sispro3d.com"); // not an ADMIN
+        var category = createCategory("Category");
+
+        var request = OfferedServiceRequest.builder()
+                .title("Service")
+                .description("Test")
+                .basePrice(new BigDecimal("800.00"))
+                .expertId(expert.getIdUser())
+                .categoryId(category.getId())
+                .deliveryTimeDays(5)
+                .build();
+        var created = offeredServiceService.create(request);
+
+        assertThatThrownBy(() -> offeredServiceService.approve(created.getId(), anotherExpert.getIdUser()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ADMIN");
+    }
+
+    @Test
+    void approve_whenAlreadyApproved_throwsException() {
+        var admin = createAdmin("admin@sispro3d.com");
+        var expert = createExpert("expert@sispro3d.com");
+        var category = createCategory("Category");
+
+        var request = OfferedServiceRequest.builder()
+                .title("Service")
+                .description("Test")
+                .basePrice(new BigDecimal("800.00"))
+                .expertId(expert.getIdUser())
+                .categoryId(category.getId())
+                .deliveryTimeDays(5)
+                .build();
+        var created = offeredServiceService.create(request);
+        offeredServiceService.approve(created.getId(), admin.getIdUser()); // first approval
+
+        assertThatThrownBy(() -> offeredServiceService.approve(created.getId(), admin.getIdUser()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("PENDING");
+    }
+
+    @Test
+    void approve_whenServiceDoesNotExist_throwsResourceNotFound() {
+        var admin = createAdmin("admin@sispro3d.com");
+
+        assertThatThrownBy(() -> offeredServiceService.approve(999L, admin.getIdUser()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void approve_whenAdminDoesNotExist_throwsResourceNotFound() {
+        var expert = createExpert("expert@sispro3d.com");
+        var category = createCategory("Category");
+
+        var request = OfferedServiceRequest.builder()
+                .title("Service")
+                .description("Test")
+                .basePrice(new BigDecimal("800.00"))
+                .expertId(expert.getIdUser())
+                .categoryId(category.getId())
+                .deliveryTimeDays(5)
+                .build();
+        var created = offeredServiceService.create(request);
+
+        assertThatThrownBy(() -> offeredServiceService.approve(created.getId(), 999L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }
