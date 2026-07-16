@@ -22,7 +22,6 @@ public class OfferedServiceMapper {
         service.setDescription(request.getDescription());
         service.setBasePrice(request.getBasePrice());
         service.setDeliveryTimeDays(request.getDeliveryTimeDays());
-        service.setStatus(request.getStatus());
         return service;
     }
 
@@ -50,6 +49,5 @@ public class OfferedServiceMapper {
         service.setDescription(request.getDescription());
         service.setBasePrice(request.getBasePrice());
         service.setDeliveryTimeDays(request.getDeliveryTimeDays());
-        service.setStatus(request.getStatus());
     }
 }
