@@ -336,4 +336,90 @@ class OfferedServiceServiceImplTest {
         assertThatThrownBy(() -> offeredServiceService.approve(created.getId(), 999L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    @Test
+    void findByExpertId() {
+        var expert = createExpert("expert.findByExpert@sispro3d.com");
+        var category = createCategory("Cat1");
+
+        var request = OfferedServiceRequest.builder()
+                .title("Servicio del experto")
+                .description("Test")
+                .basePrice(new BigDecimal("1000.00"))
+                .expertId(expert.getIdUser())
+                .categoryId(category.getId())
+                .deliveryTimeDays(7)
+                .build();
+        offeredServiceService.create(request);
+
+        List<OfferedServiceResponse> res = offeredServiceService.findByExpertId(expert.getIdUser());
+
+        assertThat(res).hasSize(1);
+        assertThat(res.get(0).getExpertId()).isEqualTo(expert.getIdUser());
+    }
+
+    @Test
+    void findByExpertId_whenNoServices() {
+        var expert = createExpert("expert.empty@sispro3d.com");
+
+        List<OfferedServiceResponse> res = offeredServiceService.findByExpertId(expert.getIdUser());
+
+        assertThat(res).isEmpty();
+    }
+
+    @Test
+    void findByExpertId_whenIdDoesNotExist() {
+        List<OfferedServiceResponse> res = offeredServiceService.findByExpertId(999L);
+        assertThat(res).isEmpty();
+    }
+
+    @Test
+    void findByCategoryId() {
+        var expert = createExpert("expert.findByCat@sispro3d.com");
+        var category = createCategory("BusquedaCat");
+
+        var request = OfferedServiceRequest.builder()
+                .title("Servicio en categoria")
+                .description("Test")
+                .basePrice(new BigDecimal("1200.00"))
+                .expertId(expert.getIdUser())
+                .categoryId(category.getId())
+                .deliveryTimeDays(10)
+                .build();
+        offeredServiceService.create(request);
+
+        List<OfferedServiceResponse> res = offeredServiceService.findByCategoryId(category.getId());
+
+        assertThat(res).hasSize(1);
+        assertThat(res.get(0).getCategoryId()).isEqualTo(category.getId());
+    }
+
+    @Test
+    void findByCategoryId_whenIdDoesNotExist() {
+        List<OfferedServiceResponse> res = offeredServiceService.findByCategoryId(999L);
+        assertThat(res).isEmpty();
+    }
+
+    @Test
+    void findByStatus() {
+        var expert = createExpert("expert.findByStatus@sispro3d.com");
+        var category = createCategory("StatusCat");
+
+        var request = OfferedServiceRequest.builder()
+                .title("Servicio pendiente")
+                .description("Test")
+                .basePrice(new BigDecimal("900.00"))
+                .expertId(expert.getIdUser())
+                .categoryId(category.getId())
+                .deliveryTimeDays(5)
+                .build();
+        offeredServiceService.create(request);
+
+        List<OfferedServiceResponse> pending = offeredServiceService.findByStatus(ServiceStatus.PENDING);
+        List<OfferedServiceResponse> approved = offeredServiceService.findByStatus(ServiceStatus.APPROVED);
+
+        assertThat(pending).isNotEmpty();
+        assertThat(pending).allMatch(s -> s.getStatus() == ServiceStatus.PENDING);
+        assertThat(approved).isEmpty();
+    }
 }

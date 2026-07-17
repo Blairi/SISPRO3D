@@ -3,6 +3,7 @@ package com.sispro3d.unam.user.service.impl;
 
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.user.domain.Account;
+import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
 import com.sispro3d.unam.user.mapper.AccountMapper;
@@ -66,6 +67,19 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public boolean existsById(Long id) {
         return accountRepository.existsById(id);
+    }
+
+    @Override
+    public Optional<AccountResponse> findByEmail(String email) {
+        return accountRepository.findByEmail(email)
+                .map(accountMapper::toResponse);
+    }
+
+    @Override
+    public List<AccountResponse> findByRole(Role role) {
+        return accountRepository.findByRole(role).stream()
+                .map(accountMapper::toResponse)
+                .toList();
     }
 
 }

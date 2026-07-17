@@ -225,4 +225,98 @@ class ReviewServiceImplTest {
 
         assertThat(reviewService.existsById(created.getId())).isTrue();
     }
+
+    @Test
+    void findByClientId() {
+        var client = createClient("client.findByClient@sispro3d.com");
+        var expert = createExpert("expert.findByClient@sispro3d.com");
+        var service = createService(expert, "Servicio1");
+
+        var request = ReviewRequest.builder()
+                .rating(5)
+                .comment("Muy bueno")
+                .clientId(client.getIdUser())
+                .offeredServiceId(service.getId())
+                .build();
+        reviewService.create(request);
+
+        List<ReviewResponse> res = reviewService.findByClientId(client.getIdUser());
+
+        assertThat(res).hasSize(1);
+        assertThat(res.get(0).getClientId()).isEqualTo(client.getIdUser());
+    }
+
+    @Test
+    void findByClientId_whenNoReviews() {
+        var client = createClient("client.empty@sispro3d.com");
+
+        List<ReviewResponse> res = reviewService.findByClientId(client.getIdUser());
+
+        assertThat(res).isEmpty();
+    }
+
+    @Test
+    void findByClientId_whenIdDoesNotExist() {
+        List<ReviewResponse> res = reviewService.findByClientId(999L);
+        assertThat(res).isEmpty();
+    }
+
+    @Test
+    void findByOfferedServiceId() {
+        var client = createClient("client.findByService@sispro3d.com");
+        var expert = createExpert("expert.findByService@sispro3d.com");
+        var service = createService(expert, "Servicio2");
+
+        var request = ReviewRequest.builder()
+                .rating(4)
+                .comment("Buen servicio")
+                .clientId(client.getIdUser())
+                .offeredServiceId(service.getId())
+                .build();
+        reviewService.create(request);
+
+        List<ReviewResponse> res = reviewService.findByOfferedServiceId(service.getId());
+
+        assertThat(res).hasSize(1);
+        assertThat(res.get(0).getOfferedServiceId()).isEqualTo(service.getId());
+    }
+
+    @Test
+    void findByOfferedServiceId_whenServiceDoesNotExist() {
+        List<ReviewResponse> res = reviewService.findByOfferedServiceId(999L);
+        assertThat(res).isEmpty();
+    }
+
+    @Test
+    void findByClientIdAndOfferedServiceId_whenExists() {
+        var client = createClient("client.findByBoth@sispro3d.com");
+        var expert = createExpert("expert.findByBoth@sispro3d.com");
+        var service = createService(expert, "Servicio3");
+
+        var request = ReviewRequest.builder()
+                .rating(3)
+                .comment("Regular")
+                .clientId(client.getIdUser())
+                .offeredServiceId(service.getId())
+                .build();
+        reviewService.create(request);
+
+        Optional<ReviewResponse> res = reviewService.findByClientIdAndOfferedServiceId(
+                client.getIdUser(), service.getId());
+
+        assertThat(res).isPresent();
+        assertThat(res.get().getRating()).isEqualTo(3);
+    }
+
+    @Test
+    void findByClientIdAndOfferedServiceId_whenNotExists() {
+        var client = createClient("client.nofind@sispro3d.com");
+        var expert = createExpert("expert.nofind@sispro3d.com");
+        var service = createService(expert, "Servicio4");
+
+        Optional<ReviewResponse> res = reviewService.findByClientIdAndOfferedServiceId(
+                client.getIdUser(), service.getId());
+
+        assertThat(res).isEmpty();
+    }
 }

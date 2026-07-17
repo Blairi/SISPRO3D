@@ -89,4 +89,24 @@ public class ReviewServiceImpl implements ReviewService {
     public boolean existsById(Long id) {
         return reviewRepository.existsById(id);
     }
+
+    @Override
+    public List<ReviewResponse> findByClientId(Long clientId) {
+        return reviewRepository.findByClient_IdUser(clientId).stream()
+                .map(reviewMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<ReviewResponse> findByOfferedServiceId(Long offeredServiceId) {
+        return reviewRepository.findByOfferedService_Id(offeredServiceId).stream()
+                .map(reviewMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public Optional<ReviewResponse> findByClientIdAndOfferedServiceId(Long clientId, Long offeredServiceId) {
+        return reviewRepository.findByClient_IdUserAndOfferedService_Id(clientId, offeredServiceId)
+                .map(reviewMapper::toResponse);
+    }
 }

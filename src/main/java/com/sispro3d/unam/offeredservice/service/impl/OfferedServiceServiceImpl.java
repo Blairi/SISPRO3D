@@ -144,4 +144,25 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         OfferedService updated = offeredServiceRepository.save(service);
         return offeredServiceMapper.toResponse(updated);
     }
+
+    @Override
+    public List<OfferedServiceResponse> findByExpertId(Long expertId) {
+        return offeredServiceRepository.findByExpert_IdUser(expertId).stream()
+                .map(offeredServiceMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<OfferedServiceResponse> findByCategoryId(Long categoryId) {
+        return offeredServiceRepository.findByCategory_Id(categoryId).stream()
+                .map(offeredServiceMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<OfferedServiceResponse> findByStatus(ServiceStatus status) {
+        return offeredServiceRepository.findByStatus(status).stream()
+                .map(offeredServiceMapper::toResponse)
+                .toList();
+    }
 }

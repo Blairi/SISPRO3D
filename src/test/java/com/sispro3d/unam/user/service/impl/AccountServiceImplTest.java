@@ -153,4 +153,62 @@ class AccountServiceImplTest {
         assertThat(accountService.existsById(saved.getIdUser())).isTrue();
     }
 
+    @Test
+    void findByEmail_whenExists() {
+        var account = new Account();
+        account.setName("Mail");
+        account.setLastName("Test");
+        account.setEmail("findme@sispro3d.com");
+        account.setPassword("test123");
+        account.setRole(Role.EXPERT);
+        account.setCreatedAt(LocalDateTime.now());
+        accountRepository.save(account);
+
+        Optional<AccountResponse> res = accountService.findByEmail("findme@sispro3d.com");
+
+        assertThat(res).isPresent();
+        assertThat(res.get().getName()).isEqualTo("Mail");
+    }
+
+    @Test
+    void findByEmail_whenNotExists() {
+        Optional<AccountResponse> res = accountService.findByEmail("noexiste@sispro3d.com");
+        assertThat(res).isEmpty();
+    }
+
+    @Test
+    void findByRole() {
+        var expert1 = new Account();
+        expert1.setName("Expert");
+        expert1.setLastName("One");
+        expert1.setEmail("e1@sispro3d.com");
+        expert1.setPassword("test123");
+        expert1.setRole(Role.EXPERT);
+        expert1.setCreatedAt(LocalDateTime.now());
+        accountRepository.save(expert1);
+
+        var expert2 = new Account();
+        expert2.setName("Expert");
+        expert2.setLastName("Two");
+        expert2.setEmail("e2@sispro3d.com");
+        expert2.setPassword("test123");
+        expert2.setRole(Role.EXPERT);
+        expert2.setCreatedAt(LocalDateTime.now());
+        accountRepository.save(expert2);
+
+        var client = new Account();
+        client.setName("Client");
+        client.setLastName("One");
+        client.setEmail("c1@sispro3d.com");
+        client.setPassword("test123");
+        client.setRole(Role.CLIENT);
+        client.setCreatedAt(LocalDateTime.now());
+        accountRepository.save(client);
+
+        List<AccountResponse> experts = accountService.findByRole(Role.EXPERT);
+
+        assertThat(experts).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(experts).allMatch(a -> a.getRole() == Role.EXPERT);
+    }
+
 }
