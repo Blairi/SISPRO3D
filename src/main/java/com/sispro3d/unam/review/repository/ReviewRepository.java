@@ -14,4 +14,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByClient(Account client);
     List<Review> findByOfferedService(OfferedService offeredService);
     Optional<Review> findByClientAndOfferedService(Account client, OfferedService offeredService);
+
+    Optional<Review> findByClient_IdUserAndOfferedService_Id(Long clientId, Long offeredServiceId);
+    List<Review> findByClient_IdUser(Long clientId);
+    List<Review> findByOfferedService_Id(Long offeredServiceId);
 }

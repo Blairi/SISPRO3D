@@ -14,4 +14,7 @@ public interface OfferedServiceRepository extends JpaRepository<OfferedService, 
     List<OfferedService> findByExpert(Account expert);
     List<OfferedService> findByCategory(Category category);
     List<OfferedService> findByStatus(ServiceStatus status);
+
+    List<OfferedService> findByExpert_IdUser(Long expertId);
+    List<OfferedService> findByCategory_Id(Long categoryId);
 }

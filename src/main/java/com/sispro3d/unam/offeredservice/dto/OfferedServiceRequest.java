@@ -1,6 +1,5 @@
 package com.sispro3d.unam.offeredservice.dto;
 
-import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -18,6 +17,5 @@ public class OfferedServiceRequest {
     private Long expertId;
     private Long adminId;
     private Long categoryId;
-    private ServiceStatus status;
     private Integer deliveryTimeDays;
 }
