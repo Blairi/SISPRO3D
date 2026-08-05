@@ -81,12 +81,12 @@ src/main/java/com/sispro3d/unam/
 ├── category/              # Categorías de servicio (stub)
 ├── offeredservice/        # Servicios ofrecidos con flujo de aprobación
 ├── review/                # Reseñas de clientes
-├── quote/                 # Cotizaciones (solo POJO)
-├── workorder/             # Órdenes de trabajo (solo POJO)
-├── deliverable/           # Archivos entregables (solo POJO)
-├── preview/               # Vistas previas (solo POJO)
-├── thread/                # Hilos de conversación (solo POJO)
-└── message/               # Mensajes de chat (solo POJO)
+├── quote/                 # Cotizaciones con flujo de aprobación
+├── workorder/             # Órdenes de trabajo (nacen de cotización aceptada)
+├── deliverable/           # Archivos entregables de una orden
+├── preview/               # Vistas previas de un entregable
+├── thread/                # Hilos de conversación de una orden
+└── message/               # Mensajes de chat de un hilo
 ```
 
 ### Lógica de negocio implementada
@@ -97,4 +97,21 @@ El módulo `offeredservice` tiene un flujo de aprobación:
 - **Aprobar servicio:** Solo usuarios con rol `ADMIN`. El servicio debe estar en `PENDING`.
 - **Rechazar servicio:** Misma validación que aprobar. Estado cambia a `REJECTED`.
 
-Los módulos marcados como "solo POJO" tienen su tabla definida en `schema.sql` pero aún no tienen implementación JPA en Java.
+El módulo `quote` tiene un flujo de cotización:
+
+- **Solicitar cotización:** Solo usuarios con rol `CLIENT` sobre un servicio `APPROVED`. El estado se fuerza a `PENDING`.
+- **Responder cotización:** Solo el `EXPERT` propietario del servicio. Establece `totalAmount` y `validUntil`.
+- **Aceptar/Rechazar cotización:** Solo el `CLIENT` solicitante sobre cotizaciones `PENDING`.
+
+El módulo `workorder` gestiona la orden de trabajo:
+
+- **Crear orden:** Solo el `CLIENT` a partir de una cotización `ACCEPTED` (una orden por cotización).
+- **Iniciar orden / Marcar en revisión:** Solo el `EXPERT` propietario.
+- **Solicitar cambios / Completar / Cancelar:** Solo el `CLIENT`.
+
+El módulo `deliverable`/`preview` permite al `EXPERT` propietario subir entregables y vistas previas solo mientras la orden está `IN_PROGRESS` o `IN_REVIEW`.
+
+El módulo `thread`/`message` implementa el chat de la orden:
+
+- **Crear hilo:** Solo el `CLIENT` o el `EXPERT` de la orden (un hilo por orden).
+- **Enviar mensaje:** Solo los participantes del hilo (cliente o experto de la orden).
