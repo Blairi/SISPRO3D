@@ -21,6 +21,8 @@
 
             <!-- Logueado -->
             <div th:if="${sessionUser != null}" class="flex gap-4 items-center">
+                <a th:if="${sessionUser.role.name() == 'EXPERT'}" href="/expert/dashboard"
+                   class="text-gray-600 hover:text-indigo-600 font-medium">Dashboard</a>
                 <span class="text-gray-700 font-medium" th:text="${sessionUser.name + ' ' + sessionUser.lastName}"></span>
                 <a href="/login/logout"
                    class="text-gray-500 hover:text-red-600 font-medium text-sm transition">

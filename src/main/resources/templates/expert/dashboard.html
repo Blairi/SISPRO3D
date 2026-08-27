@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/header :: head('SISPRO3D - Dashboard')}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<nav th:replace="~{fragments/header :: navbar}"></nav>
+
+<main class="flex-grow">
+    <div class="max-w-7xl mx-auto px-4 py-10">
+
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Mis servicios</h1>
+            <a href="/expert/services/new"
+               class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition">
+                + Nuevo servicio
+            </a>
+        </div>
+
+        <!-- Sin servicios -->
+        <div th:if="${#lists.isEmpty(services)}" class="text-center py-20">
+            <p class="text-gray-500 text-lg mb-4">Aún no has creado ningún servicio.</p>
+            <a href="/expert/services/new"
+               class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition">
+                Crear mi primer servicio
+            </a>
+        </div>
+
+        <!-- Carrusel de servicios -->
+        <div th:if="${!#lists.isEmpty(services)}">
+            <div id="carousel" class="relative overflow-hidden rounded-xl">
+                <div id="carousel-track" class="flex transition-transform duration-300 ease-in-out">
+                    <div th:each="svc : ${services}" class="min-w-full md:min-w-[50%] lg:min-w-[33.333%] px-3">
+                        <div class="bg-white rounded-xl shadow border border-gray-200 p-6 h-full flex flex-col">
+                            <div class="flex justify-between items-start mb-3">
+                                <h3 class="text-lg font-semibold text-gray-900" th:text="${svc.title}"></h3>
+                                <span th:if="${svc.status.name() == 'PENDING'}"
+                                      class="text-xs font-medium bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Pendiente</span>
+                                <span th:if="${svc.status.name() == 'APPROVED'}"
+                                      class="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded-full">Aprobado</span>
+                                <span th:if="${svc.status.name() == 'REJECTED'}"
+                                      class="text-xs font-medium bg-red-100 text-red-700 px-2 py-1 rounded-full">Rechazado</span>
+                            </div>
+                            <p class="text-gray-600 text-sm flex-grow line-clamp-3" th:text="${svc.description}"></p>
+                            <div class="mt-4 flex justify-between items-center text-sm">
+                                <span class="font-bold text-indigo-600" th:text="'$' + ${#numbers.formatDecimal(svc.basePrice, 1, 2)}"></span>
+                                <span class="text-gray-500" th:text="${svc.deliveryTimeDays} + ' días'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles del carrusel -->
+            <div th:if="${services.size() > 3}" class="flex justify-center gap-4 mt-6">
+                <button onclick="moveCarousel(-1)"
+                        class="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <button onclick="moveCarousel(1)"
+                        class="bg-white border border-gray-300 rounded-full p-2 hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const totalItems = /*[[${services.size()}]]*/ 0;
+    let position = 0;
+
+    function getVisible() {
+        if (window.innerWidth >= 1024) return 3;
+        if (window.innerWidth >= 768) return 2;
+        return 1;
+    }
+
+    function moveCarousel(direction) {
+        const track = document.getElementById('carousel-track');
+        const visible = getVisible();
+        const maxPos = Math.max(0, totalItems - visible);
+        position = Math.max(0, Math.min(maxPos, position + direction));
+        const itemWidth = 100 / visible;
+        track.style.transform = 'translateX(-' + (position * itemWidth) + '%)';
+    }
+    /*]]>*/
+</script>
+
+</body>
+</html>
