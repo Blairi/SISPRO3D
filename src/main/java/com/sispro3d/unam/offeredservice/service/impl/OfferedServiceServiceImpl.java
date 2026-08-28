@@ -146,6 +146,25 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
     }
 
     @Override
+    public OfferedServiceResponse markPending(Long id, Long adminId) {
+        var service = offeredServiceRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.forId("OfferedService", id));
+
+        var admin = accountRepository.findById(adminId)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Account (admin)", adminId));
+
+        if (admin.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("Solo cuentas de tipo ADMIN pueden modificar el estado de un servicio");
+        }
+
+        service.setStatus(ServiceStatus.PENDING);
+        service.setAdmin(admin);
+
+        OfferedService updated = offeredServiceRepository.save(service);
+        return offeredServiceMapper.toResponse(updated);
+    }
+
+    @Override
     public List<OfferedServiceResponse> findByExpertId(Long expertId) {
         return offeredServiceRepository.findByExpert_IdUser(expertId).stream()
                 .map(offeredServiceMapper::toResponse)

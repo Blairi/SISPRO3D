@@ -338,6 +338,58 @@ class OfferedServiceServiceImplTest {
     }
 
     @Test
+    void markPending() {
+        var admin = createAdmin("admin@sispro3d.com");
+        var expert = createExpert("expert@sispro3d.com");
+        var category = createCategory("Category");
+
+        var request = OfferedServiceRequest.builder()
+                .title("Servicio")
+                .description("Test")
+                .basePrice(new BigDecimal("800.00"))
+                .expertId(expert.getIdUser())
+                .categoryId(category.getId())
+                .deliveryTimeDays(5)
+                .build();
+        OfferedServiceResponse created = offeredServiceService.create(request);
+
+        offeredServiceService.approve(created.getId(), admin.getIdUser());
+        OfferedServiceResponse pending = offeredServiceService.markPending(created.getId(), admin.getIdUser());
+
+        assertThat(pending.getStatus()).isEqualTo(ServiceStatus.PENDING);
+    }
+
+    @Test
+    void markPending_whenAccountIsNotAdmin_throwsException() {
+        var expert = createExpert("expert@sispro3d.com");
+        var admin = createAdmin("admin2@sispro3d.com");
+        var category = createCategory("Category");
+
+        var request = OfferedServiceRequest.builder()
+                .title("Servicio")
+                .description("Test")
+                .basePrice(new BigDecimal("800.00"))
+                .expertId(expert.getIdUser())
+                .categoryId(category.getId())
+                .deliveryTimeDays(5)
+                .build();
+        OfferedServiceResponse created = offeredServiceService.create(request);
+        offeredServiceService.approve(created.getId(), admin.getIdUser());
+
+        assertThatThrownBy(() -> offeredServiceService.markPending(created.getId(), expert.getIdUser()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ADMIN");
+    }
+
+    @Test
+    void markPending_whenServiceDoesNotExist_throwsResourceNotFound() {
+        var admin = createAdmin("admin3@sispro3d.com");
+
+        assertThatThrownBy(() -> offeredServiceService.markPending(999L, admin.getIdUser()))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void findByExpertId() {
         var expert = createExpert("expert.findByExpert@sispro3d.com");
         var category = createCategory("Cat1");
