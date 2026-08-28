@@ -18,8 +18,11 @@ public class OfferedServiceResponse {
     private String description;
     private BigDecimal basePrice;
     private Long expertId;
+    private String expertName;
+    private String expertEmail;
     private Long adminId;
     private Long categoryId;
+    private String categoryName;
     private ServiceStatus status;
     private Integer deliveryTimeDays;
     private LocalDateTime createdAt;
