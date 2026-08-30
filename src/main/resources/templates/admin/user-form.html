@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/header :: head('SISPRO3D - Editar usuario')}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<nav th:replace="~{fragments/header :: navbar}"></nav>
+
+<main class="flex-grow">
+    <div class="max-w-lg mx-auto px-4 py-10">
+
+        <div class="mb-8">
+            <a href="/admin/users" class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">&larr; Volver a usuarios</a>
+            <h1 class="text-3xl font-bold text-gray-900 mt-2">Editar usuario</h1>
+        </div>
+
+        <form th:action="@{/admin/users/{id}/edit(id=${user.idUser})}" method="post"
+              class="bg-white shadow rounded-lg p-8 space-y-6">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                    <input type="text" id="name" name="name" th:value="${user.name}" required
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"/>
+                </div>
+                <div>
+                    <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+                    <input type="text" id="lastName" name="lastName" th:value="${user.lastName}" required
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"/>
+                </div>
+            </div>
+
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico *</label>
+                <input type="email" id="email" name="email" th:value="${user.email}" required
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"/>
+            </div>
+
+            <div>
+                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <input type="tel" id="phone" name="phone" th:value="${user.phone}"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"/>
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                <input type="password" id="password" name="password" placeholder="Dejar en blanco para no cambiar"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"/>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
+                <select name="role" required
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    <option value="CLIENT" th:selected="${user.role.name() == 'CLIENT'}">Cliente</option>
+                    <option value="EXPERT" th:selected="${user.role.name() == 'EXPERT'}">Experto</option>
+                </select>
+            </div>
+
+            <div th:if="${user.role.name() == 'EXPERT'}" class="space-y-6 border-t border-gray-200 pt-6">
+                <div>
+                    <label for="specialty" class="block text-sm font-medium text-gray-700 mb-1">Especialidad</label>
+                    <input type="text" id="specialty" name="specialty" th:value="${user.specialty}"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"/>
+                </div>
+                <div>
+                    <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">Biografía</label>
+                    <textarea id="bio" name="bio" rows="3" th:text="${user.bio}"
+                              class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"></textarea>
+                </div>
+                <div>
+                    <label for="yearsExperience" class="block text-sm font-medium text-gray-700 mb-1">Años de experiencia</label>
+                    <input type="number" id="yearsExperience" name="yearsExperience" min="0" max="100" th:value="${user.yearsExperience}"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"/>
+                </div>
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition">
+                Guardar cambios
+            </button>
+
+        </form>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>
