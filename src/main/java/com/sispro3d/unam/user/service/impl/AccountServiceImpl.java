@@ -2,6 +2,7 @@ package com.sispro3d.unam.user.service.impl;
 
 
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.dto.AccountRequest;
@@ -11,6 +12,7 @@ import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.user.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +26,9 @@ public class AccountServiceImpl implements AccountService {
 
     @Autowired
     private AccountMapper accountMapper;
+
+    @Autowired
+    private OfferedServiceRepository offeredServiceRepository;
 
     @Override
     public List<AccountResponse> findAll() {
@@ -57,11 +62,13 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
-        if (!accountRepository.existsById(id)) {
-            throw ResourceNotFoundException.forId("Account", id);
-        }
-        accountRepository.deleteById(id);
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Account", id));
+
+        offeredServiceRepository.deleteAll(offeredServiceRepository.findByExpert_IdUser(id));
+        accountRepository.delete(account);
     }
 
     @Override

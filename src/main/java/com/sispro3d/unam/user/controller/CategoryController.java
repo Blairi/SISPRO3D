@@ -34,7 +34,7 @@ public class CategoryController {
         }
 
         model.addAttribute("category", new CategoryRequest());
-        return "admin/category-form";
+        return "admin/category-create";
     }
 
     @PostMapping("/new")
@@ -57,7 +57,7 @@ public class CategoryController {
 
         var category = categoryService.findById(id).orElseThrow();
         model.addAttribute("category", category);
-        return "admin/category-form";
+        return "admin/category-edit";
     }
 
     @PostMapping("/{id}/edit")
