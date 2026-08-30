@@ -3,9 +3,11 @@ package com.sispro3d.unam.user.controller;
 import com.sispro3d.unam.category.dto.CategoryRequest;
 import com.sispro3d.unam.category.service.CategoryService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
@@ -38,10 +40,14 @@ public class CategoryController {
     }
 
     @PostMapping("/new")
-    public String create(@ModelAttribute CategoryRequest request, HttpSession session) {
+    public String create(@Valid @ModelAttribute("category") CategoryRequest request, BindingResult result, HttpSession session) {
         Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
         if (userId == null) {
             return "redirect:/login";
+        }
+
+        if (result.hasErrors()) {
+            return "admin/category-create";
         }
 
         categoryService.create(request);
@@ -61,10 +67,15 @@ public class CategoryController {
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable Long id, @ModelAttribute CategoryRequest request, HttpSession session) {
+    public String update(@PathVariable Long id, @Valid @ModelAttribute("category") CategoryRequest request, BindingResult result, HttpSession session, Model model) {
         Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
         if (userId == null) {
             return "redirect:/login";
+        }
+
+        if (result.hasErrors()) {
+            model.addAttribute("categoryId", id);
+            return "admin/category-edit";
         }
 
         categoryService.update(id, request);
