@@ -7,9 +7,11 @@ import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
 import com.sispro3d.unam.user.service.AccountService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
@@ -55,35 +57,30 @@ public class AdminDashboardController {
     }
 
     @GetMapping("/admins/new")
-    public String showCreateAdminForm(HttpSession session) {
+    public String showCreateAdminForm(HttpSession session, Model model) {
         Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
         if (userId == null) {
             return "redirect:/login";
+        }
+        if (!model.containsAttribute("user")) {
+            model.addAttribute("user", new AccountRequest());
         }
         return "admin/create-admin";
     }
 
     @PostMapping("/admins/new")
     public String createAdmin(
-            @RequestParam String name,
-            @RequestParam String lastName,
-            @RequestParam String email,
-            @RequestParam String phone,
-            @RequestParam String password,
-            HttpSession session) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
+            @Valid @ModelAttribute("user") AccountRequest request,
+            BindingResult result) {
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            result.rejectValue("password", "acc.NotBlank.password", "La contraseña es obligatoria");
+        } else if (request.getPassword().length() < 6) {
+            result.rejectValue("password", "acc.Size.password", "La contraseña debe tener al menos 6 caracteres");
         }
 
-        AccountRequest request = AccountRequest.builder()
-                .name(name)
-                .lastName(lastName)
-                .email(email)
-                .phone(phone)
-                .password(password)
-                .role(Role.ADMIN)
-                .build();
+        if (result.hasErrors()) {
+            return "admin/create-admin";
+        }
 
         accountService.create(request);
         return "redirect:/admin/dashboard";

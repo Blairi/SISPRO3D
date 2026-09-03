@@ -1,4 +1,4 @@
-package com.sispro3d.unam.category.dto;
+package com.sispro3d.unam.api.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -13,12 +13,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CategoryRequest {
+public class CategoryRequestDTO {
 
-    @NotBlank(message = "{cat.NotBlank.name}")
-    @Size(max = 50, message = "{cat.Size.name}")
+    @NotBlank(message = "name is required")
+    @Size(max = 100, message = "name must be at most 100 characters")
     private String name;
 
-    @Size(max = 1000, message = "{cat.Size.description}")
+    @Size(max = 1000, message = "description must be at most 1000 characters")
     private String description;
 }

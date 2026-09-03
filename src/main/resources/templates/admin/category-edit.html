@@ -13,17 +13,22 @@
             <h1 class="text-3xl font-bold text-gray-900 mt-2">Editar categoría</h1>
         </div>
 
-        <form th:action="@{/admin/categories/{id}/edit(id=${category.id})}" method="post"
+        <form th:action="@{/admin/categories/{id}/edit(id=${categoryId != null ? categoryId : category.id})}" method="post"
+              th:object="${category}"
               class="bg-white shadow rounded-lg p-8 space-y-6">
             <div>
                 <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-                <input type="text" id="name" name="name" th:value="${category.name}" required
-                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"/>
+                <input type="text" id="name" th:field="*{name}" required
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                       th:classappend="${#fields.hasErrors('name')} ? 'border-red-500'"/>
+                <p th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-red-500 text-sm mt-1"></p>
             </div>
             <div>
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                <textarea id="description" name="description" rows="3" th:text="${category.description}"
-                          class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"></textarea>
+                <textarea id="description" name="description" rows="3" th:text="*{description}"
+                          class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+                          th:classappend="${#fields.hasErrors('description')} ? 'border-red-500'"></textarea>
+                <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="text-red-500 text-sm mt-1"></p>
             </div>
             <button type="submit"
                     class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition">

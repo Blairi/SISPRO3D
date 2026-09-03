@@ -6,9 +6,11 @@ import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
 import com.sispro3d.unam.user.dto.AccountResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
@@ -47,11 +49,18 @@ public class ExpertDashboardController {
 
     @PostMapping("/services/new")
     public String createService(
-            @ModelAttribute OfferedServiceRequest request,
-            HttpSession session) {
+            @Valid @ModelAttribute("offeredservice") OfferedServiceRequest request,
+            BindingResult result,
+            HttpSession session,
+            Model model) {
         Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
         if (userId == null) {
             return "redirect:/login";
+        }
+
+        if (result.hasErrors()) {
+            model.addAttribute("categories", categoryRepository.findAll());
+            return "expert/create-service";
         }
 
         request.setExpertId(userId);
@@ -88,18 +97,28 @@ public class ExpertDashboardController {
     @PostMapping("/services/{id}/edit")
     public String updateService(
             @PathVariable Long id,
-            @ModelAttribute OfferedServiceRequest request,
-            HttpSession session) {
+            @Valid @ModelAttribute("offeredservice") OfferedServiceRequest request,
+            BindingResult result,
+            HttpSession session,
+            Model model) {
         Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
         if (userId == null) {
             return "redirect:/login";
         }
 
-        request.setExpertId(userId);
-        offeredServiceService.findById(id)
+        if (!offeredServiceService.findById(id)
                 .filter(svc -> svc.getExpertId().equals(userId))
-                .orElseThrow(() -> new IllegalArgumentException("Servicio no encontrado"));
+                .isPresent()) {
+            throw new IllegalArgumentException("Servicio no encontrado");
+        }
 
+        if (result.hasErrors()) {
+            model.addAttribute("serviceId", id);
+            model.addAttribute("categories", categoryRepository.findAll());
+            return "expert/edit-service";
+        }
+
+        request.setExpertId(userId);
         offeredServiceService.update(id, request);
         return "redirect:/expert/dashboard";
     }
