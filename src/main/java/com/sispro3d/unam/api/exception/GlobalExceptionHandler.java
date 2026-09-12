@@ -3,6 +3,8 @@ package com.sispro3d.unam.api.exception;
 import com.sispro3d.unam.api.error.ErrorDetail;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +57,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorDetail> handleTypeMismatch(MethodArgumentTypeMismatchException ex, jakarta.servlet.http.HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST,
                 "Invalid value for parameter: " + ex.getName(), request, List.of());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorDetail> handleConstraintViolation(ConstraintViolationException ex, jakarta.servlet.http.HttpServletRequest request) {
+        List<String> details = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.toList());
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, details);
     }
 
     @ExceptionHandler({DataIntegrityException.class, DataIntegrityViolationException.class})

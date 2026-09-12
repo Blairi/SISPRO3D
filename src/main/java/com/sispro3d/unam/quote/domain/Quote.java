@@ -27,7 +27,7 @@ public class Quote {
     @Column(nullable = false)
     private QuoteStatus status;
 
-    @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "total_amount", precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
     @Column(name = "valid_until")

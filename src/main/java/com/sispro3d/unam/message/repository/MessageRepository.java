@@ -11,4 +11,5 @@ import java.util.List;
 public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByThread(Thread thread);
     List<Message> findByThread_IdOrderByTimestampAsc(Long threadId);
+    void deleteByThread_Id(Long threadId);
 }
