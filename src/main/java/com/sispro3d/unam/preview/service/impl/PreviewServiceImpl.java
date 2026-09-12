@@ -13,7 +13,6 @@ import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,14 +21,20 @@ import java.util.Optional;
 @Service
 public class PreviewServiceImpl implements PreviewService {
 
-    @Autowired
-    private PreviewRepository previewRepository;
-    @Autowired
-    private PreviewMapper previewMapper;
-    @Autowired
-    private DeliverableRepository deliverableRepository;
-    @Autowired
-    private AccountRepository accountRepository;
+    private final PreviewRepository previewRepository;
+    private final PreviewMapper previewMapper;
+    private final DeliverableRepository deliverableRepository;
+    private final AccountRepository accountRepository;
+
+    public PreviewServiceImpl(PreviewRepository previewRepository,
+                              PreviewMapper previewMapper,
+                              DeliverableRepository deliverableRepository,
+                              AccountRepository accountRepository) {
+        this.previewRepository = previewRepository;
+        this.previewMapper = previewMapper;
+        this.deliverableRepository = deliverableRepository;
+        this.accountRepository = accountRepository;
+    }
 
     @Override
     public List<PreviewResponse> findAll() {

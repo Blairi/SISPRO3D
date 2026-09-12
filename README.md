@@ -54,7 +54,7 @@ O ejecutalo desde la consola de MariaDB:
 source scripts/data.sql;
 ```
 
-> **Importante:** El esquema se recrea en cada arranque (`ddl-auto=create`). Si borrás la base de datos o cambias de entorno, volvé a ejecutar este script.
+> **Importante:** El esquema se sincroniza en cada arranque (`ddl-auto=update` junto con `schema.sql`). Si cambiás de entorno o base de datos, volvé a ejecutar este script.
 
 ## Correr tests
 
@@ -71,6 +71,110 @@ mvn test                                           # todos los tests
 mvn test -Dtest=AccountServiceImplTest             # una clase
 mvn test -Dtest=AccountServiceImplTest#testCreate  # un método
 ```
+
+## API REST
+
+Los endpoints REST viven bajo `/api/v1` y devuelven DTOs planos (sin grafos de entidades). Semántica de errores: `ErrorDetail` con `{status, message, details[]}` — 400 validación/regla de negocio, 404 no encontrado, 409 conflicto de integridad; creaciones responden 201 + `Location` y borrados 204.
+
+### Cuentas — `/api/v1/accounts`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/accounts/{id}` | Consultar cuenta |
+| POST | `/api/v1/accounts` | Crear cuenta |
+| PUT | `/api/v1/accounts/{id}` | Actualizar cuenta |
+| DELETE | `/api/v1/accounts/{id}` | Eliminar cuenta |
+
+### Categorías — `/api/v1/categories`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/categories` | Listar categorías |
+| GET | `/api/v1/categories/{id}` | Consultar categoría |
+| POST | `/api/v1/categories` | Crear categoría |
+| PUT | `/api/v1/categories/{id}` | Actualizar categoría |
+| DELETE | `/api/v1/categories/{id}` | Eliminar categoría (409 si tiene servicios) |
+
+### Servicios — `/api/v1/services`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/services?categoryId=&expertId=` | Listar servicios (filtros opcionales) |
+| GET | `/api/v1/services/{id}` | Consultar servicio |
+| POST | `/api/v1/services` | Crear servicio (EXPERT, estado PENDING) |
+| PUT | `/api/v1/services/{id}` | Actualizar servicio |
+| DELETE | `/api/v1/services/{id}` | Eliminar servicio (409 si tiene reseñas/cotizaciones) |
+
+### Reseñas — bajo `/api/v1`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/services/{serviceId}/reviews` | Listar reseñas de un servicio |
+| POST | `/api/v1/services/{serviceId}/reviews` | Crear reseña (409 si el cliente ya reseñó) |
+| PUT | `/api/v1/reviews/{id}` | Actualizar reseña |
+| DELETE | `/api/v1/reviews/{id}` | Eliminar reseña |
+
+### Órdenes de trabajo — `/api/v1/work-orders`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/work-orders/{id}` | Consultar orden |
+| PUT | `/api/v1/work-orders/{id}/status` | Cambiar estado (validado por transiciones) |
+
+### Entregables — bajo `/api/v1`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/work-orders/{orderId}/deliverables` | Listar entregables de una orden |
+| POST | `/api/v1/work-orders/{orderId}/deliverables` | Subir entregable |
+| PUT | `/api/v1/deliverables/{id}` | Actualizar entregable |
+| DELETE | `/api/v1/deliverables/{id}` | Eliminar entregable (borra sus vistas previas) |
+
+### Cotizaciones — `/api/v1/quotes`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/quotes` | Solicitar cotización (CLIENT + servicio APPROVED) |
+| GET | `/api/v1/quotes/{id}` | Consultar cotización |
+| PUT | `/api/v1/quotes/{id}/reply` | Responder con monto y vigencia (EXPERT propietario) |
+| PUT | `/api/v1/quotes/{id}/accept` | Aceptar (CLIENT solicitante) |
+| PUT | `/api/v1/quotes/{id}/reject` | Rechazar (CLIENT solicitante) |
+| DELETE | `/api/v1/quotes/{id}` | Eliminar cotización |
+
+### Hilos de chat — bajo `/api/v1`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/work-orders/{orderId}/thread` | Abrir hilo de la orden (409 si ya existe) |
+| GET | `/api/v1/work-orders/{orderId}/thread` | Consultar hilo por orden |
+| GET | `/api/v1/threads/{id}` | Consultar hilo |
+| DELETE | `/api/v1/threads/{id}` | Eliminar hilo |
+
+### Mensajes — bajo `/api/v1`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/threads/{threadId}/messages` | Publicar mensaje (solo participantes) |
+| GET | `/api/v1/threads/{threadId}/messages` | Listar mensajes del hilo (ascendente) |
+| GET | `/api/v1/messages/{id}` | Consultar mensaje |
+| DELETE | `/api/v1/messages/{id}` | Eliminar mensaje |
+
+### Vistas previas — bajo `/api/v1`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/deliverables/{deliverableId}/previews` | Adjuntar vista previa (EXPERT propietario, orden IN_PROGRESS/IN_REVIEW) |
+| GET | `/api/v1/deliverables/{deliverableId}/previews` | Listar vistas previas de un entregable |
+| GET | `/api/v1/previews/{id}` | Consultar vista previa |
+| DELETE | `/api/v1/previews/{id}` | Eliminar vista previa |
+
+### Favoritos (N:M cliente–servicio) — `/api/v1/clients/{clientId}/favorite-services`
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/clients/{clientId}/favorite-services/{serviceId}` | Marcar servicio como favorito (409 si ya lo es) |
+| GET | `/api/v1/clients/{clientId}/favorite-services` | Listar favoritos del cliente |
+| DELETE | `/api/v1/clients/{clientId}/favorite-services/{serviceId}` | Quitar favorito (404 si no existe la asociación) |
 
 ## Estructura del proyecto
 

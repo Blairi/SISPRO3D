@@ -12,7 +12,6 @@ import com.sispro3d.unam.quote.repository.QuoteRepository;
 import com.sispro3d.unam.quote.service.QuoteService;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -22,14 +21,20 @@ import java.util.Optional;
 @Service
 public class QuoteServiceImpl implements QuoteService {
 
-    @Autowired
-    private QuoteRepository quoteRepository;
-    @Autowired
-    private QuoteMapper quoteMapper;
-    @Autowired
-    private AccountRepository accountRepository;
-    @Autowired
-    private OfferedServiceRepository offeredServiceRepository;
+    private final QuoteRepository quoteRepository;
+    private final QuoteMapper quoteMapper;
+    private final AccountRepository accountRepository;
+    private final OfferedServiceRepository offeredServiceRepository;
+
+    public QuoteServiceImpl(QuoteRepository quoteRepository,
+                            QuoteMapper quoteMapper,
+                            AccountRepository accountRepository,
+                            OfferedServiceRepository offeredServiceRepository) {
+        this.quoteRepository = quoteRepository;
+        this.quoteMapper = quoteMapper;
+        this.accountRepository = accountRepository;
+        this.offeredServiceRepository = offeredServiceRepository;
+    }
 
     @Override
     public List<QuoteResponse> findAll() {

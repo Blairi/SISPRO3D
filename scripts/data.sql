@@ -110,6 +110,14 @@ INSERT INTO deliverable (name, url_file, file_type, id_order) VALUES
 ('Mapa Roughness-Metallic 4K',           'https://files.render3d.mx/orden2/roughness_metallic.png',  'image/png',       2),
 ('Proyecto Substance Painter',           'https://files.render3d.mx/orden2/nave.spp',                'application/spp', 2);
 
+-- Orden 3: Rigging en progreso (permite probar el endpoint de vistas previas)
+INSERT INTO deliverable (name, url_file, file_type, id_order) VALUES
+('Rig con controles de mano',            'https://files.render3d.mx/orden3/rig-final.fbx',           'model/fbx',       3);
+
+-- Orden 4: Animaciones en revisión (permite probar el endpoint de vistas previas)
+INSERT INTO deliverable (name, url_file, file_type, id_order) VALUES
+('Paquete de animaciones',               'https://files.render3d.mx/orden4/animaciones.fbx',         'model/fbx',       4);
+
 -- ------------------------------------------------------------
 --  PREVIEW
 -- ------------------------------------------------------------
@@ -136,23 +144,27 @@ INSERT INTO message (id_thread, user_id, content) VALUES
 (1, 5, 'Hola Emilio, acabo de revisar el modelo y quedó espectacular. El nivel de detalle en la cara superó lo que esperaba.'),
 (1, 2, 'Gracias Mariana! Me alegra mucho. Intenté mantener las proporciones que me indicaste en el brief. ¿Algún ajuste antes de cerrar?'),
 (1, 5, 'Ninguno, todo perfecto. Puedes marcar la orden como completada.'),
-
 -- Hilo orden 2: Texturizado (completada)
 (2, 6, 'Daniela, los mapas se ven increíbles en el motor. La nave tiene exactamente el look sucio y desgastado que necesitábamos.'),
 (2, 3, 'Me alegra que funcione bien en Unreal. Usé capas de desgaste procedural en Substance para que se vea más orgánico. Cualquier variación de color me avisas.'),
 (2, 6, 'Perfecto, así lo dejaré. Muchas gracias!'),
-
 -- Hilo orden 3: Rigging en progreso
 (3, 6, 'Óscar, ¿cómo va el rigging? ¿Ya probaste los controles de la mano?'),
 (3, 4, 'Hola Rodrigo, sí, los dedos ya tienen controles individuales y un atributo de puño para animarlos rápido. Esta semana termino los controles faciales básicos.'),
 (3, 6, 'Excelente, me alegra. ¿Crees que tenga problema al importarlo a Unreal 5?'),
 (3, 4, 'No debería, estoy nombrando los huesos con la convención de UE5 desde el inicio para evitar problemas.'),
-
 -- Hilo orden 4: Animaciones en revisión
 (4, 7, 'Lucía, ya subí el paquete de animaciones para que lo revises. El ciclo de carrera lo ajusté para que se vea más pesado, como pediste.'),
 (4, 7, 'Acabo de verlas, el idle y el caminar se ven muy naturales. El salto me parece un poco rápido en la fase de caída, ¿puedes alargarlo?'),
 (4, 4, 'Claro, le agrego unos frames más a la anticipación de aterrizaje. Lo tengo listo mañana.'),
-
 -- Hilo orden 5: Sculpt pendiente
 (5, 5, 'Buenos días Ricardo, ya fue aprobada mi cotización. ¿Cuándo comenzamos con el sculpt de la criatura?'),
 (5, 2, 'Hola Mariana, esta semana reviso el brief a detalle y el lunes te mando las primeras exploraciones de silueta para que apruebes la dirección antes de esculpir.');
+
+-- ------------------------------------------------------------
+--  FAVORITE_SERVICE
+-- ------------------------------------------------------------
+
+INSERT INTO favorite_service (id_client, id_offered_service) VALUES
+(5, 1),
+(5, 3);

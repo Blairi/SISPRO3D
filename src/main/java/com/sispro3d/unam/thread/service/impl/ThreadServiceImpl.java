@@ -10,7 +10,6 @@ import com.sispro3d.unam.thread.service.ThreadService;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,14 +18,20 @@ import java.util.Optional;
 @Service
 public class ThreadServiceImpl implements ThreadService {
 
-    @Autowired
-    private ThreadRepository threadRepository;
-    @Autowired
-    private ThreadMapper threadMapper;
-    @Autowired
-    private WorkOrderRepository workOrderRepository;
-    @Autowired
-    private AccountRepository accountRepository;
+    private final ThreadRepository threadRepository;
+    private final ThreadMapper threadMapper;
+    private final WorkOrderRepository workOrderRepository;
+    private final AccountRepository accountRepository;
+
+    public ThreadServiceImpl(ThreadRepository threadRepository,
+                             ThreadMapper threadMapper,
+                             WorkOrderRepository workOrderRepository,
+                             AccountRepository accountRepository) {
+        this.threadRepository = threadRepository;
+        this.threadMapper = threadMapper;
+        this.workOrderRepository = workOrderRepository;
+        this.accountRepository = accountRepository;
+    }
 
     @Override
     public List<ThreadResponse> findAll() {

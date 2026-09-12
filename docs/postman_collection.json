@@ -137,6 +137,136 @@
         "header": [],
         "url": { "raw": "{{baseUrl}}/api/v1/accounts/2", "host": ["{{baseUrl}}"], "path": ["api", "v1", "accounts", "2"] }
       }
+    },
+    {
+      "name": "Escenario 8 - POST cotizacion valida -> 201",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clientId\": 5,\n  \"offeredServiceId\": 1,\n  \"description\": \"Cotizacion para modelo base\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/v1/quotes", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes"] }
+      }
+    },
+    {
+      "name": "Escenario 9 - PUT reply de cotizacion -> 200",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"expertId\": 2,\n  \"totalAmount\": 15000.00,\n  \"validUntil\": \"2026-12-31\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/v1/quotes/1/reply", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1", "reply"] }
+      }
+    },
+    {
+      "name": "Escenario 10 - PUT accept de cotizacion -> 200",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"clientId\": 5\n}" },
+        "url": { "raw": "{{baseUrl}}/api/v1/quotes/1/accept", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1", "accept"] }
+      }
+    },
+    {
+      "name": "Escenario 11 - GET cotizacion",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/quotes/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1"] }
+      }
+    },
+    {
+      "name": "Escenario 12 - POST hilo en orden 1 (ya existe) -> 409 (unicidad)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"actorId\": 5\n}" },
+        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/1/thread", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "1", "thread"] }
+      }
+    },
+    {
+      "name": "Escenario 13 - GET hilo por orden",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/1/thread", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "1", "thread"] }
+      }
+    },
+    {
+      "name": "Escenario 14 - POST mensaje al hilo -> 201",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"authorId\": 5,\n  \"content\": \"Hola, ¿podrias adjuntar una vista previa?\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/v1/threads/1/messages", "host": ["{{baseUrl}}"], "path": ["api", "v1", "threads", "1", "messages"] }
+      }
+    },
+    {
+      "name": "Escenario 15 - GET mensajes del hilo",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/threads/1/messages", "host": ["{{baseUrl}}"], "path": ["api", "v1", "threads", "1", "messages"] }
+      }
+    },
+    {
+      "name": "Escenario 16 - POST vista previa -> 201",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"expertId\": 4,\n  \"caption\": \"Vista previa del rig\",\n  \"urlFile\": \"https://files.render3d.mx/orden3/preview-rig.png\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/v1/deliverables/9/previews", "host": ["{{baseUrl}}"], "path": ["api", "v1", "deliverables", "9", "previews"] }
+      }
+    },
+    {
+      "name": "Escenario 17 - GET vistas previas de un entregable",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/deliverables/9/previews", "host": ["{{baseUrl}}"], "path": ["api", "v1", "deliverables", "9", "previews"] }
+      }
+    },
+    {
+      "name": "Escenario 18 - POST marcado favorito -> 201",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/clients/5/favorite-services/2", "host": ["{{baseUrl}}"], "path": ["api", "v1", "clients", "5", "favorite-services", "2"] }
+      }
+    },
+    {
+      "name": "Escenario 19 - GET favoritos del cliente",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/clients/5/favorite-services", "host": ["{{baseUrl}}"], "path": ["api", "v1", "clients", "5", "favorite-services"] }
+      }
+    },
+    {
+      "name": "Escenario 20 - DELETE favorito -> 204",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/clients/5/favorite-services/2", "host": ["{{baseUrl}}"], "path": ["api", "v1", "clients", "5", "favorite-services", "2"] }
+      }
+    },
+    {
+      "name": "Escenario 21 - GET cotizacion con id=0 -> 400 (validacion de path)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/quotes/0", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "0"] }
+      }
     }
   ]
 }

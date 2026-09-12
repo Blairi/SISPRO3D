@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS review (
 CREATE TABLE IF NOT EXISTS quote (
     id             BIGINT         NOT NULL AUTO_INCREMENT PRIMARY KEY,
     status         ENUM('PENDING','ACCEPTED','REJECTED','EXPIRED') NOT NULL DEFAULT 'PENDING',
-    total_amount   DECIMAL(10,2)  NOT NULL,
+    total_amount   DECIMAL(10,2)  NULL,
     valid_until    DATE,
     description    TEXT,
     created_at     TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
@@ -179,5 +179,23 @@ CREATE TABLE IF NOT EXISTS message (
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_message_account
         FOREIGN KEY (user_id) REFERENCES account(id_user)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- ------------------------------------------------------------
+--  FAVORITE SERVICE (N:M between ACCOUNT and OFFERED_SERVICE)
+-- ------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS favorite_service (
+    id                 BIGINT      NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    id_client          BIGINT      NOT NULL,
+    id_offered_service BIGINT      NOT NULL,
+    created_at         TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_favorite_client_service UNIQUE (id_client, id_offered_service),
+    CONSTRAINT fk_favorite_client
+        FOREIGN KEY (id_client) REFERENCES account(id_user)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_favorite_service
+        FOREIGN KEY (id_offered_service) REFERENCES offered_service(id_offered_service)
         ON UPDATE CASCADE ON DELETE CASCADE
 );
