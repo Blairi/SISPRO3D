@@ -2,11 +2,11 @@ package com.sispro3d.unam.user.controller;
 
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
+import com.sispro3d.unam.security.CurrentUser;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
 import com.sispro3d.unam.user.service.AccountService;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -28,12 +28,12 @@ public class AdminDashboardController {
     @Autowired
     private AccountService accountService;
 
+    @Autowired
+    private CurrentUser currentUser;
+
     @GetMapping("/dashboard")
-    public String dashboard(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String dashboard(Model model) {
+        Long userId = currentUser.id();
 
         List<OfferedServiceResponse> services = offeredServiceService.findAll().stream()
                 .sorted((a, b) -> {
@@ -57,11 +57,9 @@ public class AdminDashboardController {
     }
 
     @GetMapping("/admins/new")
-    public String showCreateAdminForm(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String showCreateAdminForm(Model model) {
+        Long userId = currentUser.id();
+
         if (!model.containsAttribute("user")) {
             model.addAttribute("user", new AccountRequest());
         }
@@ -87,33 +85,24 @@ public class AdminDashboardController {
     }
 
     @PostMapping("/services/{id}/approve")
-    public String approve(@PathVariable Long id, HttpSession session) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String approve(@PathVariable Long id) {
+        Long userId = currentUser.id();
 
         offeredServiceService.approve(id, userId);
         return "redirect:/admin/dashboard";
     }
 
     @PostMapping("/services/{id}/reject")
-    public String reject(@PathVariable Long id, HttpSession session) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String reject(@PathVariable Long id) {
+        Long userId = currentUser.id();
 
         offeredServiceService.reject(id, userId);
         return "redirect:/admin/dashboard";
     }
 
     @PostMapping("/services/{id}/pending")
-    public String markPending(@PathVariable Long id, HttpSession session) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String markPending(@PathVariable Long id) {
+        Long userId = currentUser.id();
 
         offeredServiceService.markPending(id, userId);
         return "redirect:/admin/dashboard";

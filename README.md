@@ -72,6 +72,31 @@ mvn test -Dtest=AccountServiceImplTest             # una clase
 mvn test -Dtest=AccountServiceImplTest#testCreate  # un método
 ```
 
+## Autenticación y login (Spring Security)
+
+El login usa **Spring Security** con usuarios en la base de datos (`account`) y contraseñas con hash BCrypt:
+
+- Página de login: `http://localhost:8080/login` (formulario con `email` y `password`).
+- Tras iniciar sesión te redirige a `/`; el header muestra tu nombre y enlaces según tu rol.
+- Cerrar sesión: botón en el header (POST `/logout`).
+
+Áreas públicas (sin login): `/`, `/login`, `/register`, el **catálogo público** `/services` (listado) y `/services/{id}` (detalle con ficha del experto, estilo marketplace), archivos estáticos (`/css/**`, `/js/**`, `/vendor/**`) y la API REST `/api/v1/**`. El catálogo solo muestra servicios `APPROVED`; los no aprobados responden 404.
+Áreas protegidas por rol: `/admin/**` solo `ADMIN`, `/expert/**` solo `EXPERT`; el resto requiere sesión iniciada.
+
+### Credenciales de demostración
+
+El script `scripts/data.sql` incluye cuentas con contraseñas reales (hash BCrypt):
+
+| Rol    | Correo                       | Contraseña |
+|--------|------------------------------|------------|
+| ADMIN  | `ricardo.solano@render3d.mx` | `Admin123!` |
+| EXPERT | `emilio.vargas@email.com`    | `Expert123!` |
+| CLIENT | `mariana.stein@estudio.com`  | `Client123!` |
+
+> **Importante:** las cuentas sembradas usaban antes hashes placeholder (`$2a$10$dummyhash*`) que ya **no** validan. Si ya tenés una base de datos con esos datos, volvé a ejecutar `scripts/data.sql` sobre una BD nueva (o re-generá los hashes) para poder iniciar sesión.
+
+Los assets de front-end (Tailwind, `css/sispro3d.css`) viven en `src/main/resources/static/` — **no** se usan CDN públicos.
+
 ## API REST
 
 Los endpoints REST viven bajo `/api/v1` y devuelven DTOs planos (sin grafos de entidades). Semántica de errores: `ErrorDetail` con `{status, message, details[]}` — 400 validación/regla de negocio, 404 no encontrado, 409 conflicto de integridad; creaciones responden 201 + `Location` y borrados 204.

@@ -2,10 +2,8 @@ package com.sispro3d.unam.user.controller;
 
 import com.sispro3d.unam.category.repository.CategoryRepository;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceRequest;
-import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
-import com.sispro3d.unam.user.dto.AccountResponse;
-import jakarta.servlet.http.HttpSession;
+import com.sispro3d.unam.security.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -23,12 +21,12 @@ public class ExpertDashboardController {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private CurrentUser currentUser;
+
     @GetMapping("/dashboard")
-    public String dashboard(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String dashboard(Model model) {
+        Long userId = currentUser.id();
 
         var services = offeredServiceService.findByExpertId(userId);
         model.addAttribute("services", services);
@@ -36,11 +34,8 @@ public class ExpertDashboardController {
     }
 
     @GetMapping("/services/new")
-    public String showCreateForm(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String showCreateForm(Model model) {
+        Long userId = currentUser.id();
 
         model.addAttribute("offeredservice", new OfferedServiceRequest());
         model.addAttribute("categories", categoryRepository.findAll());
@@ -51,12 +46,8 @@ public class ExpertDashboardController {
     public String createService(
             @Valid @ModelAttribute("offeredservice") OfferedServiceRequest request,
             BindingResult result,
-            HttpSession session,
             Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+        Long userId = currentUser.id();
 
         if (result.hasErrors()) {
             model.addAttribute("categories", categoryRepository.findAll());
@@ -69,11 +60,8 @@ public class ExpertDashboardController {
     }
 
     @GetMapping("/services/{id}/edit")
-    public String showEditForm(@PathVariable Long id, HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Long userId = currentUser.id();
 
         offeredServiceService.findById(id)
                 .filter(svc -> svc.getExpertId().equals(userId))
@@ -99,12 +87,8 @@ public class ExpertDashboardController {
             @PathVariable Long id,
             @Valid @ModelAttribute("offeredservice") OfferedServiceRequest request,
             BindingResult result,
-            HttpSession session,
             Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+        Long userId = currentUser.id();
 
         if (!offeredServiceService.findById(id)
                 .filter(svc -> svc.getExpertId().equals(userId))
@@ -124,11 +108,8 @@ public class ExpertDashboardController {
     }
 
     @GetMapping("/services/{id}/delete")
-    public String deleteService(@PathVariable Long id, HttpSession session) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String deleteService(@PathVariable Long id) {
+        Long userId = currentUser.id();
 
         offeredServiceService.findById(id)
                 .filter(svc -> svc.getExpertId().equals(userId))
