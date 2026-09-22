@@ -1,0 +1,12 @@
+/*
+ * SISPRO3D - Estilos base de la marca.
+ * Los utilidades de layout vienen de Tailwind (vendido localmente).
+ */
+
+body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+a {
+    text-decoration: none;
+}

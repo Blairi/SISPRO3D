@@ -1,10 +1,10 @@
 package com.sispro3d.unam.user.controller;
 
+import com.sispro3d.unam.security.CurrentUser;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
 import com.sispro3d.unam.user.service.AccountService;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -21,12 +21,12 @@ public class AdminUsersController {
     @Autowired
     private AccountService accountService;
 
+    @Autowired
+    private CurrentUser currentUser;
+
     @GetMapping
-    public String list(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String list(Model model) {
+        Long userId = currentUser.id();
 
         List<AccountResponse> clients = accountService.findByRole(Role.CLIENT);
         List<AccountResponse> experts = accountService.findByRole(Role.EXPERT);
@@ -37,11 +37,8 @@ public class AdminUsersController {
     }
 
     @GetMapping("/{id}/edit")
-    public String showEditForm(@PathVariable Long id, HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Long userId = currentUser.id();
 
         var response = accountService.findById(id).orElseThrow();
         model.addAttribute("user", response);
@@ -49,11 +46,8 @@ public class AdminUsersController {
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable Long id, @Valid @ModelAttribute("user") AccountRequest request, BindingResult result, HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String update(@PathVariable Long id, @Valid @ModelAttribute("user") AccountRequest request, BindingResult result, Model model) {
+        Long userId = currentUser.id();
 
         if (request.getPassword() != null && !request.getPassword().isBlank()
                 && request.getPassword().length() < 6) {
@@ -70,11 +64,8 @@ public class AdminUsersController {
     }
 
     @GetMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, HttpSession session) {
-        Long userId = (Long) session.getAttribute(LoginController.SESSION_USER_ID);
-        if (userId == null) {
-            return "redirect:/login";
-        }
+    public String delete(@PathVariable Long id) {
+        Long userId = currentUser.id();
 
         accountService.delete(id);
         return "redirect:/admin/users";

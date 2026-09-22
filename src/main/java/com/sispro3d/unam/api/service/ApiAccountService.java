@@ -8,6 +8,7 @@ import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
 import com.sispro3d.unam.quote.repository.QuoteRepository;
 import com.sispro3d.unam.user.repository.AccountRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,15 +21,18 @@ public class ApiAccountService {
     private final OfferedServiceRepository offeredServiceRepository;
     private final QuoteRepository quoteRepository;
     private final ApiAccountMapper mapper;
+    private final PasswordEncoder passwordEncoder;
 
     public ApiAccountService(AccountRepository accountRepository,
                              OfferedServiceRepository offeredServiceRepository,
                              QuoteRepository quoteRepository,
-                             ApiAccountMapper mapper) {
+                             ApiAccountMapper mapper,
+                             PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.offeredServiceRepository = offeredServiceRepository;
         this.quoteRepository = quoteRepository;
         this.mapper = mapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public AccountResponseDTO findById(Long id) {
@@ -37,11 +41,27 @@ public class ApiAccountService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account", id));
     }
 
+    private String encodeIfChanged(String rawPassword, String storedPassword) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            return storedPassword;
+        }
+        if (storedPassword == null || !isBcrypt(storedPassword)
+                || !passwordEncoder.matches(rawPassword, storedPassword)) {
+            return passwordEncoder.encode(rawPassword);
+        }
+        return storedPassword;
+    }
+
+    private boolean isBcrypt(String hash) {
+        return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
+    }
+
     public AccountResponseDTO create(AccountRequestDTO request) {
         if (accountRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new DataIntegrityException("Email already in use: " + request.getEmail());
         }
         var account = mapper.toEntity(request);
+        account.setPassword(passwordEncoder.encode(account.getPassword()));
         account.setCreatedAt(LocalDateTime.now());
         return mapper.toResponse(accountRepository.save(account));
     }
@@ -57,6 +77,7 @@ public class ApiAccountService {
                 });
 
         mapper.updateEntityFromRequest(request, existing);
+        existing.setPassword(encodeIfChanged(request.getPassword(), existing.getPassword()));
         return mapper.toResponse(accountRepository.save(existing));
     }
 

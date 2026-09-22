@@ -11,6 +11,7 @@ import com.sispro3d.unam.user.mapper.AccountMapper;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.user.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,9 @@ public class AccountServiceImpl implements AccountService {
     @Autowired
     private OfferedServiceRepository offeredServiceRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Override
     public List<AccountResponse> findAll() {
         return accountRepository.findAll().stream()
@@ -46,6 +50,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public AccountResponse create(AccountRequest request) {
         Account account = accountMapper.toEntity(request);
+        account.setPassword(passwordEncoder.encode(account.getPassword()));
         account.setCreatedAt(LocalDateTime.now());
         Account saved = accountRepository.save(account);
         return accountMapper.toResponse(saved);
@@ -57,8 +62,24 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account", id));
 
         accountMapper.updateEntityFromRequest(request, existing);
+        existing.setPassword(encodeIfChanged(request.getPassword(), existing.getPassword()));
         Account updated = accountRepository.save(existing);
         return accountMapper.toResponse(updated);
+    }
+
+    private String encodeIfChanged(String rawPassword, String storedPassword) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            return storedPassword;
+        }
+        if (storedPassword == null || !isBcrypt(storedPassword)
+                || !passwordEncoder.matches(rawPassword, storedPassword)) {
+            return passwordEncoder.encode(rawPassword);
+        }
+        return storedPassword;
+    }
+
+    private boolean isBcrypt(String hash) {
+        return hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$");
     }
 
     @Override
