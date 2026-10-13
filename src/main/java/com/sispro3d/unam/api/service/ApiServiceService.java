@@ -4,7 +4,9 @@ import com.sispro3d.unam.api.dto.ServiceRequestDTO;
 import com.sispro3d.unam.api.dto.ServiceResponseDTO;
 import com.sispro3d.unam.api.exception.DataIntegrityException;
 import com.sispro3d.unam.api.mapper.ApiServiceMapper;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.security.ApiCurrentUser;
 import com.sispro3d.unam.category.repository.CategoryRepository;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
@@ -71,10 +73,11 @@ public class ApiServiceService {
     }
 
     public ServiceResponseDTO create(ServiceRequestDTO request) {
-        var expert = accountRepository.findById(request.getExpertId())
-                .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", request.getExpertId()));
+        Long expertId = ApiCurrentUser.requireAccountId();
+        var expert = accountRepository.findById(expertId)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", expertId));
         if (expert.getRole() != Role.EXPERT) {
-            throw new IllegalArgumentException("Only EXPERT accounts can publish services");
+            throw new ForbiddenException("Only EXPERT accounts can publish services");
         }
         if (!categoryRepository.existsById(request.getCategoryId())) {
             throw ResourceNotFoundException.forId("Category", request.getCategoryId());
@@ -94,15 +97,16 @@ public class ApiServiceService {
         var existing = offeredServiceRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.forId("OfferedService", id));
 
-        if (!accountRepository.existsById(request.getExpertId())) {
-            throw ResourceNotFoundException.forId("Account (expert)", request.getExpertId());
+        Long expertId = ApiCurrentUser.requireAccountId();
+        if (!accountRepository.existsById(expertId)) {
+            throw ResourceNotFoundException.forId("Account (expert)", expertId);
         }
         if (!categoryRepository.existsById(request.getCategoryId())) {
             throw ResourceNotFoundException.forId("Category", request.getCategoryId());
         }
 
         mapper.updateEntityFromRequest(request, existing);
-        existing.setExpert(accountRepository.getReferenceById(request.getExpertId()));
+        existing.setExpert(accountRepository.getReferenceById(expertId));
         existing.setCategory(categoryRepository.getReferenceById(request.getCategoryId()));
         existing.setUpdatedAt(LocalDateTime.now());
 

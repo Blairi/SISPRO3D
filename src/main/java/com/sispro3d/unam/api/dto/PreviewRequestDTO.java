@@ -16,9 +16,6 @@ import lombok.Setter;
 @Builder
 public class PreviewRequestDTO {
 
-    @NotNull(message = "expertId is required")
-    private Long expertId;
-
     @NotBlank(message = "caption is required")
     @Size(max = 255, message = "caption must be at most 255 characters")
     private String caption;

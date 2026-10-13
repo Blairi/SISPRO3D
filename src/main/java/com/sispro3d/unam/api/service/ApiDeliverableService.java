@@ -3,9 +3,12 @@ package com.sispro3d.unam.api.service;
 import com.sispro3d.unam.api.dto.DeliverableRequestDTO;
 import com.sispro3d.unam.api.dto.DeliverableResponseDTO;
 import com.sispro3d.unam.api.mapper.ApiDeliverableMapper;
+import com.sispro3d.unam.core.exception.BadRequestException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.deliverable.repository.DeliverableRepository;
 import com.sispro3d.unam.preview.repository.PreviewRepository;
+import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,29 +23,48 @@ public class ApiDeliverableService {
     private final WorkOrderRepository workOrderRepository;
     private final PreviewRepository previewRepository;
     private final ApiDeliverableMapper mapper;
+    private final ApiOrderAccess access;
 
     public ApiDeliverableService(DeliverableRepository deliverableRepository,
                                  WorkOrderRepository workOrderRepository,
                                  PreviewRepository previewRepository,
-                                 ApiDeliverableMapper mapper) {
+                                 ApiDeliverableMapper mapper,
+                                 ApiOrderAccess access) {
         this.deliverableRepository = deliverableRepository;
         this.workOrderRepository = workOrderRepository;
         this.previewRepository = previewRepository;
         this.mapper = mapper;
+        this.access = access;
     }
 
     public List<DeliverableResponseDTO> findByWorkOrderId(Long workOrderId) {
-        if (!workOrderRepository.existsById(workOrderId)) {
-            throw ResourceNotFoundException.forId("WorkOrder", workOrderId);
-        }
+        var order = workOrderRepository.findById(workOrderId)
+                .orElseThrow(() -> ResourceNotFoundException.forId("WorkOrder", workOrderId));
+
+        access.requireParticipant(order);
+
         return deliverableRepository.findByWorkOrder_Id(workOrderId).stream()
                 .map(mapper::toResponse)
                 .toList();
     }
 
+    public DeliverableResponseDTO findById(Long id) {
+        var deliverable = findDeliverable(id);
+        access.requireParticipant(deliverable.getWorkOrder());
+        return mapper.toResponse(deliverable);
+    }
+
     public DeliverableResponseDTO create(Long workOrderId, DeliverableRequestDTO request) {
         var order = workOrderRepository.findById(workOrderId)
                 .orElseThrow(() -> ResourceNotFoundException.forId("WorkOrder", workOrderId));
+
+        access.requireExpertOwner(order);
+
+        if (order.getStatus() != WorkOrderStatus.IN_PROGRESS
+                && order.getStatus() != WorkOrderStatus.IN_REVIEW) {
+            throw new BadRequestException(
+                    "Deliverables can only be registered while the order is IN_PROGRESS or IN_REVIEW");
+        }
 
         var deliverable = mapper.toEntity(request);
         deliverable.setWorkOrder(order);
@@ -52,8 +74,9 @@ public class ApiDeliverableService {
     }
 
     public DeliverableResponseDTO update(Long id, DeliverableRequestDTO request) {
-        var existing = deliverableRepository.findById(id)
-                .orElseThrow(() -> ResourceNotFoundException.forId("Deliverable", id));
+        var existing = findDeliverable(id);
+
+        access.requireExpertOwner(existing.getWorkOrder());
 
         mapper.updateEntityFromRequest(request, existing);
         return mapper.toResponse(deliverableRepository.save(existing));
@@ -61,9 +84,16 @@ public class ApiDeliverableService {
 
     @Transactional
     public void delete(Long id) {
-        var existing = deliverableRepository.findById(id)
-                .orElseThrow(() -> ResourceNotFoundException.forId("Deliverable", id));
+        var existing = findDeliverable(id);
+
+        access.requireParticipant(existing.getWorkOrder());
+
         previewRepository.deleteAll(previewRepository.findByDeliverable_Id(id));
         deliverableRepository.delete(existing);
+    }
+
+    private Deliverable findDeliverable(Long id) {
+        return deliverableRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Deliverable", id));
     }
 }

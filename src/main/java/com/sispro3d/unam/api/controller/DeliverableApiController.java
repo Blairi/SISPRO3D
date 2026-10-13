@@ -45,6 +45,11 @@ public class DeliverableApiController {
         return ResponseEntity.created(location).body(created);
     }
 
+    @GetMapping("/deliverables/{id}")
+    public ResponseEntity<DeliverableResponseDTO> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(deliverableService.findById(id));
+    }
+
     @PutMapping("/deliverables/{id}")
     public ResponseEntity<DeliverableResponseDTO> update(@PathVariable Long id,
                                                          @Valid @RequestBody DeliverableRequestDTO request) {

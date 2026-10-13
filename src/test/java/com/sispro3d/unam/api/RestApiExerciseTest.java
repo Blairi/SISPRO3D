@@ -80,6 +80,20 @@ class RestApiExerciseTest {
     private ThreadRepository threadRepository;
 
     @Autowired
+    private com.sispro3d.unam.security.JwtTokenService jwtTokenService;
+
+    /** Token de acceso de la cuenta indicada, con su rol real. */
+    private String bearer(Long accountId) {
+        Role role = accountRepository.findById(accountId).orElseThrow().getRole();
+        return "Bearer " + jwtTokenService.issueAccessToken(accountId, role);
+    }
+
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder authed(
+            org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder builder, Long accountId) {
+        return builder.header("Authorization", bearer(accountId));
+    }
+
+    @Autowired
     private MessageRepository messageRepository;
 
     @Autowired
@@ -134,11 +148,10 @@ class RestApiExerciseTest {
                   "title": "Modelado de personaje",
                   "description": "Personaje estilizado",
                   "basePrice": 1500.00,
-                  "expertId": %d,
                   "categoryId": %d,
                   "deliveryTimeDays": 7
                 }
-                """.formatted(expertId, categoryId);
+                """.formatted(categoryId);
     }
 
     private Long createDeliverableWithPreview() {
@@ -201,6 +214,23 @@ class RestApiExerciseTest {
         return quoteRepository.save(quote).getId();
     }
 
+    private void createCompletedOrder(OfferedService service) {
+        Quote quote = new Quote();
+        quote.setStatus(QuoteStatus.ACCEPTED);
+        quote.setTotalAmount(new BigDecimal("1500.00"));
+        quote.setClient(accountRepository.getReferenceById(clientId));
+        quote.setOfferedService(service);
+        quote.setCreatedAt(LocalDateTime.now());
+        Quote savedQuote = quoteRepository.save(quote);
+
+        WorkOrder order = new WorkOrder();
+        order.setStatus(WorkOrderStatus.COMPLETED);
+        order.setQuote(savedQuote);
+        order.setCreatedAt(LocalDateTime.now());
+        order.setCompletedAt(LocalDateTime.now());
+        workOrderRepository.save(order);
+    }
+
     private Long createWorkOrderId() {
         OfferedService service = createApprovedService();
 
@@ -237,13 +267,12 @@ class RestApiExerciseTest {
         return threadRepository.save(thread).getId();
     }
 
-    private String jsonMessage(Long authorId, String content) {
+    private String jsonMessage(String content) {
         return """
                 {
-                  "authorId": %d,
                   "content": "%s"
                 }
-                """.formatted(authorId, content);
+                """.formatted(content);
     }
 
     private Long createDeliverable(WorkOrderStatus status) {
@@ -261,56 +290,45 @@ class RestApiExerciseTest {
         return deliverableRepository.save(deliverable).getId();
     }
 
-    private String jsonPreview(Long expertId) {
+    private String jsonPreview() {
         return """
                 {
-                  "expertId": %d,
                   "caption": "Vista frontal",
                   "urlFile": "https://files.render3d.mx/preview.png"
                 }
-                """.formatted(expertId);
+                """;
     }
 
-    private String jsonQuoteRequest(Long clientId, Long serviceId) {
+    private String jsonQuoteRequest(Long serviceId) {
         return """
                 {
-                  "clientId": %d,
                   "offeredServiceId": %d,
                   "description": "Personaje para portada"
                 }
-                """.formatted(clientId, serviceId);
+                """.formatted(serviceId);
     }
 
-    private String jsonQuoteReply(Long expertId) {
+    private String jsonQuoteReply() {
         return """
                 {
-                  "expertId": %d,
                   "totalAmount": 1500.00,
                   "validUntil": "2026-10-31"
                 }
-                """.formatted(expertId);
-    }
-
-    private String jsonQuoteDecision(Long clientId) {
-        return """
-                {
-                  "clientId": %d
-                }
-                """.formatted(clientId);
+                """;
     }
 
     @Test
     void deleteDeliverable_withPreview_returns204() throws Exception {
         Long deliverableId = createDeliverableWithPreview();
-        mockMvc.perform(delete("/api/v1/deliverables/{id}", deliverableId))
+        mockMvc.perform(authed(delete("/api/v1/deliverables/{id}", deliverableId), expertId))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void createService_returns201_withLocation() throws Exception {
-        mockMvc.perform(post("/api/v1/services")
+        mockMvc.perform(authed(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonService()))
+                        .content(jsonService()), expertId))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andExpect(jsonPath("$.title").value("Modelado de personaje"))
@@ -319,7 +337,7 @@ class RestApiExerciseTest {
 
     @Test
     void getService_notFound_returns404() throws Exception {
-        mockMvc.perform(get("/api/v1/services/99999"))
+        mockMvc.perform(authed(get("/api/v1/services/99999"), clientId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.message").isNotEmpty());
@@ -331,14 +349,13 @@ class RestApiExerciseTest {
                 {
                   "title": "Sin categoria",
                   "basePrice": 100.0,
-                  "expertId": %d,
                   "categoryId": 99999,
                   "deliveryTimeDays": 3
                 }
                 """.formatted(expertId);
-        mockMvc.perform(post("/api/v1/services")
+        mockMvc.perform(authed(post("/api/v1/services")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), expertId))
                 .andExpect(status().isNotFound());
     }
 
@@ -348,42 +365,42 @@ class RestApiExerciseTest {
         String body = """
                 {
                   "rating": 8,
-                  "comment": "fuera de rango",
-                  "clientId": %d
+                  "comment": "fuera de rango"
                 }
                 """.formatted(clientId);
-        mockMvc.perform(post("/api/v1/services/{serviceId}/reviews", serviceId)
+        mockMvc.perform(authed(post("/api/v1/services/{serviceId}/reviews", serviceId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.details[0]").isNotEmpty());
     }
 
     @Test
     void createReview_duplicateClientService_returns409() throws Exception {
-        Long serviceId = createService().getId();
+        OfferedService service = createApprovedService();
+        createCompletedOrder(service);
+        Long serviceId = service.getId();
         String body = """
                 {
                   "rating": 5,
-                  "comment": "muy bueno",
-                  "clientId": %d
+                  "comment": "muy bueno"
                 }
                 """.formatted(clientId);
-        mockMvc.perform(post("/api/v1/services/{serviceId}/reviews", serviceId)
+        mockMvc.perform(authed(post("/api/v1/services/{serviceId}/reviews", serviceId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/v1/services/{serviceId}/reviews", serviceId)
+        mockMvc.perform(authed(post("/api/v1/services/{serviceId}/reviews", serviceId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isConflict());
     }
 
     @Test
     void listServiceReviews_returns200() throws Exception {
         Long serviceId = createService().getId();
-        mockMvc.perform(get("/api/v1/services/{serviceId}/reviews", serviceId))
+        mockMvc.perform(authed(get("/api/v1/services/{serviceId}/reviews", serviceId), clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
     }
@@ -391,22 +408,22 @@ class RestApiExerciseTest {
     @Test
     void deleteCategory_withServices_returns409() throws Exception {
         createService();
-        mockMvc.perform(delete("/api/v1/categories/{id}", categoryId))
+        mockMvc.perform(authed(delete("/api/v1/categories/{id}", categoryId), clientId))
                 .andExpect(status().isConflict());
     }
 
     @Test
     void getAccount_notFound_returns404() throws Exception {
-        mockMvc.perform(get("/api/v1/accounts/99999"))
+        mockMvc.perform(authed(get("/api/v1/accounts/99999"), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void updateService_returns200() throws Exception {
         Long serviceId = createService().getId();
-        mockMvc.perform(put("/api/v1/services/{id}", serviceId)
+        mockMvc.perform(authed(put("/api/v1/services/{id}", serviceId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonService()))
+                        .content(jsonService()), expertId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(serviceId))
                 .andExpect(jsonPath("$.title").value("Modelado de personaje"));
@@ -414,16 +431,16 @@ class RestApiExerciseTest {
 
     @Test
     void deleteDeliverable_notFound_returns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/deliverables/99999"))
+        mockMvc.perform(authed(delete("/api/v1/deliverables/99999"), expertId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void createQuote_returns201_pending_withLocation() throws Exception {
         Long serviceId = createApprovedService().getId();
-        mockMvc.perform(post("/api/v1/quotes")
+        mockMvc.perform(authed(post("/api/v1/quotes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteRequest(clientId, serviceId)))
+                        .content(jsonQuoteRequest(serviceId)), clientId))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andExpect(jsonPath("$.status").value("PENDING"))
@@ -435,46 +452,46 @@ class RestApiExerciseTest {
     @Test
     void createQuote_nonClient_returns400() throws Exception {
         Long serviceId = createApprovedService().getId();
-        mockMvc.perform(post("/api/v1/quotes")
+        mockMvc.perform(authed(post("/api/v1/quotes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteRequest(expertId, serviceId)))
-                .andExpect(status().isBadRequest())
+                        .content(jsonQuoteRequest(serviceId)), expertId))
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("Only CLIENT accounts can request quotes"));
     }
 
     @Test
     void createQuote_nonApprovedService_returns400() throws Exception {
         Long serviceId = createService().getId();
-        mockMvc.perform(post("/api/v1/quotes")
+        mockMvc.perform(authed(post("/api/v1/quotes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteRequest(clientId, serviceId)))
+                        .content(jsonQuoteRequest(serviceId)), clientId))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Only APPROVED services can be quoted"));
     }
 
     @Test
-    void createQuote_unknownClient_returns404() throws Exception {
+    void createQuote_withoutToken_returns401() throws Exception {
         Long serviceId = createApprovedService().getId();
+
         mockMvc.perform(post("/api/v1/quotes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteRequest(99999L, serviceId)))
-                .andExpect(status().isNotFound());
+                        .content(jsonQuoteRequest(serviceId)))
+                .andExpect(status().isUnauthorized());
     }
-
     @Test
     void createQuote_unknownService_returns404() throws Exception {
-        mockMvc.perform(post("/api/v1/quotes")
+        mockMvc.perform(authed(post("/api/v1/quotes")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteRequest(clientId, 99999L)))
+                        .content(jsonQuoteRequest(99999L)), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void replyQuote_owningExpert_returns200() throws Exception {
         Long quoteId = createQuote(createApprovedService());
-        mockMvc.perform(put("/api/v1/quotes/{id}/reply", quoteId)
+        mockMvc.perform(authed(put("/api/v1/quotes/{id}/reply", quoteId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteReply(expertId)))
+                        .content(jsonQuoteReply()), expertId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalAmount").value(1500.00))
                 .andExpect(jsonPath("$.validUntil").value("2026-10-31"))
@@ -485,37 +502,35 @@ class RestApiExerciseTest {
     void replyQuote_nonOwningExpert_returns400() throws Exception {
         Long quoteId = createQuote(createApprovedService());
         Long otherExpertId = createSecondExpert();
-        mockMvc.perform(put("/api/v1/quotes/{id}/reply", quoteId)
+        mockMvc.perform(authed(put("/api/v1/quotes/{id}/reply", quoteId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteReply(otherExpertId)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Only the expert owning the service can reply to the quote"));
+                        .content(jsonQuoteReply()), otherExpertId))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Solo el experto propietario del servicio puede responder la cotización"));
     }
 
     @Test
     void replyQuote_resolvedQuote_returns400() throws Exception {
         Long quoteId = createQuote(createApprovedService());
-        mockMvc.perform(put("/api/v1/quotes/{id}/accept", quoteId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteDecision(clientId)))
+        mockMvc.perform(authed(put("/api/v1/quotes/{id}/accept", quoteId), clientId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+                .andExpect(jsonPath("$.quote.status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.workOrder.status").value("PENDING"));
 
-        mockMvc.perform(put("/api/v1/quotes/{id}/reply", quoteId)
+        mockMvc.perform(authed(put("/api/v1/quotes/{id}/reply", quoteId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteReply(expertId)))
+                        .content(jsonQuoteReply()), expertId))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Only PENDING quotes can be replied"));
+                .andExpect(jsonPath("$.message").value("Solo se pueden responder cotizaciones en estado PENDING"));
     }
 
     @Test
     void acceptQuote_requestingClient_returnsAccepted() throws Exception {
         Long quoteId = createQuote(createApprovedService());
-        mockMvc.perform(put("/api/v1/quotes/{id}/accept", quoteId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteDecision(clientId)))
+        mockMvc.perform(authed(put("/api/v1/quotes/{id}/accept", quoteId), clientId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+                .andExpect(jsonPath("$.quote.status").value("ACCEPTED"))
+                .andExpect(jsonPath("$.workOrder.status").value("PENDING"));
     }
 
     @Test
@@ -530,19 +545,15 @@ class RestApiExerciseTest {
         otherClient.setCreatedAt(LocalDateTime.now());
         Long otherClientId = accountRepository.save(otherClient).getIdUser();
 
-        mockMvc.perform(put("/api/v1/quotes/{id}/accept", quoteId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteDecision(otherClientId)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Only the requesting client can manage this quote"));
+        mockMvc.perform(authed(put("/api/v1/quotes/{id}/accept", quoteId), otherClientId))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Solo el cliente propietario puede gestionar la cotización"));
     }
 
     @Test
     void rejectQuote_requestingClient_returnsRejected() throws Exception {
         Long quoteId = createQuote(createApprovedService());
-        mockMvc.perform(put("/api/v1/quotes/{id}/reject", quoteId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonQuoteDecision(clientId)))
+        mockMvc.perform(authed(put("/api/v1/quotes/{id}/reject", quoteId), clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"));
     }
@@ -550,13 +561,13 @@ class RestApiExerciseTest {
     @Test
     void deleteQuote_returns204() throws Exception {
         Long quoteId = createQuote(createApprovedService());
-        mockMvc.perform(delete("/api/v1/quotes/{id}", quoteId))
+        mockMvc.perform(authed(delete("/api/v1/quotes/{id}", quoteId), clientId))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void deleteQuote_notFound_returns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/quotes/99999"))
+        mockMvc.perform(authed(delete("/api/v1/quotes/99999"), clientId))
                 .andExpect(status().isNotFound());
     }
 
@@ -565,7 +576,7 @@ class RestApiExerciseTest {
         Long orderId = createWorkOrderId();
         Long quoteId = workOrderRepository.findById(orderId).orElseThrow().getQuote().getId();
 
-        mockMvc.perform(delete("/api/v1/quotes/{id}", quoteId))
+        mockMvc.perform(authed(delete("/api/v1/quotes/{id}", quoteId), clientId))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message")
                         .value("Quote with id " + quoteId + " is referenced by a work order and cannot be deleted"));
@@ -575,13 +586,11 @@ class RestApiExerciseTest {
     void createThread_returns201_withLocation() throws Exception {
         Long orderId = createWorkOrderId();
         String body = """
-                {
-                  "actorId": %d
-                }
+                {}
                 """.formatted(clientId);
-        mockMvc.perform(post("/api/v1/work-orders/{orderId}/thread", orderId)
+        mockMvc.perform(authed(post("/api/v1/work-orders/{orderId}/thread", orderId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andExpect(jsonPath("$.workOrderId").value(orderId));
@@ -591,18 +600,16 @@ class RestApiExerciseTest {
     void createThread_duplicate_returns409() throws Exception {
         Long orderId = createWorkOrderId();
         String body = """
-                {
-                  "actorId": %d
-                }
+                {}
                 """.formatted(clientId);
-        mockMvc.perform(post("/api/v1/work-orders/{orderId}/thread", orderId)
+        mockMvc.perform(authed(post("/api/v1/work-orders/{orderId}/thread", orderId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/v1/work-orders/{orderId}/thread", orderId)
+        mockMvc.perform(authed(post("/api/v1/work-orders/{orderId}/thread", orderId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isConflict());
     }
 
@@ -611,27 +618,23 @@ class RestApiExerciseTest {
         Long orderId = createWorkOrderId();
         Long outsiderId = createNonParticipant();
         String body = """
-                {
-                  "actorId": %d
-                }
+                {}
                 """.formatted(outsiderId);
-        mockMvc.perform(post("/api/v1/work-orders/{orderId}/thread", orderId)
+        mockMvc.perform(authed(post("/api/v1/work-orders/{orderId}/thread", orderId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Only the order's client or expert can access the thread"));
+                        .content(body), outsiderId))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Only the order's client or expert can access this resource"));
     }
 
     @Test
     void createThread_unknownOrder_returns404() throws Exception {
         String body = """
-                {
-                  "actorId": %d
-                }
+                {}
                 """.formatted(clientId);
-        mockMvc.perform(post("/api/v1/work-orders/99999/thread")
+        mockMvc.perform(authed(post("/api/v1/work-orders/99999/thread")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isNotFound());
     }
 
@@ -639,16 +642,14 @@ class RestApiExerciseTest {
     void getThreadByOrder_returns200() throws Exception {
         Long orderId = createWorkOrderId();
         String body = """
-                {
-                  "actorId": %d
-                }
+                {}
                 """.formatted(clientId);
-        mockMvc.perform(post("/api/v1/work-orders/{orderId}/thread", orderId)
+        mockMvc.perform(authed(post("/api/v1/work-orders/{orderId}/thread", orderId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/v1/work-orders/{orderId}/thread", orderId))
+        mockMvc.perform(authed(get("/api/v1/work-orders/{orderId}/thread", orderId), clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workOrderId").value(orderId));
     }
@@ -657,18 +658,16 @@ class RestApiExerciseTest {
     void getThreadById_returns200() throws Exception {
         Long orderId = createWorkOrderId();
         String body = """
-                {
-                  "actorId": %d
-                }
+                {}
                 """.formatted(clientId);
-        String location = mockMvc.perform(post("/api/v1/work-orders/{orderId}/thread", orderId)
+        String location = mockMvc.perform(authed(post("/api/v1/work-orders/{orderId}/thread", orderId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andReturn().getResponse().getHeader("Location");
 
-        mockMvc.perform(get(java.net.URI.create(location).getPath()))
+        mockMvc.perform(authed(get(java.net.URI.create(location).getPath()), clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workOrderId").value(orderId));
     }
@@ -677,48 +676,46 @@ class RestApiExerciseTest {
     void deleteThread_returns204() throws Exception {
         Long orderId = createWorkOrderId();
         String body = """
-                {
-                  "actorId": %d
-                }
+                {}
                 """.formatted(clientId);
-        mockMvc.perform(post("/api/v1/work-orders/{orderId}/thread", orderId)
+        mockMvc.perform(authed(post("/api/v1/work-orders/{orderId}/thread", orderId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isCreated());
 
-        String threadJson = mockMvc.perform(get("/api/v1/work-orders/{orderId}/thread", orderId))
+        String threadJson = mockMvc.perform(authed(get("/api/v1/work-orders/{orderId}/thread", orderId), clientId))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         long threadId = new com.fasterxml.jackson.databind.ObjectMapper()
                 .readTree(threadJson).get("id").asLong();
 
-        mockMvc.perform(delete("/api/v1/threads/{id}", threadId))
+        mockMvc.perform(authed(delete("/api/v1/threads/{id}", threadId), clientId))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void deleteThread_notFound_returns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/threads/99999"))
+        mockMvc.perform(authed(delete("/api/v1/threads/99999"), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void deleteThread_withMessages_returns204_andDeletesMessages() throws Exception {
         Long threadId = createThreadId();
-        mockMvc.perform(post("/api/v1/threads/{threadId}/messages", threadId)
+        mockMvc.perform(authed(post("/api/v1/threads/{threadId}/messages", threadId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMessage(clientId, "Mensaje uno")))
+                        .content(jsonMessage("Mensaje uno")), clientId))
                 .andExpect(status().isCreated());
-        mockMvc.perform(post("/api/v1/threads/{threadId}/messages", threadId)
+        mockMvc.perform(authed(post("/api/v1/threads/{threadId}/messages", threadId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMessage(expertId, "Mensaje dos")))
+                        .content(jsonMessage("Mensaje dos")), expertId))
                 .andExpect(status().isCreated());
         assertEquals(2, messageRepository.findByThread_IdOrderByTimestampAsc(threadId).size());
 
-        mockMvc.perform(delete("/api/v1/threads/{id}", threadId))
+        mockMvc.perform(authed(delete("/api/v1/threads/{id}", threadId), clientId))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/threads/{id}", threadId))
+        mockMvc.perform(authed(get("/api/v1/threads/{id}", threadId), clientId))
                 .andExpect(status().isNotFound());
         assertEquals(0, messageRepository.findByThread_IdOrderByTimestampAsc(threadId).size());
     }
@@ -726,9 +723,9 @@ class RestApiExerciseTest {
     @Test
     void postMessage_returns201_withAuthorAndTimestamp() throws Exception {
         Long threadId = createThreadId();
-        mockMvc.perform(post("/api/v1/threads/{threadId}/messages", threadId)
+        mockMvc.perform(authed(post("/api/v1/threads/{threadId}/messages", threadId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMessage(clientId, "Mensaje de la prueba")))
+                        .content(jsonMessage("Mensaje de la prueba")), clientId))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andExpect(jsonPath("$.userId").value(clientId))
@@ -742,26 +739,26 @@ class RestApiExerciseTest {
     void postMessage_nonParticipant_returns400() throws Exception {
         Long threadId = createThreadId();
         Long outsiderId = createNonParticipant();
-        mockMvc.perform(post("/api/v1/threads/{threadId}/messages", threadId)
+        mockMvc.perform(authed(post("/api/v1/threads/{threadId}/messages", threadId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMessage(outsiderId, "Intento de intruso")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Only the order's client or expert can post messages"));
+                        .content(jsonMessage("Intento de intruso")), outsiderId))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Only the order's client or expert can access this resource"));
     }
 
     @Test
     void listMessages_returnsAscendingOrder() throws Exception {
         Long threadId = createThreadId();
-        mockMvc.perform(post("/api/v1/threads/{threadId}/messages", threadId)
+        mockMvc.perform(authed(post("/api/v1/threads/{threadId}/messages", threadId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMessage(expertId, "Primer mensaje")))
+                        .content(jsonMessage("Primer mensaje")), expertId))
                 .andExpect(status().isCreated());
-        mockMvc.perform(post("/api/v1/threads/{threadId}/messages", threadId)
+        mockMvc.perform(authed(post("/api/v1/threads/{threadId}/messages", threadId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMessage(clientId, "Segundo mensaje")))
+                        .content(jsonMessage("Segundo mensaje")), clientId))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/v1/threads/{threadId}/messages", threadId))
+        mockMvc.perform(authed(get("/api/v1/threads/{threadId}/messages", threadId), clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].content").value("Primer mensaje"))
@@ -770,25 +767,25 @@ class RestApiExerciseTest {
 
     @Test
     void postMessage_unknownThread_returns404() throws Exception {
-        mockMvc.perform(post("/api/v1/threads/99999/messages")
+        mockMvc.perform(authed(post("/api/v1/threads/99999/messages")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMessage(clientId, "A un hilo inexistente")))
+                        .content(jsonMessage("A un hilo inexistente")), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void getMessageById_returns200() throws Exception {
         Long threadId = createThreadId();
-        String body = jsonMessage(clientId, "Mensaje individual");
-        String messageJson = mockMvc.perform(post("/api/v1/threads/{threadId}/messages", threadId)
+        String body = jsonMessage("Mensaje individual");
+        String messageJson = mockMvc.perform(authed(post("/api/v1/threads/{threadId}/messages", threadId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body), clientId))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         long messageId = new com.fasterxml.jackson.databind.ObjectMapper()
                 .readTree(messageJson).get("id").asLong();
 
-        mockMvc.perform(get("/api/v1/messages/{id}", messageId))
+        mockMvc.perform(authed(get("/api/v1/messages/{id}", messageId), clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").value("Mensaje individual"));
     }
@@ -796,33 +793,33 @@ class RestApiExerciseTest {
     @Test
     void deleteMessage_returns204() throws Exception {
         Long threadId = createThreadId();
-        String messageJson = mockMvc.perform(post("/api/v1/threads/{threadId}/messages", threadId)
+        String messageJson = mockMvc.perform(authed(post("/api/v1/threads/{threadId}/messages", threadId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMessage(clientId, "Por borrar")))
+                        .content(jsonMessage("Por borrar")), clientId))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         long messageId = new com.fasterxml.jackson.databind.ObjectMapper()
                 .readTree(messageJson).get("id").asLong();
 
-        mockMvc.perform(delete("/api/v1/messages/{id}", messageId))
+        mockMvc.perform(authed(delete("/api/v1/messages/{id}", messageId), clientId))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/messages/{id}", messageId))
+        mockMvc.perform(authed(get("/api/v1/messages/{id}", messageId), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void deleteMessage_notFound_returns404() throws Exception {
-        mockMvc.perform(delete("/api/v1/messages/99999"))
+        mockMvc.perform(authed(delete("/api/v1/messages/99999"), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void addPreview_returns201() throws Exception {
         Long deliverableId = createDeliverable(WorkOrderStatus.IN_PROGRESS);
-        mockMvc.perform(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
+        mockMvc.perform(authed(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPreview(expertId)))
+                        .content(jsonPreview()), expertId))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.deliverableId").value(deliverableId))
                 .andExpect(jsonPath("$.caption").value("Vista frontal"))
@@ -833,9 +830,9 @@ class RestApiExerciseTest {
     @Test
     void addPreview_inactiveOrder_returns400() throws Exception {
         Long deliverableId = createDeliverable(WorkOrderStatus.COMPLETED);
-        mockMvc.perform(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
+        mockMvc.perform(authed(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPreview(expertId)))
+                        .content(jsonPreview()), expertId))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Previews can only be added while the order is IN_PROGRESS or IN_REVIEW"));
     }
@@ -844,26 +841,26 @@ class RestApiExerciseTest {
     void addPreview_nonOwnerExpert_returns400() throws Exception {
         Long deliverableId = createDeliverable(WorkOrderStatus.IN_PROGRESS);
         Long otherExpertId = createSecondExpert();
-        mockMvc.perform(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
+        mockMvc.perform(authed(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPreview(otherExpertId)))
-                .andExpect(status().isBadRequest())
+                        .content(jsonPreview()), otherExpertId))
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("Only the expert owning the order can add previews"));
     }
 
     @Test
     void listPreviews_returns200() throws Exception {
         Long deliverableId = createDeliverable(WorkOrderStatus.IN_REVIEW);
-        mockMvc.perform(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
+        mockMvc.perform(authed(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPreview(expertId)))
+                        .content(jsonPreview()), expertId))
                 .andExpect(status().isCreated());
-        mockMvc.perform(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
+        mockMvc.perform(authed(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPreview(expertId)))
+                        .content(jsonPreview()), expertId))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/v1/deliverables/{deliverableId}/previews", deliverableId))
+        mockMvc.perform(authed(get("/api/v1/deliverables/{deliverableId}/previews", deliverableId), expertId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(2));
@@ -871,24 +868,24 @@ class RestApiExerciseTest {
 
     @Test
     void addPreview_unknownDeliverable_returns404() throws Exception {
-        mockMvc.perform(post("/api/v1/deliverables/99999/previews")
+        mockMvc.perform(authed(post("/api/v1/deliverables/99999/previews")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPreview(expertId)))
+                        .content(jsonPreview()), expertId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void getPreviewById_returns200() throws Exception {
         Long deliverableId = createDeliverable(WorkOrderStatus.IN_PROGRESS);
-        String previewJson = mockMvc.perform(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
+        String previewJson = mockMvc.perform(authed(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPreview(expertId)))
+                        .content(jsonPreview()), expertId))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         long previewId = new com.fasterxml.jackson.databind.ObjectMapper()
                 .readTree(previewJson).get("id").asLong();
 
-        mockMvc.perform(get("/api/v1/previews/{id}", previewId))
+        mockMvc.perform(authed(get("/api/v1/previews/{id}", previewId), expertId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.caption").value("Vista frontal"));
     }
@@ -896,31 +893,31 @@ class RestApiExerciseTest {
     @Test
     void deletePreview_returns204() throws Exception {
         Long deliverableId = createDeliverable(WorkOrderStatus.IN_PROGRESS);
-        String previewJson = mockMvc.perform(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
+        String previewJson = mockMvc.perform(authed(post("/api/v1/deliverables/{deliverableId}/previews", deliverableId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonPreview(expertId)))
+                        .content(jsonPreview()), expertId))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         long previewId = new com.fasterxml.jackson.databind.ObjectMapper()
                 .readTree(previewJson).get("id").asLong();
 
-        mockMvc.perform(delete("/api/v1/previews/{id}", previewId))
+        mockMvc.perform(authed(delete("/api/v1/previews/{id}", previewId), expertId))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/previews/{id}", previewId))
+        mockMvc.perform(authed(get("/api/v1/previews/{id}", previewId), expertId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void associateFavorite_returns201_andVisibleInList() throws Exception {
         Long serviceId = createApprovedService().getId();
-        mockMvc.perform(post("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId))
+        mockMvc.perform(authed(post("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId), clientId))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andExpect(jsonPath("$.id").value(serviceId))
                 .andExpect(jsonPath("$.title").value("Modelado de personaje"));
 
-        mockMvc.perform(get("/api/v1/clients/{clientId}/favorite-services", clientId))
+        mockMvc.perform(authed(get("/api/v1/clients/{clientId}/favorite-services", clientId), clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].id").value(serviceId));
@@ -929,42 +926,42 @@ class RestApiExerciseTest {
     @Test
     void associateFavorite_duplicate_returns409() throws Exception {
         Long serviceId = createApprovedService().getId();
-        mockMvc.perform(post("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId))
+        mockMvc.perform(authed(post("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId), clientId))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId))
+        mockMvc.perform(authed(post("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId), clientId))
                 .andExpect(status().isConflict());
     }
 
     @Test
     void associateFavorite_unknownClient_returns404() throws Exception {
         Long serviceId = createApprovedService().getId();
-        mockMvc.perform(post("/api/v1/clients/99999/favorite-services/{serviceId}", serviceId))
+        mockMvc.perform(authed(post("/api/v1/clients/99999/favorite-services/{serviceId}", serviceId), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void associateFavorite_unknownService_returns404() throws Exception {
-        mockMvc.perform(post("/api/v1/clients/{clientId}/favorite-services/99999", clientId))
+        mockMvc.perform(authed(post("/api/v1/clients/{clientId}/favorite-services/99999", clientId), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void listFavorites_unknownClient_returns404() throws Exception {
-        mockMvc.perform(get("/api/v1/clients/99999/favorite-services"))
+        mockMvc.perform(authed(get("/api/v1/clients/99999/favorite-services"), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void removeFavorite_returns204() throws Exception {
         Long serviceId = createApprovedService().getId();
-        mockMvc.perform(post("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId))
+        mockMvc.perform(authed(post("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId), clientId))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(delete("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId))
+        mockMvc.perform(authed(delete("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId), clientId))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/clients/{clientId}/favorite-services", clientId))
+        mockMvc.perform(authed(get("/api/v1/clients/{clientId}/favorite-services", clientId), clientId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -973,13 +970,13 @@ class RestApiExerciseTest {
     @Test
     void removeFavorite_missingAssociation_returns404() throws Exception {
         Long serviceId = createApprovedService().getId();
-        mockMvc.perform(delete("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId))
+        mockMvc.perform(authed(delete("/api/v1/clients/{clientId}/favorite-services/{serviceId}", clientId, serviceId), clientId))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void nonPositivePathParameter_returns400_withDetails() throws Exception {
-        mockMvc.perform(get("/api/v1/quotes/-5"))
+        mockMvc.perform(authed(get("/api/v1/quotes/-5"), clientId))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("Validation failed"))

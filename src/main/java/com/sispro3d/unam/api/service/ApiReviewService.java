@@ -4,9 +4,14 @@ import com.sispro3d.unam.api.dto.ReviewRequestDTO;
 import com.sispro3d.unam.api.dto.ReviewResponseDTO;
 import com.sispro3d.unam.api.exception.DataIntegrityException;
 import com.sispro3d.unam.api.mapper.ApiReviewMapper;
+import com.sispro3d.unam.core.exception.ConflictException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.security.ApiCurrentUser;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
+import com.sispro3d.unam.review.domain.Review;
+import com.sispro3d.unam.review.dto.ReviewRequest;
 import com.sispro3d.unam.review.repository.ReviewRepository;
+import com.sispro3d.unam.review.service.ReviewService;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import org.springframework.stereotype.Service;
 
@@ -20,15 +25,23 @@ public class ApiReviewService {
     private final AccountRepository accountRepository;
     private final OfferedServiceRepository offeredServiceRepository;
     private final ApiReviewMapper mapper;
+    private final ReviewService reviewService;
 
     public ApiReviewService(ReviewRepository reviewRepository,
                             AccountRepository accountRepository,
                             OfferedServiceRepository offeredServiceRepository,
-                            ApiReviewMapper mapper) {
+                            ApiReviewMapper mapper,
+                            ReviewService reviewService) {
         this.reviewRepository = reviewRepository;
         this.accountRepository = accountRepository;
         this.offeredServiceRepository = offeredServiceRepository;
         this.mapper = mapper;
+        this.reviewService = reviewService;
+    }
+
+    private Review findReview(Long id) {
+        return reviewRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Review", id));
     }
 
     public List<ReviewResponseDTO> findByServiceId(Long serviceId) {
@@ -40,25 +53,21 @@ public class ApiReviewService {
                 .toList();
     }
 
+    /**
+     * Delega en el dominio, que exige rol CLIENT, una orden COMPLETED sobre el
+     * servicio, ausencia de una reseña previa y un rating válido.
+     */
     public ReviewResponseDTO create(Long serviceId, ReviewRequestDTO request) {
-        var service = offeredServiceRepository.findById(serviceId)
-                .orElseThrow(() -> ResourceNotFoundException.forId("OfferedService", serviceId));
+        Long clientId = ApiCurrentUser.requireAccountId();
 
-        var client = accountRepository.findById(request.getClientId())
-                .orElseThrow(() -> ResourceNotFoundException.forId("Account (client)", request.getClientId()));
+        var created = reviewService.create(ReviewRequest.builder()
+                .clientId(clientId)
+                .offeredServiceId(serviceId)
+                .rating(request.getRating())
+                .comment(request.getComment())
+                .build());
 
-        if (reviewRepository.findByClient_IdUserAndOfferedService_Id(request.getClientId(), serviceId).isPresent()) {
-            throw new DataIntegrityException("Client with id " + request.getClientId()
-                    + " has already reviewed service with id " + serviceId);
-        }
-
-        var review = mapper.toEntity(request);
-        review.setClient(client);
-        review.setOfferedService(service);
-        review.setCreatedAt(LocalDateTime.now());
-
-        var saved = reviewRepository.save(review);
-        return mapper.toResponse(saved);
+        return mapper.toResponse(findReview(created.getId()));
     }
 
     public ReviewResponseDTO update(Long id, ReviewRequestDTO request) {
@@ -66,15 +75,16 @@ public class ApiReviewService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Review", id));
 
         var serviceId = existing.getOfferedService().getId();
-        if (reviewRepository.findByClient_IdUserAndOfferedService_Id(request.getClientId(), serviceId)
+        Long clientId = ApiCurrentUser.requireAccountId();
+        if (reviewRepository.findByClient_IdUserAndOfferedService_Id(clientId, serviceId)
                 .filter(r -> !r.getId().equals(id))
                 .isPresent()) {
-            throw new DataIntegrityException("Client with id " + request.getClientId()
+            throw new ConflictException("Client with id " + clientId
                     + " has already reviewed service with id " + serviceId);
         }
 
-        var client = accountRepository.findById(request.getClientId())
-                .orElseThrow(() -> ResourceNotFoundException.forId("Account (client)", request.getClientId()));
+        var client = accountRepository.findById(clientId)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Account (client)", clientId));
 
         mapper.updateEntityFromRequest(request, existing);
         existing.setClient(client);

@@ -24,7 +24,4 @@ public class ReviewRequestDTO {
 
     @Size(max = 500, message = "comment must be at most 500 characters")
     private String comment;
-
-    @NotNull(message = "clientId is required")
-    private Long clientId;
 }

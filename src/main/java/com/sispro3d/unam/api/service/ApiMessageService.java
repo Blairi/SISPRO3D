@@ -4,10 +4,13 @@ import com.sispro3d.unam.api.dto.MessageRequestDTO;
 import com.sispro3d.unam.api.dto.MessageResponseDTO;
 import com.sispro3d.unam.api.exception.InvalidRequestException;
 import com.sispro3d.unam.api.mapper.ApiMessageMapper;
+import com.sispro3d.unam.core.exception.BadRequestException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+
 import com.sispro3d.unam.message.domain.Message;
 import com.sispro3d.unam.message.repository.MessageRepository;
 import com.sispro3d.unam.thread.repository.ThreadRepository;
+import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import org.springframework.stereotype.Service;
 
@@ -21,25 +24,38 @@ public class ApiMessageService {
     private final ThreadRepository threadRepository;
     private final AccountRepository accountRepository;
     private final ApiMessageMapper mapper;
+    private final ApiOrderAccess access;
 
     public ApiMessageService(MessageRepository messageRepository,
                              ThreadRepository threadRepository,
                              AccountRepository accountRepository,
-                             ApiMessageMapper mapper) {
+                             ApiMessageMapper mapper,
+                            ApiOrderAccess access) {
         this.messageRepository = messageRepository;
         this.threadRepository = threadRepository;
         this.accountRepository = accountRepository;
         this.mapper = mapper;
+        this.access = access;
     }
 
     public MessageResponseDTO post(Long threadId, MessageRequestDTO request) {
         var thread = threadRepository.findById(threadId)
                 .orElseThrow(() -> ResourceNotFoundException.forId("Thread", threadId));
 
-        var author = accountRepository.findById(request.getAuthorId())
-                .orElseThrow(() -> ResourceNotFoundException.forId("Account", request.getAuthorId()));
+        access.requireParticipant(thread.getWorkOrder());
 
-        requireParticipant(thread, author.getIdUser());
+        if (request.getContent() == null || request.getContent().isBlank()) {
+            throw new BadRequestException("A message cannot be blank");
+        }
+
+        WorkOrderStatus status = thread.getWorkOrder().getStatus();
+        if (status == WorkOrderStatus.COMPLETED || status == WorkOrderStatus.CANCELED) {
+            throw new BadRequestException("No messages can be posted to a concluded order");
+        }
+
+        Long authorId = access.currentAccountId();
+        var author = accountRepository.findById(authorId)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Account", authorId));
 
         Message message = new Message();
         message.setThread(thread);
@@ -51,37 +67,30 @@ public class ApiMessageService {
     }
 
     public List<MessageResponseDTO> findByThreadId(Long threadId) {
-        if (!threadRepository.existsById(threadId)) {
-            throw ResourceNotFoundException.forId("Thread", threadId);
-        }
+        var thread = threadRepository.findById(threadId)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Thread", threadId));
+
+        access.requireParticipant(thread.getWorkOrder());
+
         return messageRepository.findByThread_IdOrderByTimestampAsc(threadId).stream()
                 .map(mapper::toResponse)
                 .toList();
     }
 
     public MessageResponseDTO findById(Long id) {
-        return messageRepository.findById(id)
-                .map(mapper::toResponse)
-                .orElseThrow(() -> ResourceNotFoundException.forId("Message", id));
+        return mapper.toResponse(findMessage(id));
     }
 
     public void delete(Long id) {
-        if (!messageRepository.existsById(id)) {
-            throw ResourceNotFoundException.forId("Message", id);
-        }
-        messageRepository.deleteById(id);
+        var message = findMessage(id);
+        access.requireParticipant(message.getThread().getWorkOrder());
+        messageRepository.delete(message);
     }
 
-    private void requireParticipant(com.sispro3d.unam.thread.domain.Thread thread, Long userId) {
-        var order = thread.getWorkOrder();
-        var client = order.getQuote().getClient();
-        var expert = order.getQuote().getOfferedService().getExpert();
-
-        boolean isClient = client != null && userId.equals(client.getIdUser());
-        boolean isExpert = expert != null && userId.equals(expert.getIdUser());
-
-        if (!isClient && !isExpert) {
-            throw new InvalidRequestException("Only the order's client or expert can post messages");
-        }
+    private Message findMessage(Long id) {
+        var message = messageRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Message", id));
+        access.requireParticipant(message.getThread().getWorkOrder());
+        return message;
     }
 }
