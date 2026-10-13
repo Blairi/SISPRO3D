@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/header :: head('Solicitar cotización - SISPRO3D')}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<nav th:replace="~{fragments/header :: navbar}"></nav>
+
+<main class="flex-grow">
+    <div class="max-w-3xl mx-auto px-4 py-10">
+
+        <a th:href="@{/services/{id}(id=${service.id})}" class="inline-block text-sm text-indigo-600 hover:text-indigo-800 font-medium mb-6">
+            &larr; Volver al servicio
+        </a>
+
+        <div class="bg-white rounded-xl shadow border border-gray-200 p-8">
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Solicitar cotización</h1>
+            <p class="text-sm text-gray-500 mb-8">
+                Cuéntale al experto qué necesitas. Él responderá con un monto y una vigencia.
+            </p>
+
+            <div class="flex items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200">
+                <div>
+                    <p class="font-semibold text-gray-900" th:text="${service.title}"></p>
+                    <p class="text-sm text-gray-500">
+                        Precio base:
+                        <span th:text="'$' + ${#numbers.formatDecimal(service.basePrice, 1, 2)}"></span>
+                        &middot;
+                        <span th:text="${service.deliveryTimeDays} + ' días'"></span>
+                    </p>
+                </div>
+            </div>
+
+            <form th:action="@{/services/{id}/quote(id=${service.id})}" method="post" th:object="${quote}" class="space-y-6">
+
+                <div>
+                    <label th:for="description" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Descripción del trabajo
+                    </label>
+                    <textarea th:field="*{description}" id="description" rows="6"
+                              th:errorclass="border-red-500"
+                              placeholder="Describe el modelo 3D que necesitas, el formato de entrega y los plazos que te importan."
+                              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    <p th:if="${#fields.hasErrors('description')}" th:errors="*{description}"
+                       class="mt-1 text-sm text-red-600"></p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button type="submit"
+                            class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition">
+                        Enviar solicitud
+                    </button>
+                    <a th:href="@{/services/{id}(id=${service.id})}"
+                       class="text-gray-600 hover:text-gray-900 font-medium">Cancelar</a>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>
