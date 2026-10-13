@@ -2,13 +2,57 @@
   "info": {
     "name": "SISPRO3D REST API - Ejercicio 1",
     "_postman_id": "7c0e4f4a-8d5a-4f6f-9a1b-3e0f0f0f0f0f",
-    "description": "Colección de evidencia para la capa REST /api/v1 de SISPRO3D. Asume que scripts/data.sql fue cargado (ids de ejemplo) y el servidor corriendo en http://localhost:8080.",
+    "description": "Colección de evidencia para la capa REST /api/v1 de SISPRO3D. Toda la API exige un access token JWT (variable accessToken). Ejecuta primero 'auth/login' y copia el accessToken (y refreshToken) devuelto a las variables de la colección — o corre 'auth/refresh'. Los ejemplos asumen scripts/data.sql cargado (ids de ejemplo) y el servidor en http://localhost:8080. Los actores se toman del token: los cuerpos NO llevan clientId/expertId/adminId/actorId.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" }
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" }
   ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+    ]
+  },
   "item": [
+    {
+      "name": "auth/login -> 200 (guardar accessToken y refreshToken)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"mariana.stein@estudio.com\",\n  \"password\": \"Client123!\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] }
+      }
+    },
+    {
+      "name": "auth/refresh -> 200",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/v1/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "refresh"] }
+      }
+    },
+    {
+      "name": "auth/logout -> 204",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/v1/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "logout"] }
+      }
+    },
     {
       "name": "Escenario 1 - GET service existente -> 200",
       "request": {
@@ -24,7 +68,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Modelado de personaje API\",\n  \"description\": \"Creado via REST\",\n  \"basePrice\": 12000.00,\n  \"expertId\": 2,\n  \"categoryId\": 1,\n  \"deliveryTimeDays\": 15\n}"
+          "raw": "{\n  \"title\": \"Modelado de personaje API\",\n  \"description\": \"Creado via REST\",\n  \"basePrice\": 12000.00,\n  \"categoryId\": 1,\n  \"deliveryTimeDays\": 15\n}"
         },
         "url": { "raw": "{{baseUrl}}/api/v1/services", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services"] }
       }
@@ -36,7 +80,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Modelado de personaje estilizado (editado)\",\n  \"description\": \"Descripcion editada\",\n  \"basePrice\": 9800.00,\n  \"expertId\": 2,\n  \"categoryId\": 1,\n  \"deliveryTimeDays\": 20\n}"
+          "raw": "{\n  \"title\": \"Modelado de personaje estilizado (editado)\",\n  \"description\": \"Descripcion editada\",\n  \"basePrice\": 9800.00,\n  \"categoryId\": 1,\n  \"deliveryTimeDays\": 20\n}"
         },
         "url": { "raw": "{{baseUrl}}/api/v1/services/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services", "1"] }
       }
@@ -64,7 +108,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"rating\": 8,\n  \"comment\": \"fuera de rango\",\n  \"clientId\": 5\n}"
+          "raw": "{\n  \"rating\": 8,\n  \"comment\": \"fuera de rango\"\n}"
         },
         "url": { "raw": "{{baseUrl}}/api/v1/services/1/reviews", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services", "1", "reviews"] }
       }
@@ -102,6 +146,31 @@
       }
     },
     {
+      "name": "Extras - POST work-order para cotizacion aceptada -> 201",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"quoteId\": 1\n}" },
+        "url": { "raw": "{{baseUrl}}/api/v1/work-orders", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders"] }
+      }
+    },
+    {
+      "name": "Extras - GET work-orders del actor",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/work-orders", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders"] }
+      }
+    },
+    {
+      "name": "Extras - GET work-orders por estado",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/status/IN_PROGRESS", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "status", "IN_PROGRESS"] }
+      }
+    },
+    {
       "name": "Extras - PUT status de orden (transicion invalida -> 400)",
       "request": {
         "method": "PUT",
@@ -131,6 +200,14 @@
       }
     },
     {
+      "name": "Extras - GET deliverable por id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/deliverables/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "deliverables", "1"] }
+      }
+    },
+    {
       "name": "Extras - GET account existente",
       "request": {
         "method": "GET",
@@ -145,7 +222,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"clientId\": 5,\n  \"offeredServiceId\": 1,\n  \"description\": \"Cotizacion para modelo base\"\n}"
+          "raw": "{\n  \"offeredServiceId\": 1,\n  \"description\": \"Cotizacion para modelo base\"\n}"
         },
         "url": { "raw": "{{baseUrl}}/api/v1/quotes", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes"] }
       }
@@ -157,17 +234,16 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"expertId\": 2,\n  \"totalAmount\": 15000.00,\n  \"validUntil\": \"2026-12-31\"\n}"
+          "raw": "{\n  \"totalAmount\": 15000.00,\n  \"validUntil\": \"2026-12-31\"\n}"
         },
         "url": { "raw": "{{baseUrl}}/api/v1/quotes/1/reply", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1", "reply"] }
       }
     },
     {
-      "name": "Escenario 10 - PUT accept de cotizacion -> 200",
+      "name": "Escenario 10 - PUT accept de cotizacion -> 200 (crea la orden)",
       "request": {
         "method": "PUT",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{\n  \"clientId\": 5\n}" },
+        "header": [],
         "url": { "raw": "{{baseUrl}}/api/v1/quotes/1/accept", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1", "accept"] }
       }
     },
@@ -180,11 +256,27 @@
       }
     },
     {
+      "name": "Extras - GET cotizaciones del actor",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/quotes", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes"] }
+      }
+    },
+    {
+      "name": "Extras - PUT expire de cotizacion pasada -> 200",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/v1/quotes/1/expire", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1", "expire"] }
+      }
+    },
+    {
       "name": "Escenario 12 - POST hilo en orden 1 (ya existe) -> 409 (unicidad)",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{\n  \"actorId\": 5\n}" },
+        "body": { "mode": "raw", "raw": "{}" },
         "url": { "raw": "{{baseUrl}}/api/v1/work-orders/1/thread", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "1", "thread"] }
       }
     },
@@ -203,7 +295,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"authorId\": 5,\n  \"content\": \"Hola, ¿podrias adjuntar una vista previa?\"\n}"
+          "raw": "{\n  \"content\": \"Hola, ¿podrias adjuntar una vista previa?\"\n}"
         },
         "url": { "raw": "{{baseUrl}}/api/v1/threads/1/messages", "host": ["{{baseUrl}}"], "path": ["api", "v1", "threads", "1", "messages"] }
       }
@@ -223,7 +315,7 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"expertId\": 4,\n  \"caption\": \"Vista previa del rig\",\n  \"urlFile\": \"https://files.render3d.mx/orden3/preview-rig.png\"\n}"
+          "raw": "{\n  \"caption\": \"Vista previa del rig\",\n  \"urlFile\": \"https://files.render3d.mx/orden3/preview-rig.png\"\n}"
         },
         "url": { "raw": "{{baseUrl}}/api/v1/deliverables/9/previews", "host": ["{{baseUrl}}"], "path": ["api", "v1", "deliverables", "9", "previews"] }
       }
@@ -234,6 +326,15 @@
         "method": "GET",
         "header": [],
         "url": { "raw": "{{baseUrl}}/api/v1/deliverables/9/previews", "host": ["{{baseUrl}}"], "path": ["api", "v1", "deliverables", "9", "previews"] }
+      }
+    },
+    {
+      "name": "Extras - PUT vista previa (solo participantes) -> 200",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"caption\": \"Vista previa corregida\",\n  \"urlFile\": \"https://files.render3d.mx/orden3/preview-rig-v2.png\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/v1/previews/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "previews", "1"] }
       }
     },
     {
