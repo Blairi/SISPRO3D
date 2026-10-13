@@ -1,5 +1,8 @@
 package com.sispro3d.unam.workorder.service.impl;
 
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ConflictException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.quote.domain.QuoteStatus;
 import com.sispro3d.unam.quote.repository.QuoteRepository;
@@ -50,18 +53,20 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (client)", request.getClientId()));
 
         if (client.getRole() != Role.CLIENT) {
-            throw new IllegalStateException("Solo cuentas de tipo CLIENT pueden crear órdenes de trabajo");
+            throw new ForbiddenException("Solo cuentas de tipo CLIENT pueden crear órdenes de trabajo");
         }
 
         var quote = quoteRepository.findById(request.getQuoteId())
                 .orElseThrow(() -> ResourceNotFoundException.forId("Quote", request.getQuoteId()));
 
         if (quote.getStatus() != QuoteStatus.ACCEPTED) {
-            throw new IllegalStateException("Solo se pueden crear órdenes a partir de cotizaciones en estado ACCEPTED");
+            throw new BadRequestException("Solo se pueden crear órdenes a partir de cotizaciones en estado ACCEPTED");
         }
         if (quote.getClient() == null || !request.getClientId().equals(quote.getClient().getIdUser())) {
-            throw new IllegalStateException("Solo el cliente propietario de la cotización puede crear la orden");
+            throw new ForbiddenException("Solo el cliente propietario de la cotización puede crear la orden");
         }
+
+        requireQuoteSinOrden(quote.getId());
 
         WorkOrder order = workOrderMapper.toEntity(request);
         order.setQuote(quote);
@@ -72,6 +77,12 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         return workOrderMapper.toResponse(saved);
     }
 
+    private void requireQuoteSinOrden(Long quoteId) {
+        if (workOrderRepository.existsByQuote_Id(quoteId)) {
+            throw new ConflictException("La cotización " + quoteId + " ya tiene una orden de trabajo asociada");
+        }
+    }
+
     @Override
     public WorkOrderResponse update(Long id, WorkOrderRequest request) {
         WorkOrder existing = workOrderRepository.findById(id)
@@ -80,11 +91,22 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         if (!accountRepository.existsById(request.getClientId())) {
             throw ResourceNotFoundException.forId("Account (client)", request.getClientId());
         }
-        if (!quoteRepository.existsById(request.getQuoteId())) {
-            throw ResourceNotFoundException.forId("Quote", request.getQuoteId());
+
+        var quote = quoteRepository.findById(request.getQuoteId())
+                .orElseThrow(() -> ResourceNotFoundException.forId("Quote", request.getQuoteId()));
+
+        // update revalida las mismas reglas que create.
+        if (quote.getStatus() != QuoteStatus.ACCEPTED) {
+            throw new BadRequestException("Solo se pueden asociar órdenes a cotizaciones en estado ACCEPTED");
+        }
+        if (quote.getClient() == null || !request.getClientId().equals(quote.getClient().getIdUser())) {
+            throw new BadRequestException("La orden debe pertenecer al cliente de la cotización");
+        }
+        if (!quote.getId().equals(existing.getQuote().getId())) {
+            requireQuoteSinOrden(quote.getId());
         }
 
-        existing.setQuote(quoteRepository.getReferenceById(request.getQuoteId()));
+        existing.setQuote(quote);
         WorkOrder updated = workOrderRepository.save(existing);
         return workOrderMapper.toResponse(updated);
     }
@@ -110,7 +132,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         requireExpertOwner(order, expertId);
 
         if (order.getStatus() != WorkOrderStatus.PENDING) {
-            throw new IllegalStateException("Solo se pueden iniciar órdenes en estado PENDING");
+            throw new BadRequestException("Solo se pueden iniciar órdenes en estado PENDING");
         }
 
         order.setStatus(WorkOrderStatus.IN_PROGRESS);
@@ -126,7 +148,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         requireExpertOwner(order, expertId);
 
         if (order.getStatus() != WorkOrderStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Solo se pueden enviar a revisión órdenes en estado IN_PROGRESS");
+            throw new BadRequestException("Solo se pueden enviar a revisión órdenes en estado IN_PROGRESS");
         }
 
         order.setStatus(WorkOrderStatus.IN_REVIEW);
@@ -141,7 +163,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         requireClientOwner(order, clientId);
 
         if (order.getStatus() != WorkOrderStatus.IN_REVIEW) {
-            throw new IllegalStateException("Solo se pueden solicitar cambios en órdenes en estado IN_REVIEW");
+            throw new BadRequestException("Solo se pueden solicitar cambios en órdenes en estado IN_REVIEW");
         }
 
         order.setStatus(WorkOrderStatus.IN_PROGRESS);
@@ -156,7 +178,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         requireClientOwner(order, clientId);
 
         if (order.getStatus() != WorkOrderStatus.IN_REVIEW) {
-            throw new IllegalStateException("Solo se pueden completar órdenes en estado IN_REVIEW");
+            throw new BadRequestException("Solo se pueden completar órdenes en estado IN_REVIEW");
         }
 
         order.setStatus(WorkOrderStatus.COMPLETED);
@@ -173,7 +195,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
         if (order.getStatus() != WorkOrderStatus.PENDING
                 && order.getStatus() != WorkOrderStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Solo se pueden cancelar órdenes en estado PENDING o IN_PROGRESS");
+            throw new BadRequestException("Solo se pueden cancelar órdenes en estado PENDING o IN_PROGRESS");
         }
 
         order.setStatus(WorkOrderStatus.CANCELED);
@@ -185,12 +207,12 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", expertId));
 
         if (expert.getRole() != Role.EXPERT) {
-            throw new IllegalStateException("Solo cuentas de tipo EXPERT pueden gestionar órdenes de trabajo");
+            throw new ForbiddenException("Solo cuentas de tipo EXPERT pueden gestionar órdenes de trabajo");
         }
 
         var serviceExpert = order.getQuote().getOfferedService().getExpert();
         if (serviceExpert == null || !expertId.equals(serviceExpert.getIdUser())) {
-            throw new IllegalStateException("Solo el experto propietario del servicio puede gestionar la orden");
+            throw new ForbiddenException("Solo el experto propietario del servicio puede gestionar la orden");
         }
     }
 
@@ -199,11 +221,11 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (client)", clientId));
 
         if (client.getRole() != Role.CLIENT) {
-            throw new IllegalStateException("Solo cuentas de tipo CLIENT pueden gestionar órdenes de trabajo");
+            throw new ForbiddenException("Solo cuentas de tipo CLIENT pueden gestionar órdenes de trabajo");
         }
 
         if (order.getQuote().getClient() == null || !clientId.equals(order.getQuote().getClient().getIdUser())) {
-            throw new IllegalStateException("Solo el cliente propietario de la orden puede gestionarla");
+            throw new ForbiddenException("Solo el cliente propietario de la orden puede gestionarla");
         }
     }
 

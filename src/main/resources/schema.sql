@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS preview (
     id             BIGINT         NOT NULL AUTO_INCREMENT PRIMARY KEY,
     caption        VARCHAR(255)   NOT NULL,
     url_file       VARCHAR(255)   NOT NULL,
+    created_at     DATETIME       NULL,
     deliverable_id BIGINT         NOT NULL,
     CONSTRAINT fk_preview_deliverable
         FOREIGN KEY (deliverable_id) REFERENCES deliverable(id)

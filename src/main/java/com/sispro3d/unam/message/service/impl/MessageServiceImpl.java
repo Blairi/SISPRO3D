@@ -1,5 +1,7 @@
 package com.sispro3d.unam.message.service.impl;
 
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.message.domain.Message;
 import com.sispro3d.unam.message.dto.MessageRequest;
@@ -11,6 +13,7 @@ import com.sispro3d.unam.thread.domain.Thread;
 import com.sispro3d.unam.thread.repository.ThreadRepository;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
+import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -57,6 +60,7 @@ public class MessageServiceImpl implements MessageService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account", request.getUserId()));
 
         requireParticipant(thread.getWorkOrder(), user.getIdUser());
+        requireOrderActiva(thread.getWorkOrder());
 
         Message message = messageMapper.toEntity(request);
         message.setThread(thread);
@@ -107,7 +111,14 @@ public class MessageServiceImpl implements MessageService {
         boolean isExpert = expert != null && userId.equals(expert.getIdUser());
 
         if (!isClient && !isExpert) {
-            throw new IllegalStateException("Solo el cliente o el experto de la orden pueden enviar mensajes");
+            throw new ForbiddenException("Solo el cliente o el experto de la orden pueden enviar mensajes");
+        }
+    }
+
+    private void requireOrderActiva(WorkOrder order) {
+        WorkOrderStatus status = order.getStatus();
+        if (status == WorkOrderStatus.COMPLETED || status == WorkOrderStatus.CANCELED) {
+            throw new BadRequestException("No se pueden enviar mensajes cuando la orden ha concluido");
         }
     }
 

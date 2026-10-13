@@ -1,5 +1,7 @@
 package com.sispro3d.unam.deliverable.service.impl;
 
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.deliverable.dto.DeliverableRequest;
@@ -93,19 +95,19 @@ public class DeliverableServiceImpl implements DeliverableService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", expertId));
 
         if (expert.getRole() != Role.EXPERT) {
-            throw new IllegalStateException("Solo cuentas de tipo EXPERT pueden gestionar entregables");
+            throw new ForbiddenException("Solo cuentas de tipo EXPERT pueden gestionar entregables");
         }
 
         var serviceExpert = order.getQuote().getOfferedService().getExpert();
         if (serviceExpert == null || !expertId.equals(serviceExpert.getIdUser())) {
-            throw new IllegalStateException("Solo el experto propietario del servicio puede gestionar la orden");
+            throw new ForbiddenException("Solo el experto propietario del servicio puede gestionar la orden");
         }
     }
 
     private void requireActiveOrder(WorkOrder order) {
         if (order.getStatus() != WorkOrderStatus.IN_PROGRESS
                 && order.getStatus() != WorkOrderStatus.IN_REVIEW) {
-            throw new IllegalStateException("Solo se pueden gestionar entregables en órdenes en estado IN_PROGRESS o IN_REVIEW");
+            throw new BadRequestException("Solo se pueden gestionar entregables en órdenes en estado IN_PROGRESS o IN_REVIEW");
         }
     }
 

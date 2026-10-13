@@ -1,5 +1,8 @@
 package com.sispro3d.unam.review.service.impl;
 
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ConflictException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
 import com.sispro3d.unam.review.domain.Review;
@@ -8,7 +11,10 @@ import com.sispro3d.unam.review.dto.ReviewResponse;
 import com.sispro3d.unam.review.mapper.ReviewMapper;
 import com.sispro3d.unam.review.repository.ReviewRepository;
 import com.sispro3d.unam.review.service.ReviewService;
+import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
+import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
+import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +33,8 @@ public class ReviewServiceImpl implements ReviewService {
     private AccountRepository accountRepository;
     @Autowired
     private OfferedServiceRepository offeredServiceRepository;
+    @Autowired
+    private WorkOrderRepository workOrderRepository;
 
     @Override
     public List<ReviewResponse> findAll() {
@@ -43,19 +51,49 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public ReviewResponse create(ReviewRequest request) {
-        if (!accountRepository.existsById(request.getClientId())) {
-            throw ResourceNotFoundException.forId("Account (client)", request.getClientId());
-        }
-        if (!offeredServiceRepository.existsById(request.getOfferedServiceId())) {
-            throw ResourceNotFoundException.forId("OfferedService", request.getOfferedServiceId());
+        var client = accountRepository.findById(request.getClientId())
+                .orElseThrow(() -> ResourceNotFoundException.forId("Account (client)", request.getClientId()));
+
+        if (client.getRole() != Role.CLIENT) {
+            throw new ForbiddenException("Solo cuentas de tipo CLIENT pueden publicar reseñas");
         }
 
+        var service = offeredServiceRepository.findById(request.getOfferedServiceId())
+                .orElseThrow(() -> ResourceNotFoundException.forId("OfferedService", request.getOfferedServiceId()));
+
+        requireCompletedOrder(request.getClientId(), request.getOfferedServiceId());
+        requireSinReseñaPrevia(request.getClientId(), request.getOfferedServiceId());
+        requireRatingValido(request.getRating());
+
         Review review = reviewMapper.toEntity(request);
-        review.setClient(accountRepository.getReferenceById(request.getClientId()));
-        review.setOfferedService(offeredServiceRepository.getReferenceById(request.getOfferedServiceId()));
+        review.setClient(client);
+        review.setOfferedService(service);
         review.setCreatedAt(LocalDateTime.now());
         Review saved = reviewRepository.save(review);
         return reviewMapper.toResponse(saved);
+    }
+
+    private void requireCompletedOrder(Long clientId, Long offeredServiceId) {
+        var completed = workOrderRepository
+                .findByQuote_Client_IdUserAndQuote_OfferedService_IdAndStatus(
+                        clientId, offeredServiceId, WorkOrderStatus.COMPLETED);
+
+        if (completed.isEmpty()) {
+            throw new BadRequestException(
+                    "Solo se puede reseñar un servicio con una orden de trabajo completada");
+        }
+    }
+
+    private void requireSinReseñaPrevia(Long clientId, Long offeredServiceId) {
+        if (reviewRepository.findByClient_IdUserAndOfferedService_Id(clientId, offeredServiceId).isPresent()) {
+            throw new ConflictException("El cliente ya publicó una reseña para este servicio");
+        }
+    }
+
+    private void requireRatingValido(Integer rating) {
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new BadRequestException("La calificación debe estar entre 1 y 5");
+        }
     }
 
     @Override

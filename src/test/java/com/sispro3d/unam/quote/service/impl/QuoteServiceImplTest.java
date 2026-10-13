@@ -2,11 +2,14 @@ package com.sispro3d.unam.quote.service.impl;
 
 import com.sispro3d.unam.category.domain.Category;
 import com.sispro3d.unam.category.repository.CategoryRepository;
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
 import com.sispro3d.unam.quote.domain.QuoteStatus;
+import com.sispro3d.unam.quote.dto.QuoteAcceptance;
 import com.sispro3d.unam.quote.dto.QuoteRequest;
 import com.sispro3d.unam.quote.dto.QuoteResponse;
 import com.sispro3d.unam.quote.repository.QuoteRepository;
@@ -14,6 +17,8 @@ import com.sispro3d.unam.quote.service.QuoteService;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
+import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
+import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,6 +53,9 @@ class QuoteServiceImplTest {
 
     @Autowired
     private OfferedServiceRepository offeredServiceRepository;
+
+    @Autowired
+    private WorkOrderRepository workOrderRepository;
 
     private Account createExpert(String email) {
         var account = new Account();
@@ -105,6 +113,14 @@ class QuoteServiceImplTest {
         return quoteService.create(createQuoteRequest(client, service));
     }
 
+    private QuoteResponse createUnansweredQuote(Account client, OfferedService service) {
+        return quoteService.create(QuoteRequest.builder()
+                .clientId(client.getIdUser())
+                .offeredServiceId(service.getId())
+                .description("Solicito cotización para mi proyecto")
+                .build());
+    }
+
     @Test
     void create() {
         var expert = createExpert("quote.expert.create@sispro3d.com");
@@ -154,7 +170,7 @@ class QuoteServiceImplTest {
         var request = createQuoteRequest(expert, service);
 
         assertThatThrownBy(() -> quoteService.create(request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("CLIENT");
     }
 
@@ -176,7 +192,7 @@ class QuoteServiceImplTest {
         offeredServiceRepository.save(service);
 
         assertThatThrownBy(() -> quoteService.create(createQuoteRequest(client, service)))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("APPROVED");
     }
 
@@ -228,6 +244,50 @@ class QuoteServiceImplTest {
         assertThat(updated.getDescription()).isEqualTo("Descripción actualizada");
         assertThat(updated.getTotalAmount()).isEqualTo(new BigDecimal("2000.00"));
         assertThat(updated.getStatus()).isEqualTo(QuoteStatus.PENDING);
+    }
+
+    @Test
+    void update_whenReassigningToAnotherClient_throwsExceptionAndKeepsOriginalClient() {
+        var expert = createExpert("quote.expert.reassign@sispro3d.com");
+        var client = createClient("quote.client.reassign@sispro3d.com");
+        var otherClient = createClient("quote.client.reassign2@sispro3d.com");
+        var service = createApprovedService("Servicio a reasignar", expert);
+        QuoteResponse created = createPendingQuote(client, service);
+
+        var updateRequest = QuoteRequest.builder()
+                .clientId(otherClient.getIdUser())
+                .offeredServiceId(service.getId())
+                .description("Intento de reasignación")
+                .build();
+
+        assertThatThrownBy(() -> quoteService.update(created.getId(), updateRequest))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("otro cliente");
+
+        assertThat(quoteRepository.findById(created.getId()).orElseThrow().getClient().getIdUser())
+                .isEqualTo(client.getIdUser());
+    }
+
+    @Test
+    void update_whenReassigningToAnotherService_throwsExceptionAndKeepsOriginalService() {
+        var expert = createExpert("quote.expert.reassignsvc@sispro3d.com");
+        var client = createClient("quote.client.reassignsvc@sispro3d.com");
+        var service = createApprovedService("Servicio original", expert);
+        var otherService = createApprovedService("Servicio distinto", expert);
+        QuoteResponse created = createPendingQuote(client, service);
+
+        var updateRequest = QuoteRequest.builder()
+                .clientId(client.getIdUser())
+                .offeredServiceId(otherService.getId())
+                .description("Intento de cambio de servicio")
+                .build();
+
+        assertThatThrownBy(() -> quoteService.update(created.getId(), updateRequest))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("otro servicio");
+
+        assertThat(quoteRepository.findById(created.getId()).orElseThrow().getOfferedService().getId())
+                .isEqualTo(service.getId());
     }
 
     @Test
@@ -299,7 +359,7 @@ class QuoteServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> quoteService.respond(created.getId(), otherExpert.getIdUser(), proposal))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("propietario");
     }
 
@@ -315,7 +375,7 @@ class QuoteServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> quoteService.respond(created.getId(), client.getIdUser(), proposal))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("EXPERT");
     }
 
@@ -332,7 +392,7 @@ class QuoteServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> quoteService.respond(created.getId(), expert.getIdUser(), proposal))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("PENDING");
     }
 
@@ -370,9 +430,15 @@ class QuoteServiceImplTest {
         var service = createApprovedService("Modelado de personaje", expert);
         QuoteResponse created = createPendingQuote(client, service);
 
-        QuoteResponse accepted = quoteService.accept(created.getId(), client.getIdUser());
+        QuoteAcceptance accepted = quoteService.accept(created.getId(), client.getIdUser());
 
-        assertThat(accepted.getStatus()).isEqualTo(QuoteStatus.ACCEPTED);
+        assertThat(accepted.quote().getStatus()).isEqualTo(QuoteStatus.ACCEPTED);
+        assertThat(accepted.workOrder().getStatus()).isEqualTo(WorkOrderStatus.PENDING);
+        assertThat(accepted.workOrder().getQuoteId()).isEqualTo(created.getId());
+
+        var order = workOrderRepository.findByQuote_Id(created.getId()).orElseThrow();
+        assertThat(order.getStatus()).isEqualTo(WorkOrderStatus.PENDING);
+        assertThat(order.getCreatedAt()).isNotNull();
     }
 
     @Test
@@ -384,7 +450,7 @@ class QuoteServiceImplTest {
         QuoteResponse created = createPendingQuote(client, service);
 
         assertThatThrownBy(() -> quoteService.accept(created.getId(), otherClient.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("propietario");
     }
 
@@ -396,7 +462,7 @@ class QuoteServiceImplTest {
         QuoteResponse created = createPendingQuote(client, service);
 
         assertThatThrownBy(() -> quoteService.accept(created.getId(), expert.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("CLIENT");
     }
 
@@ -409,7 +475,7 @@ class QuoteServiceImplTest {
         quoteService.accept(created.getId(), client.getIdUser());
 
         assertThatThrownBy(() -> quoteService.accept(created.getId(), client.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("PENDING");
     }
 
@@ -434,6 +500,47 @@ class QuoteServiceImplTest {
     }
 
     @Test
+    void accept_whenValidityHasLapsed_throwsExceptionAndKeepsQuotePending() {
+        var expert = createExpert("quote.expert.lapsed.accept@sispro3d.com");
+        var client = createClient("quote.client.lapsed.accept@sispro3d.com");
+        var service = createApprovedService("Servicio vencido aceptar", expert);
+        QuoteResponse created = createPendingQuote(client, service);
+
+        quoteService.respond(created.getId(), expert.getIdUser(), QuoteRequest.builder()
+                .totalAmount(new BigDecimal("1500.00"))
+                .validUntil(LocalDate.now().minusDays(1))
+                .build());
+
+        assertThatThrownBy(() -> quoteService.accept(created.getId(), client.getIdUser()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("expiró");
+
+        assertThat(quoteRepository.findById(created.getId()).orElseThrow().getStatus())
+                .isEqualTo(QuoteStatus.PENDING);
+        assertThat(workOrderRepository.findByQuote_Id(created.getId())).isEmpty();
+    }
+
+    @Test
+    void reject_whenValidityHasLapsed_throwsExceptionAndKeepsQuotePending() {
+        var expert = createExpert("quote.expert.lapsed.reject@sispro3d.com");
+        var client = createClient("quote.client.lapsed.reject@sispro3d.com");
+        var service = createApprovedService("Servicio vencido rechazar", expert);
+        QuoteResponse created = createPendingQuote(client, service);
+
+        quoteService.respond(created.getId(), expert.getIdUser(), QuoteRequest.builder()
+                .totalAmount(new BigDecimal("1500.00"))
+                .validUntil(LocalDate.now().minusDays(1))
+                .build());
+
+        assertThatThrownBy(() -> quoteService.reject(created.getId(), client.getIdUser()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("expiró");
+
+        assertThat(quoteRepository.findById(created.getId()).orElseThrow().getStatus())
+                .isEqualTo(QuoteStatus.PENDING);
+    }
+
+    @Test
     void reject_whenClientDoesNotOwnQuote_throwsException() {
         var expert = createExpert("quote.expert.reject2@sispro3d.com");
         var client = createClient("quote.client.reject2@sispro3d.com");
@@ -442,8 +549,64 @@ class QuoteServiceImplTest {
         QuoteResponse created = createPendingQuote(client, service);
 
         assertThatThrownBy(() -> quoteService.reject(created.getId(), otherClient.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("propietario");
+    }
+
+    @Test
+    void cancel() {
+        var expert = createExpert("quote.expert.cancel@sispro3d.com");
+        var client = createClient("quote.client.cancel@sispro3d.com");
+        var service = createApprovedService("Modelado de personaje", expert);
+        QuoteResponse created = createUnansweredQuote(client, service);
+
+        QuoteResponse cancelled = quoteService.cancel(created.getId(), client.getIdUser());
+
+        assertThat(cancelled.getStatus()).isEqualTo(QuoteStatus.REJECTED);
+    }
+
+    @Test
+    void cancel_whenQuoteAlreadyAnswered_throwsExceptionAndKeepsQuotePending() {
+        var expert = createExpert("quote.expert.cancel2@sispro3d.com");
+        var client = createClient("quote.client.cancel2@sispro3d.com");
+        var service = createApprovedService("Servicio respondido cancelar", expert);
+        QuoteResponse created = createPendingQuote(client, service);
+
+        assertThatThrownBy(() -> quoteService.cancel(created.getId(), client.getIdUser()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("respondida");
+
+        assertThat(quoteRepository.findById(created.getId()).orElseThrow().getStatus())
+                .isEqualTo(QuoteStatus.PENDING);
+    }
+
+    @Test
+    void cancel_whenClientDoesNotOwnQuote_throwsException() {
+        var expert = createExpert("quote.expert.cancel3@sispro3d.com");
+        var client = createClient("quote.client.cancel3@sispro3d.com");
+        var otherClient = createClient("quote.client.cancel4@sispro3d.com");
+        var service = createApprovedService("Servicio cancelar", expert);
+        QuoteResponse created = createUnansweredQuote(client, service);
+
+        assertThatThrownBy(() -> quoteService.cancel(created.getId(), otherClient.getIdUser()))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessageContaining("propietario");
+    }
+
+    @Test
+    void cancel_whenUnansweredQuoteCarriesLapsedValidity_stillCancels() {
+        var expert = createExpert("quote.expert.cancel5@sispro3d.com");
+        var client = createClient("quote.client.cancel5@sispro3d.com");
+        var service = createApprovedService("Servicio cancelar con vigencia", expert);
+        QuoteResponse created = createUnansweredQuote(client, service);
+
+        var stale = quoteRepository.findById(created.getId()).orElseThrow();
+        stale.setValidUntil(LocalDate.of(2020, 1, 1));
+        quoteRepository.save(stale);
+
+        QuoteResponse cancelled = quoteService.cancel(created.getId(), client.getIdUser());
+
+        assertThat(cancelled.getStatus()).isEqualTo(QuoteStatus.REJECTED);
     }
 
     @Test
@@ -467,7 +630,7 @@ class QuoteServiceImplTest {
         quoteService.accept(created.getId(), client.getIdUser());
 
         assertThatThrownBy(() -> quoteService.expire(created.getId()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("PENDING");
     }
 

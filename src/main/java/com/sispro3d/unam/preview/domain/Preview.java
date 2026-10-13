@@ -4,6 +4,8 @@ import com.sispro3d.unam.deliverable.domain.Deliverable;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "preview")
 @Getter
@@ -30,4 +32,7 @@ public class Preview {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "deliverable_id", nullable = false)
     private Deliverable deliverable;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 }

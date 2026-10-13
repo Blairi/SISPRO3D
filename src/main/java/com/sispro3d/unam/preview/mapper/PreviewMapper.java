@@ -31,6 +31,7 @@ public class PreviewMapper {
                 .caption(preview.getCaption())
                 .urlFile(preview.getUrlFile())
                 .deliverableId(preview.getDeliverable() != null ? preview.getDeliverable().getId() : null)
+                .createdAt(preview.getCreatedAt())
                 .build();
     }
 

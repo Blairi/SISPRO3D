@@ -2,12 +2,19 @@ package com.sispro3d.unam.workorder.service.impl;
 
 import com.sispro3d.unam.category.domain.Category;
 import com.sispro3d.unam.category.repository.CategoryRepository;
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
+import com.sispro3d.unam.core.exception.ConflictException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
+import com.sispro3d.unam.quote.domain.Quote;
+import com.sispro3d.unam.quote.domain.QuoteStatus;
+import com.sispro3d.unam.quote.dto.QuoteAcceptance;
 import com.sispro3d.unam.quote.dto.QuoteRequest;
 import com.sispro3d.unam.quote.dto.QuoteResponse;
+import com.sispro3d.unam.quote.repository.QuoteRepository;
 import com.sispro3d.unam.quote.service.QuoteService;
 import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Role;
@@ -54,6 +61,9 @@ class WorkOrderServiceImplTest {
     @Autowired
     private QuoteService quoteService;
 
+    @Autowired
+    private QuoteRepository quoteRepository;
+
     private Account createExpert(String email) {
         var account = new Account();
         account.setName("Expert");
@@ -97,7 +107,7 @@ class WorkOrderServiceImplTest {
         return offeredServiceRepository.save(service);
     }
 
-    private QuoteResponse createAcceptedQuote(Account client, OfferedService service) {
+    private QuoteAcceptance createAcceptedQuote(Account client, OfferedService service) {
         var request = QuoteRequest.builder()
                 .clientId(client.getIdUser())
                 .offeredServiceId(service.getId())
@@ -109,12 +119,22 @@ class WorkOrderServiceImplTest {
     }
 
     private WorkOrderResponse createOrder(Account client, OfferedService service) {
-        QuoteResponse quote = createAcceptedQuote(client, service);
-        var request = WorkOrderRequest.builder()
+        return createAcceptedQuote(client, service).workOrder();
+    }
+
+    /** Cotización en ACCEPTED sin orden asociada, para probar el re-apuntado de órdenes. */
+    private QuoteResponse createAcceptedQuoteWithoutOrder(Account client, OfferedService service) {
+        var request = QuoteRequest.builder()
                 .clientId(client.getIdUser())
-                .quoteId(quote.getId())
+                .offeredServiceId(service.getId())
+                .description("Cotización sin orden")
+                .totalAmount(new BigDecimal("1500.00"))
                 .build();
-        return workOrderService.create(request);
+        QuoteResponse created = quoteService.create(request);
+        Quote quote = quoteRepository.findById(created.getId()).orElseThrow();
+        quote.setStatus(QuoteStatus.ACCEPTED);
+        quoteRepository.save(quote);
+        return created;
     }
 
     @Test
@@ -137,7 +157,7 @@ class WorkOrderServiceImplTest {
         var expert = createExpert("workorder.expert.noclient@sispro3d.com");
         var client = createClient("workorder.client.noclient@sispro3d.com");
         var service = createApprovedService("Servicio sin cliente", expert);
-        QuoteResponse quote = createAcceptedQuote(client, service);
+        QuoteResponse quote = createAcceptedQuoteWithoutOrder(client, service);
 
         var request = WorkOrderRequest.builder()
                 .clientId(999L)
@@ -166,7 +186,7 @@ class WorkOrderServiceImplTest {
         var expert = createExpert("workorder.expert.notclient@sispro3d.com");
         var client = createClient("workorder.client.notclient@sispro3d.com");
         var service = createApprovedService("Servicio con experto", expert);
-        QuoteResponse quote = createAcceptedQuote(client, service);
+        QuoteResponse quote = createAcceptedQuoteWithoutOrder(client, service);
 
         var request = WorkOrderRequest.builder()
                 .clientId(expert.getIdUser())
@@ -174,7 +194,7 @@ class WorkOrderServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> workOrderService.create(request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("CLIENT");
     }
 
@@ -198,7 +218,7 @@ class WorkOrderServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> workOrderService.create(orderRequest))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("ACCEPTED");
     }
 
@@ -208,7 +228,7 @@ class WorkOrderServiceImplTest {
         var client = createClient("workorder.client.owner@sispro3d.com");
         var otherClient = createClient("workorder.client.other@sispro3d.com");
         var service = createApprovedService("Servicio del experto", expert);
-        QuoteResponse quote = createAcceptedQuote(client, service);
+        QuoteResponse quote = createAcceptedQuoteWithoutOrder(client, service);
 
         var request = WorkOrderRequest.builder()
                 .clientId(otherClient.getIdUser())
@@ -216,7 +236,7 @@ class WorkOrderServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> workOrderService.create(request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("propietario");
     }
 
@@ -257,7 +277,7 @@ class WorkOrderServiceImplTest {
         var service = createApprovedService("Rigging basico", expert);
         WorkOrderResponse created = createOrder(client, service);
 
-        QuoteResponse secondQuote = createAcceptedQuote(client, service);
+        QuoteResponse secondQuote = createAcceptedQuoteWithoutOrder(client, service);
         var updateRequest = WorkOrderRequest.builder()
                 .clientId(client.getIdUser())
                 .quoteId(secondQuote.getId())
@@ -266,6 +286,100 @@ class WorkOrderServiceImplTest {
 
         assertThat(updated.getQuoteId()).isEqualTo(secondQuote.getId());
         assertThat(updated.getStatus()).isEqualTo(WorkOrderStatus.PENDING);
+    }
+
+    @Test
+    void create_whenQuoteAlreadyHasOrder_throwsConflictAndCreatesNoSecondOrder() {
+        var expert = createExpert("workorder.expert.dup@sispro3d.com");
+        var client = createClient("workorder.client.dup@sispro3d.com");
+        var service = createApprovedService("Servicio duplicado", expert);
+        QuoteAcceptance accepted = createAcceptedQuote(client, service);
+
+        var request = WorkOrderRequest.builder()
+                .clientId(client.getIdUser())
+                .quoteId(accepted.quote().getId())
+                .build();
+
+        assertThatThrownBy(() -> workOrderService.create(request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining(String.valueOf(accepted.quote().getId()));
+
+        assertThat(workOrderRepository.findByQuote_Id(accepted.quote().getId()))
+                .isPresent();
+        assertThat(workOrderRepository.findAll()
+                .stream()
+                .filter(o -> o.getQuote().getId().equals(accepted.quote().getId())))
+                .hasSize(1);
+    }
+
+    @Test
+    void update_whenTargetQuoteAlreadyHasOrder_throwsConflictAndKeepsOriginalQuote() {
+        var expert = createExpert("workorder.expert.updup@sispro3d.com");
+        var client = createClient("workorder.client.updup@sispro3d.com");
+        var service = createApprovedService("Servicio re-apuntado", expert);
+        WorkOrderResponse created = createOrder(client, service);
+        QuoteAcceptance used = createAcceptedQuote(client, service);
+
+        var request = WorkOrderRequest.builder()
+                .clientId(client.getIdUser())
+                .quoteId(used.quote().getId())
+                .build();
+
+        assertThatThrownBy(() -> workOrderService.update(created.getId(), request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining(String.valueOf(used.quote().getId()));
+
+        assertThat(workOrderRepository.findById(created.getId()).orElseThrow().getQuote().getId())
+                .isNotEqualTo(used.quote().getId());
+    }
+
+    @Test
+    void update_whenTargetQuoteNotAccepted_throwsExceptionAndKeepsOriginalQuote() {
+        var expert = createExpert("workorder.expert.uppend@sispro3d.com");
+        var client = createClient("workorder.client.uppend@sispro3d.com");
+        var service = createApprovedService("Servicio re-apuntado pendiente", expert);
+        WorkOrderResponse created = createOrder(client, service);
+
+        QuoteResponse pending = quoteService.create(QuoteRequest.builder()
+                .clientId(client.getIdUser())
+                .offeredServiceId(service.getId())
+                .description("Sigue pendiente")
+                .totalAmount(new BigDecimal("900.00"))
+                .build());
+
+        var request = WorkOrderRequest.builder()
+                .clientId(client.getIdUser())
+                .quoteId(pending.getId())
+                .build();
+
+        assertThatThrownBy(() -> workOrderService.update(created.getId(), request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("ACCEPTED");
+
+        assertThat(workOrderRepository.findById(created.getId()).orElseThrow().getQuote().getId())
+                .isNotEqualTo(pending.getId());
+    }
+
+    @Test
+    void update_whenTargetQuoteBelongsToAnotherClient_throwsExceptionAndKeepsOriginalQuote() {
+        var expert = createExpert("workorder.expert.upother@sispro3d.com");
+        var client = createClient("workorder.client.upother@sispro3d.com");
+        var otherClient = createClient("workorder.client.upother2@sispro3d.com");
+        var service = createApprovedService("Servicio re-apuntado ajeno", expert);
+        WorkOrderResponse created = createOrder(client, service);
+        QuoteResponse otherQuote = createAcceptedQuoteWithoutOrder(otherClient, service);
+
+        var request = WorkOrderRequest.builder()
+                .clientId(client.getIdUser())
+                .quoteId(otherQuote.getId())
+                .build();
+
+        assertThatThrownBy(() -> workOrderService.update(created.getId(), request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("cliente");
+
+        assertThat(workOrderRepository.findById(created.getId()).orElseThrow().getQuote().getId())
+                .isNotEqualTo(otherQuote.getId());
     }
 
     @Test
@@ -326,7 +440,7 @@ class WorkOrderServiceImplTest {
         WorkOrderResponse created = createOrder(client, service);
 
         assertThatThrownBy(() -> workOrderService.start(created.getId(), otherExpert.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("propietario");
     }
 
@@ -338,7 +452,7 @@ class WorkOrderServiceImplTest {
         WorkOrderResponse created = createOrder(client, service);
 
         assertThatThrownBy(() -> workOrderService.start(created.getId(), client.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("EXPERT");
     }
 
@@ -351,7 +465,7 @@ class WorkOrderServiceImplTest {
         workOrderService.start(created.getId(), expert.getIdUser());
 
         assertThatThrownBy(() -> workOrderService.start(created.getId(), expert.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("PENDING");
     }
 
@@ -395,7 +509,7 @@ class WorkOrderServiceImplTest {
         WorkOrderResponse created = createOrder(client, service);
 
         assertThatThrownBy(() -> workOrderService.markInReview(created.getId(), expert.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("IN_PROGRESS");
     }
 
@@ -422,7 +536,7 @@ class WorkOrderServiceImplTest {
         workOrderService.start(created.getId(), expert.getIdUser());
 
         assertThatThrownBy(() -> workOrderService.requestChanges(created.getId(), client.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("IN_REVIEW");
     }
 
@@ -449,7 +563,7 @@ class WorkOrderServiceImplTest {
         WorkOrderResponse created = createOrder(client, service);
 
         assertThatThrownBy(() -> workOrderService.complete(created.getId(), client.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("IN_REVIEW");
     }
 
@@ -464,7 +578,7 @@ class WorkOrderServiceImplTest {
         workOrderService.markInReview(created.getId(), expert.getIdUser());
 
         assertThatThrownBy(() -> workOrderService.complete(created.getId(), otherClient.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("propietario");
     }
 
@@ -490,7 +604,7 @@ class WorkOrderServiceImplTest {
         workOrderService.markInReview(created.getId(), expert.getIdUser());
 
         assertThatThrownBy(() -> workOrderService.cancel(created.getId(), client.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("PENDING o IN_PROGRESS");
     }
 
@@ -499,7 +613,7 @@ class WorkOrderServiceImplTest {
         var expert = createExpert("workorder.expert.findByQuote@sispro3d.com");
         var client = createClient("workorder.client.findByQuote@sispro3d.com");
         var service = createApprovedService("Servicio cotizado", expert);
-        QuoteResponse quote = createAcceptedQuote(client, service);
+        QuoteResponse quote = createAcceptedQuoteWithoutOrder(client, service);
 
         var request = WorkOrderRequest.builder()
                 .clientId(client.getIdUser())

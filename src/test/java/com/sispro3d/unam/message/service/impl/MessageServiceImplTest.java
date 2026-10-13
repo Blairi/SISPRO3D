@@ -2,6 +2,7 @@ package com.sispro3d.unam.message.service.impl;
 
 import com.sispro3d.unam.category.domain.Category;
 import com.sispro3d.unam.category.repository.CategoryRepository;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.message.dto.MessageRequest;
 import com.sispro3d.unam.message.dto.MessageResponse;
@@ -116,13 +117,7 @@ class MessageServiceImplTest {
                 .totalAmount(new BigDecimal("1500.00"))
                 .build();
         QuoteResponse quote = quoteService.create(quoteRequest);
-        QuoteResponse accepted = quoteService.accept(quote.getId(), client.getIdUser());
-
-        var orderRequest = WorkOrderRequest.builder()
-                .clientId(client.getIdUser())
-                .quoteId(accepted.getId())
-                .build();
-        WorkOrderResponse order = workOrderService.create(orderRequest);
+        WorkOrderResponse order = quoteService.accept(quote.getId(), client.getIdUser()).workOrder();
 
         var threadRequest = ThreadRequest.builder()
                 .actorId(client.getIdUser())
@@ -208,7 +203,7 @@ class MessageServiceImplTest {
         ThreadResponse thread = createThread(client, service);
 
         assertThatThrownBy(() -> messageService.create(createMessageRequest(otherExpert, thread)))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("cliente o el experto");
     }
 
