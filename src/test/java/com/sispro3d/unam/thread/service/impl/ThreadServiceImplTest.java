@@ -2,6 +2,8 @@ package com.sispro3d.unam.thread.service.impl;
 
 import com.sispro3d.unam.category.domain.Category;
 import com.sispro3d.unam.category.repository.CategoryRepository;
+import com.sispro3d.unam.core.exception.ConflictException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
@@ -110,13 +112,7 @@ class ThreadServiceImplTest {
                 .totalAmount(new BigDecimal("1500.00"))
                 .build();
         QuoteResponse quote = quoteService.create(quoteRequest);
-        QuoteResponse accepted = quoteService.accept(quote.getId(), client.getIdUser());
-
-        var orderRequest = WorkOrderRequest.builder()
-                .clientId(client.getIdUser())
-                .quoteId(accepted.getId())
-                .build();
-        return workOrderService.create(orderRequest);
+        return quoteService.accept(quote.getId(), client.getIdUser()).workOrder();
     }
 
     private ThreadRequest createThreadRequest(Account actor, WorkOrderResponse order) {
@@ -190,7 +186,7 @@ class ThreadServiceImplTest {
         WorkOrderResponse order = createOrder(client, service);
 
         assertThatThrownBy(() -> threadService.create(createThreadRequest(otherExpert, order)))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("cliente o el experto");
     }
 
@@ -203,7 +199,7 @@ class ThreadServiceImplTest {
         threadService.create(createThreadRequest(client, order));
 
         assertThatThrownBy(() -> threadService.create(createThreadRequest(expert, order)))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("un hilo de conversación por orden");
     }
 

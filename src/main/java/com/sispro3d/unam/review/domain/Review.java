@@ -3,12 +3,16 @@ package com.sispro3d.unam.review.domain;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.user.domain.Account;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "review") // TODO: Agregar constraint de id_client y id_service
+@Table(name = "review", uniqueConstraints = @UniqueConstraint(
+        name = "uq_review_client_service",
+        columnNames = {"id_client", "id_offered_service"}))
 @Getter
 @Setter
 @ToString(exclude = {"client", "offeredService"})
@@ -20,7 +24,8 @@ public class Review {
     @Column(name = "id_review")
     private Long id;
 
-    // TODO: validar que la reseña este entre 1 y 5
+    @Min(1)
+    @Max(5)
     @Column(nullable = false)
     private Integer rating;
 

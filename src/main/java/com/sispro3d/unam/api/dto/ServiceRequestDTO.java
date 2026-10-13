@@ -32,9 +32,6 @@ public class ServiceRequestDTO {
     @DecimalMin(value = "0.0", inclusive = false, message = "basePrice must be positive")
     private BigDecimal basePrice;
 
-    @NotNull(message = "expertId is required")
-    private Long expertId;
-
     @NotNull(message = "categoryId is required")
     private Long categoryId;
 

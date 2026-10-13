@@ -1,6 +1,9 @@
 package com.sispro3d.unam.api.exception;
 
 import com.sispro3d.unam.api.error.ErrorDetail;
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ConflictException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolation;
@@ -43,7 +46,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation failed", request, details);
     }
 
-    @ExceptionHandler({InvalidRequestException.class, IllegalArgumentException.class})
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorDetail> handleForbidden(ForbiddenException ex, jakarta.servlet.http.HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler({BadRequestException.class, InvalidRequestException.class, IllegalArgumentException.class})
     public ResponseEntity<ErrorDetail> handleBadRequest(RuntimeException ex, jakarta.servlet.http.HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, List.of());
     }
@@ -67,7 +75,7 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation failed", request, details);
     }
 
-    @ExceptionHandler({DataIntegrityException.class, DataIntegrityViolationException.class})
+    @ExceptionHandler({ConflictException.class, DataIntegrityException.class, DataIntegrityViolationException.class})
     public ResponseEntity<ErrorDetail> handleConflict(RuntimeException ex, jakarta.servlet.http.HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request, List.of());
     }

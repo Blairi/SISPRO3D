@@ -11,4 +11,6 @@ import java.util.List;
 public interface PreviewRepository extends JpaRepository<Preview, Long> {
     List<Preview> findByDeliverable(Deliverable deliverable);
     List<Preview> findByDeliverable_Id(Long deliverableId);
+
+    List<Preview> findByDeliverable_IdOrderByCreatedAtAsc(Long deliverableId);
 }

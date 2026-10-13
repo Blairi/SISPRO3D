@@ -2,6 +2,8 @@ package com.sispro3d.unam.preview.service.impl;
 
 import com.sispro3d.unam.category.domain.Category;
 import com.sispro3d.unam.category.repository.CategoryRepository;
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.deliverable.dto.DeliverableRequest;
@@ -15,6 +17,7 @@ import com.sispro3d.unam.preview.dto.PreviewRequest;
 import com.sispro3d.unam.preview.dto.PreviewResponse;
 import com.sispro3d.unam.preview.repository.PreviewRepository;
 import com.sispro3d.unam.preview.service.PreviewService;
+import com.sispro3d.unam.quote.dto.QuoteAcceptance;
 import com.sispro3d.unam.quote.dto.QuoteRequest;
 import com.sispro3d.unam.quote.dto.QuoteResponse;
 import com.sispro3d.unam.quote.service.QuoteService;
@@ -119,7 +122,7 @@ class PreviewServiceImplTest {
         return offeredServiceRepository.save(service);
     }
 
-    private QuoteResponse createAcceptedQuote(Account client, OfferedService service) {
+    private QuoteAcceptance createAcceptedQuote(Account client, OfferedService service) {
         var request = QuoteRequest.builder()
                 .clientId(client.getIdUser())
                 .offeredServiceId(service.getId())
@@ -131,12 +134,7 @@ class PreviewServiceImplTest {
     }
 
     private WorkOrderResponse createInProgressOrder(Account client, OfferedService service, Account expert) {
-        QuoteResponse quote = createAcceptedQuote(client, service);
-        var request = WorkOrderRequest.builder()
-                .clientId(client.getIdUser())
-                .quoteId(quote.getId())
-                .build();
-        WorkOrderResponse created = workOrderService.create(request);
+        WorkOrderResponse created = createAcceptedQuote(client, service).workOrder();
         return workOrderService.start(created.getId(), expert.getIdUser());
     }
 
@@ -201,7 +199,7 @@ class PreviewServiceImplTest {
         DeliverableResponse deliverable = createDeliverable(expert, order);
 
         assertThatThrownBy(() -> previewService.create(createPreviewRequest(otherExpert, deliverable)))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("propietario");
     }
 
@@ -214,7 +212,7 @@ class PreviewServiceImplTest {
         DeliverableResponse deliverable = createDeliverable(expert, order);
 
         assertThatThrownBy(() -> previewService.create(createPreviewRequest(client, deliverable)))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("EXPERT");
     }
 
@@ -223,13 +221,7 @@ class PreviewServiceImplTest {
         var expert = createExpert("preview.expert.pending@sispro3d.com");
         var client = createClient("preview.client.pending@sispro3d.com");
         var service = createApprovedService("Servicio pendiente", expert);
-        QuoteResponse quote = createAcceptedQuote(client, service);
-
-        var orderRequest = WorkOrderRequest.builder()
-                .clientId(client.getIdUser())
-                .quoteId(quote.getId())
-                .build();
-        WorkOrderResponse order = workOrderService.create(orderRequest);
+        WorkOrderResponse order = createAcceptedQuote(client, service).workOrder();
 
         WorkOrder orderEntity = workOrderRepository.findById(order.getId()).orElseThrow();
         var deliverable = new Deliverable();
@@ -248,7 +240,7 @@ class PreviewServiceImplTest {
                 .build();
 
         assertThatThrownBy(() -> previewService.create(request))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("IN_PROGRESS o IN_REVIEW");
     }
 

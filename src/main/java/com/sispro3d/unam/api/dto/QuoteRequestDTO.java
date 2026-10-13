@@ -14,9 +14,6 @@ import lombok.Setter;
 @Builder
 public class QuoteRequestDTO {
 
-    @NotNull(message = "clientId is required")
-    private Long clientId;
-
     @NotNull(message = "offeredServiceId is required")
     private Long offeredServiceId;
 

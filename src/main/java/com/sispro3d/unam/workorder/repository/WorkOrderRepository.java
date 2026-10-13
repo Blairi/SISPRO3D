@@ -17,4 +17,11 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, Long> {
     Optional<WorkOrder> findByQuote_Id(Long quoteId);
     List<WorkOrder> findByQuote_Client_IdUser(Long clientId);
     List<WorkOrder> findByQuote_OfferedService_Expert_IdUser(Long expertId);
+
+    /** Una cotización no puede tener más de una orden de trabajo. */
+    boolean existsByQuote_Id(Long quoteId);
+
+    /** Órdenes COMPLETED de un cliente sobre un servicio, para validar la reseña. */
+    List<WorkOrder> findByQuote_Client_IdUserAndQuote_OfferedService_IdAndStatus(
+            Long clientId, Long offeredServiceId, WorkOrderStatus status);
 }

@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS preview (
     id             BIGINT         NOT NULL AUTO_INCREMENT PRIMARY KEY,
     caption        VARCHAR(255)   NOT NULL,
     url_file       VARCHAR(255)   NOT NULL,
+    created_at     DATETIME       NULL,
     deliverable_id BIGINT         NOT NULL,
     CONSTRAINT fk_preview_deliverable
         FOREIGN KEY (deliverable_id) REFERENCES deliverable(id)
@@ -198,4 +199,14 @@ CREATE TABLE IF NOT EXISTS favorite_service (
     CONSTRAINT fk_favorite_service
         FOREIGN KEY (id_offered_service) REFERENCES offered_service(id_offered_service)
         ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- ------------------------------------------------------------
+--  REVOKED TOKEN
+--  Identificadores de tokens de refresco invalidados al cerrar sesión.
+-- ------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS revoked_token (
+    id_token   VARCHAR(64) NOT NULL PRIMARY KEY,
+    revoked_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

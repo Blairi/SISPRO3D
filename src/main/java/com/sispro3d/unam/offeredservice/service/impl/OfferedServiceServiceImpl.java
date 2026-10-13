@@ -1,7 +1,9 @@
 package com.sispro3d.unam.offeredservice.service.impl;
 
-import com.sispro3d.unam.category.repository.CategoryRepository;
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.category.repository.CategoryRepository;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceRequest;
@@ -49,7 +51,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", request.getExpertId()));
 
         if (expert.getRole() != Role.EXPERT) {
-            throw new IllegalStateException("Solo cuentas de tipo EXPERT pueden publicar servicios");
+            throw new ForbiddenException("Solo cuentas de tipo EXPERT pueden publicar servicios");
         }
 
         if (!categoryRepository.existsById(request.getCategoryId())) {
@@ -107,11 +109,11 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (admin)", adminId));
 
         if (admin.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("Solo cuentas de tipo ADMIN pueden aprobar servicios");
+            throw new ForbiddenException("Solo cuentas de tipo ADMIN pueden aprobar servicios");
         }
 
         if (service.getStatus() != ServiceStatus.PENDING) {
-            throw new IllegalStateException("Solo se pueden aprobar servicios en estado PENDING");
+            throw new BadRequestException("Solo se pueden aprobar servicios en estado PENDING");
         }
 
         service.setStatus(ServiceStatus.APPROVED);
@@ -131,11 +133,11 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (admin)", adminId));
 
         if (admin.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("Solo cuentas de tipo ADMIN pueden aprobar servicios");
+            throw new ForbiddenException("Solo cuentas de tipo ADMIN pueden aprobar servicios");
         }
 
         if (service.getStatus() != ServiceStatus.PENDING) {
-            throw new IllegalStateException("Solo se pueden aprobar servicios en estado PENDING");
+            throw new BadRequestException("Solo se pueden aprobar servicios en estado PENDING");
         }
 
         service.setStatus(ServiceStatus.REJECTED);
@@ -154,7 +156,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (admin)", adminId));
 
         if (admin.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("Solo cuentas de tipo ADMIN pueden modificar el estado de un servicio");
+            throw new ForbiddenException("Solo cuentas de tipo ADMIN pueden modificar el estado de un servicio");
         }
 
         service.setStatus(ServiceStatus.PENDING);

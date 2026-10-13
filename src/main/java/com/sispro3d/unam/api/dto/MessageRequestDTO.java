@@ -16,9 +16,6 @@ import lombok.Setter;
 @Builder
 public class MessageRequestDTO {
 
-    @NotNull(message = "authorId is required")
-    private Long authorId;
-
     @NotBlank(message = "content is required")
     @Size(max = 255, message = "content must be at most 255 characters")
     private String content;

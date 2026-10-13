@@ -18,9 +18,6 @@ import java.time.LocalDate;
 @Builder
 public class QuoteReplyDTO {
 
-    @NotNull(message = "expertId is required")
-    private Long expertId;
-
     @NotNull(message = "totalAmount is required")
     @DecimalMin(value = "0.01", message = "totalAmount must be greater than zero")
     private BigDecimal totalAmount;

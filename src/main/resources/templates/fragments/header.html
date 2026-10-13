@@ -25,8 +25,16 @@
 
             <!-- Logueado -->
             <div th:if="${sessionUser != null}" class="flex gap-4 items-center">
+                <a th:if="${sessionUser.role.name() == 'CLIENT'}" href="/client/quotes"
+                   class="text-gray-600 hover:text-indigo-600 font-medium">Mis cotizaciones</a>
+                <a th:if="${sessionUser.role.name() == 'CLIENT'}" href="/client/orders"
+                   class="text-gray-600 hover:text-indigo-600 font-medium">Mis órdenes</a>
+                <a th:if="${sessionUser.role.name() == 'EXPERT'}" href="/expert/quotes"
+                   class="text-gray-600 hover:text-indigo-600 font-medium">Cotizaciones</a>
+                <a th:if="${sessionUser.role.name() == 'EXPERT'}" href="/expert/orders"
+                   class="text-gray-600 hover:text-indigo-600 font-medium">Órdenes</a>
                 <a th:if="${sessionUser.role.name() == 'EXPERT'}" href="/expert/dashboard"
-                   class="text-gray-600 hover:text-indigo-600 font-medium">Dashboard</a>
+                   class="text-gray-600 hover:text-indigo-600 font-medium">Servicios</a>
                 <a th:if="${sessionUser.role.name() == 'ADMIN'}" href="/admin/dashboard"
                    class="text-gray-600 hover:text-indigo-600 font-medium">Dashboard</a>
                 <a th:if="${sessionUser.role.name() == 'ADMIN'}" href="/admin/categories"

@@ -1,5 +1,6 @@
 package com.sispro3d.unam.message.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Getter
@@ -10,6 +11,8 @@ import lombok.*;
 @Builder
 public class MessageRequest {
     private Long userId;
-    private Long threadId;
+
+    @NotBlank(message = "{msg.NotBlank.content}")
     private String content;
+    private Long threadId;
 }

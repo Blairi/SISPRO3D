@@ -1,5 +1,7 @@
 package com.sispro3d.unam.thread.service.impl;
 
+import com.sispro3d.unam.core.exception.ConflictException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.thread.domain.Thread;
 import com.sispro3d.unam.thread.dto.ThreadRequest;
@@ -57,7 +59,7 @@ public class ThreadServiceImpl implements ThreadService {
         requireParticipant(order, actor.getIdUser());
 
         if (threadRepository.existsByWorkOrder_Id(order.getId())) {
-            throw new IllegalStateException("Solo puede existir un hilo de conversación por orden");
+            throw new ConflictException("Solo puede existir un hilo de conversación por orden");
         }
 
         Thread thread = threadMapper.toEntity(request);
@@ -102,7 +104,7 @@ public class ThreadServiceImpl implements ThreadService {
         boolean isExpert = expert != null && userId.equals(expert.getIdUser());
 
         if (!isClient && !isExpert) {
-            throw new IllegalStateException("Solo el cliente o el experto de la orden pueden acceder al hilo");
+            throw new ForbiddenException("Solo el cliente o el experto de la orden pueden acceder al hilo");
         }
     }
 

@@ -76,6 +76,92 @@
                 <p class="text-lg font-medium text-gray-900"
                    th:text="${service.deliveryTimeDays} + ' días'"></p>
             </div>
+
+            <div class="ml-auto">
+                <a th:if="${sessionUser == null or sessionUser.role.name() == 'CLIENT'}"
+                   th:href="@{/services/{id}/quote(id=${service.id})}"
+                   class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                    Contratar
+                </a>
+            </div>
+        </div>
+
+        <!-- Reseñas -->
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <div th:if="${canReview}"
+                 class="lg:col-span-1 bg-white rounded-xl shadow border border-gray-200 p-6 h-fit">
+                <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Deja tu reseña</h2>
+
+                <div th:if="${reviewSuccess != null}"
+                     class="mb-4 rounded-lg bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm">
+                    <p th:text="${reviewSuccess}"></p>
+                </div>
+                <div th:if="${reviewError != null}"
+                     class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3 text-sm">
+                    <p th:text="${reviewError}"></p>
+                </div>
+
+                <form th:action="@{/services/{id}/review(id=${service.id})}" method="post"
+                      th:object="${reviewRequest}" class="space-y-4">
+                    <div>
+                        <label th:for="rating" class="block text-sm font-semibold text-gray-900 mb-2">
+                            Calificación
+                        </label>
+                        <select th:field="*{rating}" id="rating"
+                                th:errorclass="border-red-500"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Selecciona (1-5)</option>
+                            <option value="1">1 - Muy malo</option>
+                            <option value="2">2 - Malo</option>
+                            <option value="3">3 - Regular</option>
+                            <option value="4">4 - Bueno</option>
+                            <option value="5">5 - Excelente</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label th:for="comment" class="block text-sm font-semibold text-gray-900 mb-2">
+                            Comentario (opcional)
+                        </label>
+                        <textarea th:field="*{comment}" id="comment" rows="3"
+                                  placeholder="¿Cómo fue tu experiencia?"
+                                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                    <button type="submit"
+                            class="w-full bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition">
+                        Publicar reseña
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-2 bg-white rounded-xl shadow border border-gray-200 p-6">
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide">Reseñas del servicio</h2>
+                    <div th:if="${avgRating != null}" class="flex items-center gap-2">
+                        <span class="text-2xl font-bold text-gray-900" th:text="${avgRating}"></span>
+                        <span class="text-amber-500 text-xl" th:text="${'★'.repeat(avgStars)}"></span>
+                    </div>
+                </div>
+
+                <p th:if="${#lists.isEmpty(reviews)}" class="text-sm text-gray-500">
+                    Todavía no hay reseñas para este servicio.
+                </p>
+
+                <div th:unless="${#lists.isEmpty(reviews)}" class="space-y-4">
+                    <div th:each="review : ${reviews}"
+                         class="rounded-lg border border-gray-200 p-4">
+                        <div class="flex items-center justify-between gap-4 mb-2">
+                            <p class="font-semibold text-gray-900" th:text="${reviewerNames[review.clientId]}"></p>
+                            <span class="text-amber-500 text-sm" th:text="${'★'.repeat(review.rating)}"></span>
+                        </div>
+                        <p th:if="${review.comment != null}"
+                           class="text-sm text-gray-700 whitespace-pre-line" th:text="${review.comment}"></p>
+                        <p class="text-xs text-gray-400 mt-2"
+                           th:text="${#temporals.format(review.createdAt, 'dd/MM/yyyy')}"></p>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>

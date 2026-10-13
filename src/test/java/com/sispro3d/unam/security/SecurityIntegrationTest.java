@@ -40,6 +40,9 @@ class SecurityIntegrationTest {
     private AccountRepository accountRepository;
 
     @Autowired
+    private JwtTokenService jwtTokenService;
+
+    @Autowired
     private CategoryRepository categoryRepository;
 
     @Autowired
@@ -147,26 +150,37 @@ class SecurityIntegrationTest {
     }
 
     @Test
-    void restApi_postWithoutAuthAndWithoutCsrf_stillWorks() throws Exception {
+    void restApi_withoutToken_returns401() throws Exception {
+        mockMvc.perform(post("/api/v1/services")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(serviceBody()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    void restApi_withTokenAndWithoutCsrf_isCreated() throws Exception {
+        String token = "Bearer " + jwtTokenService.issueAccessToken(expertId, Role.EXPERT);
+
+        mockMvc.perform(post("/api/v1/services")
+                        .header("Authorization", token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(serviceBody()))
+                .andExpect(status().isCreated());
+    }
+
+    private String serviceBody() {
         Category category = new Category();
         category.setName("Modelado");
         category.setDescription("Servicios 3D");
         Long categoryId = categoryRepository.save(category).getId();
 
-        String body = """
+        return """
                 {
                   "title": "Modelado de prueba",
                   "description": "Descripcion",
                   "basePrice": 1500.00,
-                  "expertId": %d,
                   "categoryId": %d,
                   "deliveryTimeDays": 7
                 }
-                """.formatted(expertId, categoryId);
-
-        mockMvc.perform(post("/api/v1/services")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isCreated());
+                """.formatted(categoryId);
     }
 }

@@ -2,6 +2,8 @@ package com.sispro3d.unam.offeredservice.service.impl;
 
 import com.sispro3d.unam.category.domain.Category;
 import com.sispro3d.unam.category.repository.CategoryRepository;
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceRequest;
@@ -284,7 +286,7 @@ class OfferedServiceServiceImplTest {
         var created = offeredServiceService.create(request);
 
         assertThatThrownBy(() -> offeredServiceService.approve(created.getId(), anotherExpert.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("ADMIN");
     }
 
@@ -306,7 +308,7 @@ class OfferedServiceServiceImplTest {
         offeredServiceService.approve(created.getId(), admin.getIdUser()); // first approval
 
         assertThatThrownBy(() -> offeredServiceService.approve(created.getId(), admin.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("PENDING");
     }
 
@@ -377,7 +379,7 @@ class OfferedServiceServiceImplTest {
         offeredServiceService.approve(created.getId(), admin.getIdUser());
 
         assertThatThrownBy(() -> offeredServiceService.markPending(created.getId(), expert.getIdUser()))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("ADMIN");
     }
 

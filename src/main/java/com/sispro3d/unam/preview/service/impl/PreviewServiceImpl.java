@@ -1,5 +1,7 @@
 package com.sispro3d.unam.preview.service.impl;
 
+import com.sispro3d.unam.core.exception.BadRequestException;
+import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.deliverable.repository.DeliverableRepository;
@@ -15,6 +17,7 @@ import com.sispro3d.unam.workorder.domain.WorkOrder;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,6 +63,7 @@ public class PreviewServiceImpl implements PreviewService {
 
         Preview preview = previewMapper.toEntity(request);
         preview.setDeliverable(deliverable);
+        preview.setCreatedAt(LocalDateTime.now());
 
         Preview saved = previewRepository.save(preview);
         return previewMapper.toResponse(saved);
@@ -98,25 +102,25 @@ public class PreviewServiceImpl implements PreviewService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", expertId));
 
         if (expert.getRole() != Role.EXPERT) {
-            throw new IllegalStateException("Solo cuentas de tipo EXPERT pueden gestionar previsualizaciones");
+            throw new ForbiddenException("Solo cuentas de tipo EXPERT pueden gestionar previsualizaciones");
         }
 
         var serviceExpert = order.getQuote().getOfferedService().getExpert();
         if (serviceExpert == null || !expertId.equals(serviceExpert.getIdUser())) {
-            throw new IllegalStateException("Solo el experto propietario del servicio puede gestionar la orden");
+            throw new ForbiddenException("Solo el experto propietario del servicio puede gestionar la orden");
         }
     }
 
     private void requireActiveOrder(WorkOrder order) {
         if (order.getStatus() != WorkOrderStatus.IN_PROGRESS
                 && order.getStatus() != WorkOrderStatus.IN_REVIEW) {
-            throw new IllegalStateException("Solo se pueden gestionar previsualizaciones en órdenes en estado IN_PROGRESS o IN_REVIEW");
+            throw new BadRequestException("Solo se pueden gestionar previsualizaciones en órdenes en estado IN_PROGRESS o IN_REVIEW");
         }
     }
 
     @Override
     public List<PreviewResponse> findByDeliverableId(Long deliverableId) {
-        return previewRepository.findByDeliverable_Id(deliverableId).stream()
+        return previewRepository.findByDeliverable_IdOrderByCreatedAtAsc(deliverableId).stream()
                 .map(previewMapper::toResponse)
                 .toList();
     }

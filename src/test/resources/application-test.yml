@@ -11,3 +11,10 @@ spring:
   sql:
     init:
       mode: never
+
+app:
+  jwt:
+    secret: test-only-signing-key-para-los-tests-de-sispro3d-0123456789
+    access-ttl: PT30M
+    refresh-ttl: P7D
+    issuer: sispro3d-test
