@@ -5,6 +5,7 @@ import com.sispro3d.unam.category.repository.CategoryRepository;
 import com.sispro3d.unam.core.exception.BadRequestException;
 import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.core.storage.FileStorageService;
 import com.sispro3d.unam.deliverable.dto.DeliverableRequest;
 import com.sispro3d.unam.deliverable.dto.DeliverableResponse;
 import com.sispro3d.unam.deliverable.repository.DeliverableRepository;
@@ -23,12 +24,18 @@ import com.sispro3d.unam.workorder.dto.WorkOrderRequest;
 import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -41,11 +48,22 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Transactional
 class DeliverableServiceImplTest {
 
+    @TempDir
+    static Path uploadsDir;
+
+    @DynamicPropertySource
+    static void storageLocation(DynamicPropertyRegistry registry) {
+        registry.add("app.storage.location", () -> uploadsDir.toString());
+    }
+
     @Autowired
     private DeliverableService deliverableService;
 
     @Autowired
     private DeliverableRepository deliverableRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @Autowired
     private AccountRepository accountRepository;
@@ -121,13 +139,16 @@ class DeliverableServiceImplTest {
         return workOrderService.start(created.getId(), expert.getIdUser());
     }
 
+    private MockMultipartFile modelFile(String filename) {
+        return new MockMultipartFile("file", filename, "application/octet-stream", "model-bytes".getBytes());
+    }
+
     private DeliverableRequest createDeliverableRequest(Account expert, WorkOrderResponse order) {
         return DeliverableRequest.builder()
                 .expertId(expert.getIdUser())
                 .workOrderId(order.getId())
                 .name("Modelo FBX")
-                .urlFile("https://files.render3d.mx/modelo.fbx")
-                .fileType("model/fbx")
+                .file(modelFile("modelo.fbx"))
                 .build();
     }
 
@@ -142,10 +163,31 @@ class DeliverableServiceImplTest {
 
         assertThat(res.getId()).isNotNull();
         assertThat(res.getName()).isEqualTo("Modelo FBX");
-        assertThat(res.getUrlFile()).isEqualTo("https://files.render3d.mx/modelo.fbx");
-        assertThat(res.getFileType()).isEqualTo("model/fbx");
+        assertThat(res.getUrlFile()).startsWith("deliverables/").endsWith(".fbx");
+        assertThat(res.getFileType()).isEqualTo("FBX");
         assertThat(res.getWorkOrderId()).isEqualTo(order.getId());
         assertThat(res.getCreatedAt()).isNotNull();
+        assertThat(Files.exists(fileStorageService.resolve(res.getUrlFile()))).isTrue();
+    }
+
+    @Test
+    void create_whenFileTypeNotAllowed_throwsBadRequest_andStoresNothing() {
+        var expert = createExpert("deliverable.expert.badtype@sispro3d.com");
+        var client = createClient("deliverable.client.badtype@sispro3d.com");
+        var service = createApprovedService("Tipo invalido", expert);
+        WorkOrderResponse order = createInProgressOrder(client, service, expert);
+
+        var request = DeliverableRequest.builder()
+                .expertId(expert.getIdUser())
+                .workOrderId(order.getId())
+                .name("Mal tipo")
+                .file(modelFile("modelo.exe"))
+                .build();
+
+        assertThatThrownBy(() -> deliverableService.create(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Formato no permitido");
+        assertThat(deliverableService.findByWorkOrderId(order.getId())).isEmpty();
     }
 
     @Test
@@ -156,8 +198,7 @@ class DeliverableServiceImplTest {
                 .expertId(expert.getIdUser())
                 .workOrderId(999L)
                 .name("Modelo")
-                .urlFile("https://files.render3d.mx/modelo.fbx")
-                .fileType("model/fbx")
+                .file(modelFile("modelo.fbx"))
                 .build();
 
         assertThatThrownBy(() -> deliverableService.create(request))
@@ -240,18 +281,21 @@ class DeliverableServiceImplTest {
         var service = createApprovedService("Rigging basico", expert);
         WorkOrderResponse order = createInProgressOrder(client, service, expert);
         DeliverableResponse created = deliverableService.create(createDeliverableRequest(expert, order));
+        Path previous = fileStorageService.resolve(created.getUrlFile());
 
         var updateRequest = DeliverableRequest.builder()
                 .expertId(expert.getIdUser())
                 .workOrderId(order.getId())
                 .name("Modelo OBJ")
-                .urlFile("https://files.render3d.mx/modelo.obj")
-                .fileType("model/obj")
+                .file(modelFile("modelo.obj"))
                 .build();
         DeliverableResponse updated = deliverableService.update(created.getId(), updateRequest);
 
         assertThat(updated.getName()).isEqualTo("Modelo OBJ");
-        assertThat(updated.getFileType()).isEqualTo("model/obj");
+        assertThat(updated.getFileType()).isEqualTo("OBJ");
+        assertThat(updated.getUrlFile()).startsWith("deliverables/").endsWith(".obj");
+        assertThat(Files.exists(previous)).isFalse();
+        assertThat(Files.exists(fileStorageService.resolve(updated.getUrlFile()))).isTrue();
     }
 
     @Test
@@ -271,10 +315,12 @@ class DeliverableServiceImplTest {
         var service = createApprovedService("Para borrar", expert);
         WorkOrderResponse order = createInProgressOrder(client, service, expert);
         DeliverableResponse created = deliverableService.create(createDeliverableRequest(expert, order));
+        Path stored = fileStorageService.resolve(created.getUrlFile());
 
         deliverableService.delete(created.getId());
 
         assertThat(deliverableRepository.existsById(created.getId())).isFalse();
+        assertThat(Files.exists(stored)).isFalse();
     }
 
     @Test

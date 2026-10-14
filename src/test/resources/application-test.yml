@@ -18,3 +18,5 @@ app:
     access-ttl: PT30M
     refresh-ttl: P7D
     issuer: sispro3d-test
+  storage:
+    location: target/test-uploads

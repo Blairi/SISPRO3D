@@ -5,6 +5,7 @@ import com.sispro3d.unam.api.dto.DeliverableResponseDTO;
 import com.sispro3d.unam.api.mapper.ApiDeliverableMapper;
 import com.sispro3d.unam.core.exception.BadRequestException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.core.storage.FileStorageService;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.deliverable.repository.DeliverableRepository;
 import com.sispro3d.unam.preview.repository.PreviewRepository;
@@ -24,17 +25,20 @@ public class ApiDeliverableService {
     private final PreviewRepository previewRepository;
     private final ApiDeliverableMapper mapper;
     private final ApiOrderAccess access;
+    private final FileStorageService fileStorageService;
 
     public ApiDeliverableService(DeliverableRepository deliverableRepository,
                                  WorkOrderRepository workOrderRepository,
                                  PreviewRepository previewRepository,
                                  ApiDeliverableMapper mapper,
-                                 ApiOrderAccess access) {
+                                 ApiOrderAccess access,
+                                 FileStorageService fileStorageService) {
         this.deliverableRepository = deliverableRepository;
         this.workOrderRepository = workOrderRepository;
         this.previewRepository = previewRepository;
         this.mapper = mapper;
         this.access = access;
+        this.fileStorageService = fileStorageService;
     }
 
     public List<DeliverableResponseDTO> findByWorkOrderId(Long workOrderId) {
@@ -88,8 +92,11 @@ public class ApiDeliverableService {
 
         access.requireParticipant(existing.getWorkOrder());
 
-        previewRepository.deleteAll(previewRepository.findByDeliverable_Id(id));
+        var previews = previewRepository.findByDeliverable_Id(id);
+        previews.forEach(preview -> fileStorageService.delete(preview.getUrlFile()));
+        previewRepository.deleteAll(previews);
         deliverableRepository.delete(existing);
+        fileStorageService.delete(existing.getUrlFile());
     }
 
     private Deliverable findDeliverable(Long id) {

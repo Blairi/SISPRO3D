@@ -18,8 +18,6 @@ public class DeliverableMapper {
         }
         var deliverable = new Deliverable();
         deliverable.setName(request.getName());
-        deliverable.setUrlFile(request.getUrlFile());
-        deliverable.setFileType(request.getFileType());
         return deliverable;
     }
 
@@ -39,7 +37,5 @@ public class DeliverableMapper {
 
     public void updateEntityFromRequest(DeliverableRequest request, Deliverable deliverable) {
         deliverable.setName(request.getName());
-        deliverable.setUrlFile(request.getUrlFile());
-        deliverable.setFileType(request.getFileType());
     }
 }

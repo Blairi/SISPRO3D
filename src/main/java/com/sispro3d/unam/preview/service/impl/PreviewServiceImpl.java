@@ -3,6 +3,8 @@ package com.sispro3d.unam.preview.service.impl;
 import com.sispro3d.unam.core.exception.BadRequestException;
 import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.core.storage.FileStorageService;
+import com.sispro3d.unam.core.storage.UploadValidator;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.deliverable.repository.DeliverableRepository;
 import com.sispro3d.unam.preview.domain.Preview;
@@ -24,19 +26,27 @@ import java.util.Optional;
 @Service
 public class PreviewServiceImpl implements PreviewService {
 
+    private static final String SUBFOLDER = "previews";
+
     private final PreviewRepository previewRepository;
     private final PreviewMapper previewMapper;
     private final DeliverableRepository deliverableRepository;
     private final AccountRepository accountRepository;
+    private final FileStorageService fileStorageService;
+    private final UploadValidator uploadValidator;
 
     public PreviewServiceImpl(PreviewRepository previewRepository,
                               PreviewMapper previewMapper,
                               DeliverableRepository deliverableRepository,
-                              AccountRepository accountRepository) {
+                              AccountRepository accountRepository,
+                              FileStorageService fileStorageService,
+                              UploadValidator uploadValidator) {
         this.previewRepository = previewRepository;
         this.previewMapper = previewMapper;
         this.deliverableRepository = deliverableRepository;
         this.accountRepository = accountRepository;
+        this.fileStorageService = fileStorageService;
+        this.uploadValidator = uploadValidator;
     }
 
     @Override
@@ -61,9 +71,15 @@ public class PreviewServiceImpl implements PreviewService {
         requireExpertOwner(order, request.getExpertId());
         requireActiveOrder(order);
 
+        String error = uploadValidator.previewError(request.getFile());
+        if (error != null) {
+            throw new BadRequestException(error);
+        }
+
         Preview preview = previewMapper.toEntity(request);
         preview.setDeliverable(deliverable);
         preview.setCreatedAt(LocalDateTime.now());
+        preview.setUrlFile(fileStorageService.store(request.getFile(), SUBFOLDER));
 
         Preview saved = previewRepository.save(preview);
         return previewMapper.toResponse(saved);
@@ -80,16 +96,27 @@ public class PreviewServiceImpl implements PreviewService {
 
         previewMapper.updateEntityFromRequest(request, existing);
         existing.setDeliverable(deliverableRepository.getReferenceById(request.getDeliverableId()));
+
+        if (request.getFile() != null && !request.getFile().isEmpty()) {
+            String error = uploadValidator.previewError(request.getFile());
+            if (error != null) {
+                throw new BadRequestException(error);
+            }
+            String previous = existing.getUrlFile();
+            existing.setUrlFile(fileStorageService.store(request.getFile(), SUBFOLDER));
+            fileStorageService.delete(previous);
+        }
+
         Preview updated = previewRepository.save(existing);
         return previewMapper.toResponse(updated);
     }
 
     @Override
     public void delete(Long id) {
-        if (!previewRepository.existsById(id)) {
-            throw ResourceNotFoundException.forId("Preview", id);
-        }
+        Preview existing = previewRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Preview", id));
         previewRepository.deleteById(id);
+        fileStorageService.delete(existing.getUrlFile());
     }
 
     @Override

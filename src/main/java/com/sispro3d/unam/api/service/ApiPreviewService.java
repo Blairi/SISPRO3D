@@ -7,6 +7,7 @@ import com.sispro3d.unam.api.mapper.ApiPreviewMapper;
 import com.sispro3d.unam.core.exception.BadRequestException;
 import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.core.storage.FileStorageService;
 import com.sispro3d.unam.security.ApiCurrentUser;
 import com.sispro3d.unam.deliverable.repository.DeliverableRepository;
 import com.sispro3d.unam.preview.domain.Preview;
@@ -28,17 +29,20 @@ public class ApiPreviewService {
     private final AccountRepository accountRepository;
     private final ApiPreviewMapper mapper;
     private final ApiOrderAccess access;
+    private final FileStorageService fileStorageService;
 
     public ApiPreviewService(PreviewRepository previewRepository,
                              DeliverableRepository deliverableRepository,
                              AccountRepository accountRepository,
                              ApiPreviewMapper mapper,
-                             ApiOrderAccess access) {
+                             ApiOrderAccess access,
+                             FileStorageService fileStorageService) {
         this.previewRepository = previewRepository;
         this.deliverableRepository = deliverableRepository;
         this.accountRepository = accountRepository;
         this.mapper = mapper;
         this.access = access;
+        this.fileStorageService = fileStorageService;
     }
 
     public PreviewResponseDTO create(Long deliverableId, PreviewRequestDTO request) {
@@ -111,6 +115,7 @@ public class ApiPreviewService {
         var preview = findPreview(id);
         access.requireParticipant(preview.getDeliverable().getWorkOrder());
         previewRepository.delete(preview);
+        fileStorageService.delete(preview.getUrlFile());
     }
 
     private Preview findPreview(Long id) {

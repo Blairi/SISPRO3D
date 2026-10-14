@@ -3,6 +3,8 @@ package com.sispro3d.unam.deliverable.service.impl;
 import com.sispro3d.unam.core.exception.BadRequestException;
 import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.core.storage.FileStorageService;
+import com.sispro3d.unam.core.storage.UploadValidator;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.deliverable.dto.DeliverableRequest;
 import com.sispro3d.unam.deliverable.dto.DeliverableResponse;
@@ -19,10 +21,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
 public class DeliverableServiceImpl implements DeliverableService {
+
+    private static final String SUBFOLDER = "deliverables";
 
     @Autowired
     private DeliverableRepository deliverableRepository;
@@ -32,6 +37,10 @@ public class DeliverableServiceImpl implements DeliverableService {
     private WorkOrderRepository workOrderRepository;
     @Autowired
     private AccountRepository accountRepository;
+    @Autowired
+    private FileStorageService fileStorageService;
+    @Autowired
+    private UploadValidator uploadValidator;
 
     @Override
     public List<DeliverableResponse> findAll() {
@@ -54,9 +63,16 @@ public class DeliverableServiceImpl implements DeliverableService {
         requireExpertOwner(order, request.getExpertId());
         requireActiveOrder(order);
 
+        String error = uploadValidator.deliverableError(request.getFile());
+        if (error != null) {
+            throw new BadRequestException(error);
+        }
+
         Deliverable deliverable = deliverableMapper.toEntity(request);
         deliverable.setWorkOrder(order);
         deliverable.setCreatedAt(LocalDateTime.now());
+        deliverable.setUrlFile(fileStorageService.store(request.getFile(), SUBFOLDER));
+        deliverable.setFileType(fileTypeOf(request));
 
         Deliverable saved = deliverableRepository.save(deliverable);
         return deliverableMapper.toResponse(saved);
@@ -73,16 +89,28 @@ public class DeliverableServiceImpl implements DeliverableService {
 
         deliverableMapper.updateEntityFromRequest(request, existing);
         existing.setWorkOrder(workOrderRepository.getReferenceById(request.getWorkOrderId()));
+
+        if (request.getFile() != null && !request.getFile().isEmpty()) {
+            String error = uploadValidator.deliverableError(request.getFile());
+            if (error != null) {
+                throw new BadRequestException(error);
+            }
+            String previous = existing.getUrlFile();
+            existing.setUrlFile(fileStorageService.store(request.getFile(), SUBFOLDER));
+            existing.setFileType(fileTypeOf(request));
+            fileStorageService.delete(previous);
+        }
+
         Deliverable updated = deliverableRepository.save(existing);
         return deliverableMapper.toResponse(updated);
     }
 
     @Override
     public void delete(Long id) {
-        if (!deliverableRepository.existsById(id)) {
-            throw ResourceNotFoundException.forId("Deliverable", id);
-        }
-        deliverableRepository.deleteById(id);
+        Deliverable existing = deliverableRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.forId("Deliverable", id));
+        deliverableRepository.delete(existing);
+        fileStorageService.delete(existing.getUrlFile());
     }
 
     @Override
@@ -109,6 +137,10 @@ public class DeliverableServiceImpl implements DeliverableService {
                 && order.getStatus() != WorkOrderStatus.IN_REVIEW) {
             throw new BadRequestException("Solo se pueden gestionar entregables en órdenes en estado IN_PROGRESS o IN_REVIEW");
         }
+    }
+
+    private String fileTypeOf(DeliverableRequest request) {
+        return FileStorageService.extensionOf(request.getFile().getOriginalFilename()).toUpperCase(Locale.ROOT);
     }
 
     @Override

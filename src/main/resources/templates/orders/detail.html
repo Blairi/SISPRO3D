@@ -132,7 +132,8 @@
                                     <p class="font-semibold text-gray-900" th:text="${deliverable.name}"></p>
                                     <p class="text-xs text-gray-500">
                                         <span th:text="${deliverable.fileType}"></span> &middot;
-                                        <a th:href="${deliverable.urlFile}" target="_blank" rel="noopener"
+                                        <a th:href="${#strings.startsWith(deliverable.urlFile, 'http') ? deliverable.urlFile : '/files/' + deliverable.urlFile}"
+                                           target="_blank" rel="noopener"
                                            class="text-indigo-600 hover:text-indigo-800 font-medium">Descargar archivo</a>
                                     </p>
                                 </div>
@@ -147,7 +148,8 @@
                                  class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <figure th:each="preview : ${previewsByDeliverable[deliverable.id]}"
                                         class="rounded-lg overflow-hidden border border-gray-200">
-                                    <img th:src="${preview.urlFile}" th:alt="${preview.caption}"
+                                    <img th:src="${#strings.startsWith(preview.urlFile, 'http') ? preview.urlFile : '/files/' + preview.urlFile}"
+                                         th:alt="${preview.caption}"
                                          class="w-full h-32 object-cover">
                                     <figcaption th:if="${preview.caption != null}"
                                                 class="px-3 py-2 text-xs text-gray-600" th:text="${preview.caption}"></figcaption>
