@@ -13,6 +13,9 @@ import com.sispro3d.unam.deliverable.service.DeliverableService;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
+import com.sispro3d.unam.preview.dto.PreviewRequest;
+import com.sispro3d.unam.preview.dto.PreviewResponse;
+import com.sispro3d.unam.preview.service.PreviewService;
 import com.sispro3d.unam.quote.dto.QuoteAcceptance;
 import com.sispro3d.unam.quote.dto.QuoteRequest;
 import com.sispro3d.unam.quote.dto.QuoteResponse;
@@ -80,6 +83,9 @@ class DeliverableServiceImplTest {
     @Autowired
     private WorkOrderService workOrderService;
 
+    @Autowired
+    private PreviewService previewService;
+
     private Account createExpert(String email) {
         var account = new Account();
         account.setName("Expert");
@@ -141,6 +147,10 @@ class DeliverableServiceImplTest {
 
     private MockMultipartFile modelFile(String filename) {
         return new MockMultipartFile("file", filename, "application/octet-stream", "model-bytes".getBytes());
+    }
+
+    private MockMultipartFile imageFile(String filename) {
+        return new MockMultipartFile("file", filename, "image/png", "image-bytes".getBytes());
     }
 
     private DeliverableRequest createDeliverableRequest(Account expert, WorkOrderResponse order) {
@@ -321,6 +331,29 @@ class DeliverableServiceImplTest {
 
         assertThat(deliverableRepository.existsById(created.getId())).isFalse();
         assertThat(Files.exists(stored)).isFalse();
+    }
+
+    @Test
+    void delete_removesDeliverableAndItsPreviewFiles() {
+        var expert = createExpert("deliverable.expert.cascade@sispro3d.com");
+        var client = createClient("deliverable.client.cascade@sispro3d.com");
+        var service = createApprovedService("Cascada", expert);
+        WorkOrderResponse order = createInProgressOrder(client, service, expert);
+        DeliverableResponse deliverable = deliverableService.create(createDeliverableRequest(expert, order));
+        PreviewResponse preview = previewService.create(PreviewRequest.builder()
+                .expertId(expert.getIdUser())
+                .deliverableId(deliverable.getId())
+                .caption("Vista frontal")
+                .file(imageFile("preview.png"))
+                .build());
+        Path deliverableFile = fileStorageService.resolve(deliverable.getUrlFile());
+        Path previewFile = fileStorageService.resolve(preview.getUrlFile());
+
+        deliverableService.delete(deliverable.getId());
+
+        assertThat(deliverableRepository.existsById(deliverable.getId())).isFalse();
+        assertThat(Files.exists(deliverableFile)).isFalse();
+        assertThat(Files.exists(previewFile)).isFalse();
     }
 
     @Test

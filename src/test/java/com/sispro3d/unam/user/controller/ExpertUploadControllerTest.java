@@ -2,6 +2,7 @@ package com.sispro3d.unam.user.controller;
 
 import com.sispro3d.unam.category.domain.Category;
 import com.sispro3d.unam.category.repository.CategoryRepository;
+import com.sispro3d.unam.core.storage.FileStorageService;
 import com.sispro3d.unam.core.storage.UploadValidator;
 import com.sispro3d.unam.deliverable.dto.DeliverableRequest;
 import com.sispro3d.unam.deliverable.dto.DeliverableResponse;
@@ -10,7 +11,10 @@ import com.sispro3d.unam.deliverable.service.DeliverableService;
 import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
+import com.sispro3d.unam.preview.dto.PreviewRequest;
+import com.sispro3d.unam.preview.dto.PreviewResponse;
 import com.sispro3d.unam.preview.repository.PreviewRepository;
+import com.sispro3d.unam.preview.service.PreviewService;
 import com.sispro3d.unam.quote.dto.QuoteRequest;
 import com.sispro3d.unam.quote.service.QuoteService;
 import com.sispro3d.unam.user.domain.Account;
@@ -33,11 +37,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
@@ -77,16 +83,22 @@ class ExpertUploadControllerTest {
     @Autowired
     private PreviewRepository previewRepository;
     @Autowired
+    private PreviewService previewService;
+    @Autowired
+    private FileStorageService fileStorageService;
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private Long orderId;
     private Long expertId;
+    private Long clientId;
 
     @BeforeEach
     void setUp() {
         Account expert = createAccount("upload.expert@sispro3d.com", Role.EXPERT);
         Account client = createAccount("upload.client@sispro3d.com", Role.CLIENT);
         expertId = expert.getIdUser();
+        clientId = client.getIdUser();
 
         Category category = new Category();
         category.setName("Modelado 3D");
@@ -144,6 +156,15 @@ class ExpertUploadControllerTest {
                 .workOrderId(orderId)
                 .name("Modelo base")
                 .file(new MockMultipartFile("file", "modelo.obj", "application/octet-stream", "x".getBytes()))
+                .build());
+    }
+
+    private PreviewResponse seedPreview(DeliverableResponse deliverable, String filename) {
+        return previewService.create(PreviewRequest.builder()
+                .expertId(expertId)
+                .deliverableId(deliverable.getId())
+                .caption("Vista")
+                .file(new MockMultipartFile("file", filename, "image/png", "image".getBytes()))
                 .build());
     }
 
@@ -226,5 +247,122 @@ class ExpertUploadControllerTest {
                 .andExpect(redirectedUrl("/orders/" + orderId));
 
         assertThat(previewRepository.findByDeliverable_Id(deliverable.getId())).hasSize(1);
+    }
+
+    @Test
+    void orderDetail_showsDeleteControls_forExpertOnActiveOrder() throws Exception {
+        DeliverableResponse deliverable = seedDeliverable();
+        PreviewResponse preview = seedPreview(deliverable, "a.png");
+        MockHttpSession session = loginExpert();
+
+        String html = mockMvc.perform(get("/orders/{id}", orderId).session(session))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html).contains("/deliverables/" + deliverable.getId() + "/delete");
+        assertThat(html).contains("/previews/" + preview.getId() + "/delete");
+    }
+
+    @Test
+    void orderDetail_hidesDeleteControls_forClient() throws Exception {
+        DeliverableResponse deliverable = seedDeliverable();
+        PreviewResponse preview = seedPreview(deliverable, "a.png");
+        MockHttpSession session = login("upload.client@sispro3d.com", "test123");
+
+        String html = mockMvc.perform(get("/orders/{id}", orderId).session(session))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html).doesNotContain("/delete");
+    }
+
+    @Test
+    void deleteDeliverable_removesRowAndCascadesPreviewFiles() throws Exception {
+        DeliverableResponse deliverable = seedDeliverable();
+        PreviewResponse preview = seedPreview(deliverable, "render.png");
+        Path deliverableFile = fileStorageService.resolve(deliverable.getUrlFile());
+        Path previewFile = fileStorageService.resolve(preview.getUrlFile());
+        MockHttpSession session = loginExpert();
+
+        mockMvc.perform(post("/expert/orders/{orderId}/deliverables/{deliverableId}/delete",
+                        orderId, deliverable.getId())
+                        .session(session)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/orders/" + orderId));
+
+        assertThat(deliverableRepository.existsById(deliverable.getId())).isFalse();
+        assertThat(previewRepository.existsById(preview.getId())).isFalse();
+        assertThat(Files.exists(deliverableFile)).isFalse();
+        assertThat(Files.exists(previewFile)).isFalse();
+    }
+
+    @Test
+    void deletePreview_removesOnlyTargetedPreview() throws Exception {
+        DeliverableResponse deliverable = seedDeliverable();
+        PreviewResponse first = seedPreview(deliverable, "a.png");
+        PreviewResponse second = seedPreview(deliverable, "b.png");
+        Path firstFile = fileStorageService.resolve(first.getUrlFile());
+        Path secondFile = fileStorageService.resolve(second.getUrlFile());
+        MockHttpSession session = loginExpert();
+
+        mockMvc.perform(post("/expert/orders/{orderId}/deliverables/{deliverableId}/previews/{previewId}/delete",
+                        orderId, deliverable.getId(), first.getId())
+                        .session(session)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/orders/" + orderId));
+
+        assertThat(previewRepository.existsById(first.getId())).isFalse();
+        assertThat(Files.exists(firstFile)).isFalse();
+        assertThat(previewRepository.existsById(second.getId())).isTrue();
+        assertThat(Files.exists(secondFile)).isTrue();
+    }
+
+    @Test
+    void client_cannotDeleteDeliverable() throws Exception {
+        DeliverableResponse deliverable = seedDeliverable();
+        MockHttpSession session = login("upload.client@sispro3d.com", "test123");
+
+        mockMvc.perform(post("/expert/orders/{orderId}/deliverables/{deliverableId}/delete",
+                        orderId, deliverable.getId())
+                        .session(session)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+
+        assertThat(deliverableRepository.existsById(deliverable.getId())).isTrue();
+    }
+
+    @Test
+    void outsider_cannotDeletePreview() throws Exception {
+        DeliverableResponse deliverable = seedDeliverable();
+        PreviewResponse preview = seedPreview(deliverable, "a.png");
+        createAccount("upload.outsider@sispro3d.com", Role.CLIENT);
+        MockHttpSession session = login("upload.outsider@sispro3d.com", "test123");
+
+        mockMvc.perform(post("/expert/orders/{orderId}/deliverables/{deliverableId}/previews/{previewId}/delete",
+                        orderId, deliverable.getId(), preview.getId())
+                        .session(session)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+
+        assertThat(previewRepository.existsById(preview.getId())).isTrue();
+    }
+
+    @Test
+    void noDeleteOnConcludedOrder() throws Exception {
+        DeliverableResponse deliverable = seedDeliverable();
+        workOrderService.markInReview(orderId, expertId);
+        workOrderService.complete(orderId, clientId);
+        MockHttpSession session = loginExpert();
+
+        mockMvc.perform(post("/expert/orders/{orderId}/deliverables/{deliverableId}/delete",
+                        orderId, deliverable.getId())
+                        .session(session)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/expert/orders"));
+
+        assertThat(deliverableRepository.existsById(deliverable.getId())).isTrue();
     }
 }

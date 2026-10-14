@@ -11,6 +11,8 @@ import com.sispro3d.unam.deliverable.dto.DeliverableResponse;
 import com.sispro3d.unam.deliverable.mapper.DeliverableMapper;
 import com.sispro3d.unam.deliverable.repository.DeliverableRepository;
 import com.sispro3d.unam.deliverable.service.DeliverableService;
+import com.sispro3d.unam.preview.domain.Preview;
+import com.sispro3d.unam.preview.repository.PreviewRepository;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
@@ -41,6 +43,8 @@ public class DeliverableServiceImpl implements DeliverableService {
     private FileStorageService fileStorageService;
     @Autowired
     private UploadValidator uploadValidator;
+    @Autowired
+    private PreviewRepository previewRepository;
 
     @Override
     public List<DeliverableResponse> findAll() {
@@ -109,6 +113,11 @@ public class DeliverableServiceImpl implements DeliverableService {
     public void delete(Long id) {
         Deliverable existing = deliverableRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.forId("Deliverable", id));
+
+        List<Preview> previews = previewRepository.findByDeliverable_Id(id);
+        previews.forEach(preview -> fileStorageService.delete(preview.getUrlFile()));
+        previewRepository.deleteAll(previews);
+
         deliverableRepository.delete(existing);
         fileStorageService.delete(existing.getUrlFile());
     }
