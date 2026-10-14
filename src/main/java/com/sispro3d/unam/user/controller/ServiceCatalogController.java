@@ -1,8 +1,12 @@
 package com.sispro3d.unam.user.controller;
 
+import com.sispro3d.unam.category.dto.CategoryResponse;
+import com.sispro3d.unam.category.service.CategoryService;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
+import com.sispro3d.unam.offeredservice.dto.ServiceSearchCriteria;
+import com.sispro3d.unam.offeredservice.dto.ServiceSortOrder;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
 import com.sispro3d.unam.review.dto.ReviewRequest;
 import com.sispro3d.unam.review.dto.ReviewResponse;
@@ -26,10 +30,14 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Controller
@@ -38,6 +46,9 @@ public class ServiceCatalogController {
 
     @Autowired
     private OfferedServiceService offeredServiceService;
+
+    @Autowired
+    private CategoryService categoryService;
 
     @Autowired
     private AccountService accountService;
@@ -49,15 +60,55 @@ public class ServiceCatalogController {
     private WorkOrderService workOrderService;
 
     @GetMapping
-    public String index(Model model) {
-        List<OfferedServiceResponse> services = offeredServiceService.findByStatus(ServiceStatus.APPROVED).stream()
-                .sorted((a, b) -> {
-                    if (a.getCreatedAt() == null) return 1;
-                    if (b.getCreatedAt() == null) return -1;
-                    return b.getCreatedAt().compareTo(a.getCreatedAt());
-                })
-                .toList();
+    public String index(@RequestParam(required = false) String q,
+                        @RequestParam(required = false) String categoryId,
+                        @RequestParam(required = false) String minPrice,
+                        @RequestParam(required = false) String maxPrice,
+                        @RequestParam(required = false) String maxDeliveryDays,
+                        @RequestParam(required = false) String sort,
+                        Model model) {
+        List<String> filterErrors = new ArrayList<>();
+
+        Long parsedCategoryId = parseLong(categoryId, filterErrors, "La categoría indicada no es válida.");
+        BigDecimal parsedMinPrice = parseDecimal(minPrice, filterErrors, "El precio mínimo indicado no es un número válido.");
+        BigDecimal parsedMaxPrice = parseDecimal(maxPrice, filterErrors, "El precio máximo indicado no es un número válido.");
+        Integer parsedMaxDeliveryDays = parseInteger(maxDeliveryDays, filterErrors, "El tiempo de entrega indicado no es un número válido.");
+
+        if (parsedMinPrice != null && parsedMaxPrice != null && parsedMinPrice.compareTo(parsedMaxPrice) > 0) {
+            filterErrors.add("El precio mínimo no puede ser mayor que el precio máximo.");
+            parsedMinPrice = null;
+            parsedMaxPrice = null;
+        }
+
+        String query = q == null ? null : q.trim();
+        if (query != null && query.isEmpty()) {
+            query = null;
+        }
+
+        ServiceSortOrder sortOrder = parseSort(sort);
+
+        List<OfferedServiceResponse> services = offeredServiceService.search(
+                new ServiceSearchCriteria(query, parsedCategoryId, parsedMinPrice, parsedMaxPrice, parsedMaxDeliveryDays, sortOrder));
+
+        boolean filtersActive = query != null
+                || parsedCategoryId != null
+                || parsedMinPrice != null
+                || parsedMaxPrice != null
+                || parsedMaxDeliveryDays != null;
+
+        List<CategoryResponse> categories = categoryService.findAll();
+
         model.addAttribute("services", services);
+        model.addAttribute("categories", categories);
+        model.addAttribute("filterQuery", query);
+        model.addAttribute("filterCategoryId", parsedCategoryId);
+        model.addAttribute("filterMinPrice", parsedMinPrice);
+        model.addAttribute("filterMaxPrice", parsedMaxPrice);
+        model.addAttribute("filterMaxDeliveryDays", parsedMaxDeliveryDays);
+        model.addAttribute("filterSort", sortOrder);
+        model.addAttribute("filterErrors", filterErrors);
+        model.addAttribute("filtersActive", filtersActive);
+        model.addAttribute("hasApprovedServices", !offeredServiceService.findByStatus(ServiceStatus.APPROVED).isEmpty());
         return "services/index";
     }
 
@@ -169,5 +220,52 @@ public class ServiceCatalogController {
             return securityAccount.getId();
         }
         return null;
+    }
+
+    private Long parseLong(String value, List<String> errors, String message) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value.trim());
+        } catch (NumberFormatException ex) {
+            errors.add(message);
+            return null;
+        }
+    }
+
+    private BigDecimal parseDecimal(String value, List<String> errors, String message) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value.trim());
+        } catch (NumberFormatException ex) {
+            errors.add(message);
+            return null;
+        }
+    }
+
+    private Integer parseInteger(String value, List<String> errors, String message) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value.trim());
+        } catch (NumberFormatException ex) {
+            errors.add(message);
+            return null;
+        }
+    }
+
+    private ServiceSortOrder parseSort(String value) {
+        if (value == null || value.isBlank()) {
+            return ServiceSortOrder.NEWEST;
+        }
+        try {
+            return ServiceSortOrder.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return ServiceSortOrder.NEWEST;
+        }
     }
 }
