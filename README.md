@@ -275,6 +275,10 @@ El módulo `thread`/`message` implementa el chat de la orden:
 - **Crear hilo:** Solo el `CLIENT` o el `EXPERT` de la orden (un hilo por orden).
 - **Enviar mensaje:** Solo los participantes del hilo (cliente o experto de la orden).
 
+### Búsqueda y filtros del catálogo público
+
+El catálogo `/services` admite búsqueda y filtros por parámetros de consulta (resultados compartibles por URL), siempre sobre servicios `APPROVED`: **texto libre** (`q`) que coincide, sin distinguir mayúsculas, como subcadena del título, la descripción o el nombre del experto; **categoría** (`categoryId`); **rango de precio** base inclusive (`minPrice`, `maxPrice`); **tiempo de entrega máximo** en días (`maxDeliveryDays`); y **orden de resultados** (`sort`: `NEWEST` por defecto, `PRICE_ASC` o `PRICE_DESC`). Los filtros se combinan con una conjunción. Cuando ningún servicio coincide, la página muestra un estado de «sin resultados» distinto del catálogo vacío; si `minPrice` es mayor que `maxPrice` se muestra un mensaje de validación y no se aplica el filtro de precio.
+
 ### Reportes de administración
 
 Desde `/admin/reports` (solo `ADMIN`, con enlace en la navegación) el administrador ve métricas derivadas de los datos existentes: **servicios más solicitados** (ranking por número de cotizaciones recibidas, con las órdenes generadas), **desempeño de expertos** (servicios, cotizaciones respondidas, órdenes por estado, órdenes completadas y calificación promedio, o «sin reseñas») y **resumen de actividad** (cuentas por rol, servicios/cotizaciones/órdenes por estado y total de reseñas). El formulario acepta un rango opcional de fechas `from`/`to` que filtra por fecha de creación (inclusive en ambos extremos); si `from` es posterior a `to` se muestra un mensaje de validación y se presentan los totales históricos. La página es de solo lectura: no crea ni modifica registros.
