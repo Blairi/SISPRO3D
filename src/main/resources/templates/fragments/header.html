@@ -41,6 +41,8 @@
                    class="text-gray-600 hover:text-indigo-600 font-medium">Categorías</a>
                 <a th:if="${sessionUser.role.name() == 'ADMIN'}" href="/admin/users"
                    class="text-gray-600 hover:text-indigo-600 font-medium">Usuarios</a>
+                <a th:if="${sessionUser.role.name() == 'ADMIN'}" href="/admin/reports"
+                   class="text-gray-600 hover:text-indigo-600 font-medium">Reportes</a>
                 <span class="text-gray-700 font-medium" th:text="${sessionUser.name + ' ' + sessionUser.lastName}"></span>
                 <form th:action="@{/logout}" method="post">
                     <button type="submit"
