@@ -81,7 +81,7 @@ El login usa **Spring Security** con usuarios en la base de datos (`account`) y 
 - Cerrar sesión: botón en el header (POST `/logout`).
 
 Áreas públicas (sin login): `/`, `/login`, `/register`, el **catálogo público** `/services` (listado) y `/services/{id}` (detalle con ficha del experto, estilo marketplace), archivos estáticos (`/css/**`, `/js/**`, `/vendor/**`) y la API REST `/api/v1/**`. El catálogo solo muestra servicios `APPROVED`; los no aprobados responden 404.
-Áreas protegidas por rol: `/admin/**` solo `ADMIN`, `/expert/**` solo `EXPERT`; el resto (incluido el detalle de orden `/orders/{id}` y su chat) requiere sesión iniciada — el detalle de una orden solo lo ven sus dos partes.
+Áreas protegidas por rol: `/admin/**` solo `ADMIN`, `/expert/**` solo `EXPERT`; el resto (incluido el detalle de orden `/orders/{id}` y su chat) requiere sesión iniciada — el detalle de una orden solo lo ven sus dos partes, y los archivos en `/files/**` solo los descarga el cliente o el experto de la orden propietaria (el resto recibe 404).
 
 ### Credenciales de demostración
 
@@ -266,7 +266,7 @@ El módulo `workorder` gestiona la orden de trabajo:
 
 El módulo `deliverable`/`preview` permite al `EXPERT` propietario subir entregables y vistas previas solo mientras la orden está `IN_PROGRESS` o `IN_REVIEW`. Desde el detalle de la orden (`/orders/{id}`) el experto también puede **eliminar** cada vista previa (una en una) o un entregable completo; al borrar un entregable se eliminan sus vistas previas y todos los archivos asociados.
 
-Desde la interfaz web, el experto adjunta el archivo real desde el formulario del entregable (`.obj`, `.fbx`, `.stl` o `.blend`, o un paquete comprimido `.zip`, `.rar` o `.7z`) y la imagen de cada vista previa (`.png`, `.jpg`, `.jpeg` o `.webp`), hasta 25 MB para modelos e imágenes y hasta 100 MB para los comprimidos. El archivo se guarda en la carpeta configurada por `app.storage.location` (por defecto `uploads/`) bajo un nombre único (UUID) y la fila conserva solo la ruta relativa en `urlFile`; `fileType` se deduce de la extensión. Los archivos se sirven en `/files/**` (requiere sesión iniciada) y se borran al eliminar o reemplazar el entregable o la vista previa. Las filas creadas por la API REST siguen guardando URLs externas, que las plantillas renderizan tal cual.
+Desde la interfaz web, el experto adjunta el archivo real desde el formulario del entregable (`.obj`, `.fbx`, `.stl` o `.blend`, o un paquete comprimido `.zip`, `.rar` o `.7z`) y la imagen de cada vista previa (`.png`, `.jpg`, `.jpeg` o `.webp`), hasta 25 MB para modelos e imágenes y hasta 100 MB para los comprimidos. El archivo se guarda en la carpeta configurada por `app.storage.location` (por defecto `uploads/`) bajo un nombre único (UUID) y la fila conserva solo la ruta relativa en `urlFile`; `fileType` se deduce de la extensión. Los archivos se sirven en `/files/**`, donde solo el cliente o el experto de la orden propietaria pueden descargarlos (cualquier otra cuenta, incluido un admin, recibe 404 para no revelar su existencia); se borran al eliminar o reemplazar el entregable o la vista previa. Las filas creadas por la API REST siguen guardando URLs externas, que las plantillas renderizan tal cual.
 
 > **Nota:** la API REST `/api/v1` todavía recibe una referencia (`urlFile`) en lugar de un multipart; la subida de binarios solo aplica a la interfaz web. La referencia del archivo (`url_file`, `VARCHAR(255)`) se reutiliza sin cambios de esquema.
 
