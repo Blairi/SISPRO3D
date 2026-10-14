@@ -275,11 +275,15 @@ El módulo `thread`/`message` implementa el chat de la orden:
 - **Crear hilo:** Solo el `CLIENT` o el `EXPERT` de la orden (un hilo por orden).
 - **Enviar mensaje:** Solo los participantes del hilo (cliente o experto de la orden).
 
+### Reportes de administración
+
+Desde `/admin/reports` (solo `ADMIN`, con enlace en la navegación) el administrador ve métricas derivadas de los datos existentes: **servicios más solicitados** (ranking por número de cotizaciones recibidas, con las órdenes generadas), **desempeño de expertos** (servicios, cotizaciones respondidas, órdenes por estado, órdenes completadas y calificación promedio, o «sin reseñas») y **resumen de actividad** (cuentas por rol, servicios/cotizaciones/órdenes por estado y total de reseñas). El formulario acepta un rango opcional de fechas `from`/`to` que filtra por fecha de creación (inclusive en ambos extremos); si `from` es posterior a `to` se muestra un mensaje de validación y se presentan los totales históricos. La página es de solo lectura: no crea ni modifica registros.
+
 
 1. Suite: mvn -o test → 329 verdes.
 2. Web (necesita MariaDB + spring-boot:run).
 3. 
-3. Flujo completo verificado por curl: login CLIENT (mariana.stein@estudio.com/Client123!) 
+3. Flujo completo verificado por curl: login CLIENT (bm/Client123!) 
 → «Contratar» → solicitud → login EXPERT (emilio.vargas@email.com/Expert123!) 
 4. → responda en /expert/quotes → cliente acepta → orden → experto inicia/envía a revisión 
 5. → registra entregable+preview → cliente completa → /orders/{id} muestra chat → reseña 
