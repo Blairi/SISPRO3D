@@ -83,6 +83,8 @@ El login usa **Spring Security** con usuarios en la base de datos (`account`) y 
 Áreas públicas (sin login): `/`, `/login`, `/register`, el **catálogo público** `/services` (listado) y `/services/{id}` (detalle con ficha del experto, estilo marketplace), archivos estáticos (`/css/**`, `/js/**`, `/vendor/**`) y la API REST `/api/v1/**`. El catálogo solo muestra servicios `APPROVED`; los no aprobados responden 404.
 Áreas protegidas por rol: `/admin/**` solo `ADMIN`, `/expert/**` solo `EXPERT`; el resto (incluido el detalle de orden `/orders/{id}` y su chat) requiere sesión iniciada — el detalle de una orden solo lo ven sus dos partes, y los archivos en `/files/**` solo los descarga el cliente o el experto de la orden propietaria (el resto recibe 404).
 
+**Páginas de error de la web:** los errores de la interfaz web (no de la API) se renderizan con plantillas propias en español — `templates/error/404.html`, `templates/error/500.html` y el fallback genérico `templates/error.html` (reemplaza la página Whitelabel). Reutilizan el header/footer y muestran un mensaje genérico con navegación, sin filtrar mensajes técnicos ni trazas; el contrato de error JSON de `/api/v1/**` (`ErrorDetail`) no cambia.
+
 ### Credenciales de demostración
 
 El script `scripts/data.sql` incluye cuentas con contraseñas reales (hash BCrypt):
