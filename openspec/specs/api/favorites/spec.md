@@ -2,7 +2,7 @@
 
 Expose Favorites as a secure, consumer-friendly REST API that uses JWT identity and enforces ownership and role constraints. This lets external clients manage a client's favorite services via the API while preventing cross-client access.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Favorites API requires JWT authentication and CLIENT role
 
@@ -22,7 +22,7 @@ The system SHALL require a valid JWT access token for all Favorites API endpoint
 
 ### Requirement: Ownership is enforced for path-based client endpoints
 
-For requests to `/api/v1/clients/{clientId}/favorite-services/**`, the `clientId` in the path SHALL be equal to the `accountId` extracted from the JWT token. If they differ, the system SHALL return 403. The system SHALL still validate the target client and service exist and return appropriate 404/409 as currently defined.
+For requests to `/api/v1/clients/{clientId}/favorite-services/**`, the `clientId` in the path SHALL be equal to the `accountId` extracted from the JWT token. If the referenced client does not exist, the system SHALL return 404. If the referenced client exists but its id differs from the token's `accountId`, the system SHALL return 403. The system SHALL continue to validate the target service exists (404) and reject duplicates (409).
 
 #### Scenario: Cross-client access is denied
 - **WHEN** a CLIENT token for account A calls `/api/v1/clients/{clientIdB}/favorite-services`

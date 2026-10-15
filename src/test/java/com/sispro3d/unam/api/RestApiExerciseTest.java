@@ -101,6 +101,7 @@ class RestApiExerciseTest {
 
     private Long expertId;
     private Long clientId;
+    private Long otherClientId;
     private Long categoryId;
 
     @BeforeEach
@@ -122,6 +123,15 @@ class RestApiExerciseTest {
         client.setRole(Role.CLIENT);
         client.setCreatedAt(LocalDateTime.now());
         clientId = accountRepository.save(client).getIdUser();
+
+        Account otherClient = new Account();
+        otherClient.setName("Other");
+        otherClient.setLastName("Client");
+        otherClient.setEmail("other-client@api.test");
+        otherClient.setPassword("test123");
+        otherClient.setRole(Role.CLIENT);
+        otherClient.setCreatedAt(LocalDateTime.now());
+        otherClientId = accountRepository.save(otherClient).getIdUser();
 
         Category category = new Category();
         category.setName("Modelado");
@@ -981,5 +991,64 @@ class RestApiExerciseTest {
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("Validation failed"))
                 .andExpect(jsonPath("$.details[0]").isNotEmpty());
+    }
+
+    @Test
+    void meFavorites_requiresToken_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/me/favorite-services"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void meFavorites_expertRole_returns403() throws Exception {
+        mockMvc.perform(authed(get("/api/v1/me/favorite-services"), expertId))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void meFavorites_associateListAndRemove() throws Exception {
+        Long serviceId = createApprovedService().getId();
+
+        mockMvc.perform(authed(post("/api/v1/me/favorite-services/{serviceId}", serviceId), clientId))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/api/v1/services/" + serviceId)))
+                .andExpect(jsonPath("$.id").value(serviceId));
+
+        mockMvc.perform(authed(get("/api/v1/me/favorite-services"), clientId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(serviceId));
+
+        mockMvc.perform(authed(delete("/api/v1/me/favorite-services/{serviceId}", serviceId), clientId))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(authed(get("/api/v1/me/favorite-services"), clientId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void meFavorites_duplicate_returns409() throws Exception {
+        Long serviceId = createApprovedService().getId();
+        mockMvc.perform(authed(post("/api/v1/me/favorite-services/{serviceId}", serviceId), clientId))
+                .andExpect(status().isCreated());
+        mockMvc.perform(authed(post("/api/v1/me/favorite-services/{serviceId}", serviceId), clientId))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void meFavorites_unknownService_returns404() throws Exception {
+        mockMvc.perform(authed(post("/api/v1/me/favorite-services/99999"), clientId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void favoritesPath_crossClient_returns403() throws Exception {
+        Long serviceId = createApprovedService().getId();
+        mockMvc.perform(authed(get("/api/v1/clients/{clientId}/favorite-services", otherClientId), clientId))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(authed(post("/api/v1/clients/{clientId}/favorite-services/{serviceId}", otherClientId, serviceId), clientId))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(authed(delete("/api/v1/clients/{clientId}/favorite-services/{serviceId}", otherClientId, serviceId), clientId))
+                .andExpect(status().isForbidden());
     }
 }
