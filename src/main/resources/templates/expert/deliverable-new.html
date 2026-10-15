@@ -15,11 +15,11 @@
         <div class="bg-white rounded-xl shadow border border-gray-200 p-8">
             <h1 class="text-2xl font-bold text-gray-900 mb-2">Registrar entregable</h1>
             <p class="text-sm text-gray-500 mb-8">
-                Adjunta la referencia de un archivo entregado al cliente en la orden #<span th:text="${order.id}"></span>.
+                Adjunta el archivo entregado al cliente en la orden #<span th:text="${order.id}"></span>.
             </p>
 
             <form th:action="@{/expert/orders/{id}/deliverables(id=${order.id})}" method="post"
-                  th:object="${deliverable}" class="space-y-6">
+                  enctype="multipart/form-data" th:object="${deliverable}" class="space-y-6">
 
                 <div>
                     <label th:for="name" class="block text-sm font-semibold text-gray-900 mb-2">
@@ -34,31 +34,13 @@
                 </div>
 
                 <div>
-                    <label th:for="urlFile" class="block text-sm font-semibold text-gray-900 mb-2">
-                        Referencia del archivo
+                    <label for="file" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Archivo del entregable
                     </label>
-                    <input type="url" th:field="*{urlFile}" id="urlFile"
-                           th:errorclass="border-red-500"
-                           placeholder="https://..."
+                    <input type="file" name="file" id="file" accept=".obj,.fbx,.stl,.blend,.zip,.rar,.7z"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <p th:if="${#fields.hasErrors('urlFile')}" th:errors="*{urlFile}"
-                       class="mt-1 text-sm text-red-600"></p>
-                </div>
-
-                <div>
-                    <label th:for="fileType" class="block text-sm font-semibold text-gray-900 mb-2">
-                        Tipo de archivo
-                    </label>
-                    <select th:field="*{fileType}" id="fileType"
-                            th:errorclass="border-red-500"
-                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">Selecciona un formato</option>
-                        <option value="OBJ">.OBJ</option>
-                        <option value="FBX">.FBX</option>
-                        <option value="STL">.STL</option>
-                        <option value="BLEND">.BLEND</option>
-                    </select>
-                    <p th:if="${#fields.hasErrors('fileType')}" th:errors="*{fileType}"
+                    <p class="mt-1 text-xs text-gray-500">Formatos: .OBJ, .FBX, .STL, .BLEND o comprimidos .ZIP, .RAR, .7Z (modelos hasta 25 MB, comprimidos hasta 100 MB).</p>
+                    <p th:if="${#fields.hasErrors('file')}" th:errors="*{file}"
                        class="mt-1 text-sm text-red-600"></p>
                 </div>
 

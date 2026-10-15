@@ -22,7 +22,7 @@ flowchart TB
     end
 
     subgraph WebStack["Presentación Web · Thymeleaf"]
-        WC["user/controller/<br/>Home · Login · Register · ServiceCatalog<br/>QuoteRequest · ClientQuotes · ClientOrders<br/>ExpertDashboard · AdminDashboard · AdminUsers · Category"]
+        WC["user/controller/<br/>Home · Login · Register · ServiceCatalog<br/>QuoteRequest · ClientQuotes · ClientOrders<br/>ExpertDashboard · AdminDashboard · AdminUsers · AdminReports · Category"]
         Templates["templates/*.html<br/>home · login · register · services/<br/>client/ · expert/ · admin/ · fragments/"]
     end
 

@@ -8,6 +8,8 @@ import com.sispro3d.unam.offeredservice.domain.OfferedService;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceRequest;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
+import com.sispro3d.unam.offeredservice.dto.ServiceSearchCriteria;
+import com.sispro3d.unam.offeredservice.dto.ServiceSortOrder;
 import com.sispro3d.unam.offeredservice.mapper.OfferedServiceMapper;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
@@ -16,8 +18,12 @@ import com.sispro3d.unam.user.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -185,5 +191,60 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         return offeredServiceRepository.findByStatus(status).stream()
                 .map(offeredServiceMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    public List<OfferedServiceResponse> search(ServiceSearchCriteria criteria) {
+        String query = criteria.query() == null ? "" : criteria.query().trim().toLowerCase(Locale.ROOT);
+        Long categoryId = criteria.categoryId();
+        BigDecimal minPrice = criteria.minPrice();
+        BigDecimal maxPrice = criteria.maxPrice();
+        Integer maxDeliveryDays = criteria.maxDeliveryDays();
+
+        List<OfferedServiceResponse> results = findByStatus(ServiceStatus.APPROVED).stream()
+                .filter(service -> query.isEmpty() || matchesQuery(service, query))
+                .filter(service -> categoryId == null || categoryId.equals(service.getCategoryId()))
+                .filter(service -> minPrice == null
+                        || (service.getBasePrice() != null && service.getBasePrice().compareTo(minPrice) >= 0))
+                .filter(service -> maxPrice == null
+                        || (service.getBasePrice() != null && service.getBasePrice().compareTo(maxPrice) <= 0))
+                .filter(service -> maxDeliveryDays == null
+                        || (service.getDeliveryTimeDays() != null && service.getDeliveryTimeDays() <= maxDeliveryDays))
+                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+
+        results.sort(comparatorFor(criteria.sortOrNewest()));
+        return results;
+    }
+
+    private boolean matchesQuery(OfferedServiceResponse service, String lowerQuery) {
+        return containsIgnoreCase(service.getTitle(), lowerQuery)
+                || containsIgnoreCase(service.getDescription(), lowerQuery)
+                || containsIgnoreCase(service.getExpertName(), lowerQuery);
+    }
+
+    private boolean containsIgnoreCase(String value, String lowerQuery) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(lowerQuery);
+    }
+
+    private Comparator<OfferedServiceResponse> comparatorFor(ServiceSortOrder sort) {
+        return switch (sort) {
+            case PRICE_ASC -> (a, b) -> comparePrice(a, b, true);
+            case PRICE_DESC -> (a, b) -> comparePrice(a, b, false);
+            case NEWEST -> (a, b) -> {
+                LocalDateTime first = a.getCreatedAt();
+                LocalDateTime second = b.getCreatedAt();
+                if (first == null) return second == null ? 0 : 1;
+                if (second == null) return -1;
+                return second.compareTo(first);
+            };
+        };
+    }
+
+    private int comparePrice(OfferedServiceResponse a, OfferedServiceResponse b, boolean ascending) {
+        BigDecimal first = a.getBasePrice();
+        BigDecimal second = b.getBasePrice();
+        if (first == null) return second == null ? 0 : 1;
+        if (second == null) return -1;
+        return ascending ? first.compareTo(second) : second.compareTo(first);
     }
 }

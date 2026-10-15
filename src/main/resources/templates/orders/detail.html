@@ -132,25 +132,45 @@
                                     <p class="font-semibold text-gray-900" th:text="${deliverable.name}"></p>
                                     <p class="text-xs text-gray-500">
                                         <span th:text="${deliverable.fileType}"></span> &middot;
-                                        <a th:href="${deliverable.urlFile}" target="_blank" rel="noopener"
+                                        <a th:href="${#strings.startsWith(deliverable.urlFile, 'http') ? deliverable.urlFile : '/files/' + deliverable.urlFile}"
+                                           target="_blank" rel="noopener"
                                            class="text-indigo-600 hover:text-indigo-800 font-medium">Descargar archivo</a>
                                     </p>
                                 </div>
-                                <a th:if="${isExpert and (order.status.name() == 'IN_PROGRESS' or order.status.name() == 'IN_REVIEW')}"
-                                   th:href="@{/expert/orders/{orderId}/deliverables/{deliverableId}/previews/new(orderId=${order.id}, deliverableId=${deliverable.id})}"
-                                   class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                                    + Añadir previsualización
-                                </a>
+                                <div class="flex items-center gap-4">
+                                    <a th:if="${isExpert and (order.status.name() == 'IN_PROGRESS' or order.status.name() == 'IN_REVIEW')}"
+                                       th:href="@{/expert/orders/{orderId}/deliverables/{deliverableId}/previews/new(orderId=${order.id}, deliverableId=${deliverable.id})}"
+                                       class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                                        + Añadir previsualización
+                                    </a>
+                                    <form th:if="${isExpert and (order.status.name() == 'IN_PROGRESS' or order.status.name() == 'IN_REVIEW')}"
+                                          th:action="@{/expert/orders/{orderId}/deliverables/{deliverableId}/delete(orderId=${order.id}, deliverableId=${deliverable.id})}"
+                                          method="post">
+                                        <button type="submit"
+                                                class="text-sm text-red-600 hover:text-red-800 font-medium">
+                                            Eliminar entregable
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
 
                             <div th:if="${!#lists.isEmpty(previewsByDeliverable[deliverable.id])}"
                                  class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <figure th:each="preview : ${previewsByDeliverable[deliverable.id]}"
                                         class="rounded-lg overflow-hidden border border-gray-200">
-                                    <img th:src="${preview.urlFile}" th:alt="${preview.caption}"
+                                    <img th:src="${#strings.startsWith(preview.urlFile, 'http') ? preview.urlFile : '/files/' + preview.urlFile}"
+                                         th:alt="${preview.caption}"
                                          class="w-full h-32 object-cover">
                                     <figcaption th:if="${preview.caption != null}"
                                                 class="px-3 py-2 text-xs text-gray-600" th:text="${preview.caption}"></figcaption>
+                                    <form th:if="${isExpert and (order.status.name() == 'IN_PROGRESS' or order.status.name() == 'IN_REVIEW')}"
+                                          th:action="@{/expert/orders/{orderId}/deliverables/{deliverableId}/previews/{previewId}/delete(orderId=${order.id}, deliverableId=${deliverable.id}, previewId=${preview.id})}"
+                                          method="post" class="px-3 pb-2">
+                                        <button type="submit"
+                                                class="text-xs text-red-600 hover:text-red-800 font-medium">
+                                            Eliminar
+                                        </button>
+                                    </form>
                                 </figure>
                             </div>
                         </div>

@@ -38,10 +38,22 @@ public class AdminUsersController {
 
     @GetMapping("/{id}/edit")
     public String showEditForm(@PathVariable Long id, Model model) {
-        Long userId = currentUser.id();
+        var account = accountService.findById(id).orElseThrow();
 
-        var response = accountService.findById(id).orElseThrow();
-        model.addAttribute("user", response);
+        AccountRequest request = AccountRequest.builder()
+                .name(account.getName())
+                .lastName(account.getLastName())
+                .email(account.getEmail())
+                .phone(account.getPhone())
+                .role(account.getRole())
+                .specialty(account.getSpecialty())
+                .portfolioUrl(account.getPortfolioUrl())
+                .bio(account.getBio())
+                .yearsExperience(account.getYearsExperience())
+                .build();
+
+        model.addAttribute("user", request);
+        model.addAttribute("userId", id);
         return "admin/user-form";
     }
 

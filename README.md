@@ -72,16 +72,39 @@ mvn test -Dtest=AccountServiceImplTest             # una clase
 mvn test -Dtest=AccountServiceImplTest#testCreate  # un método
 ```
 
+## Regenerar las capturas de pantalla (documentación)
+
+Las capturas de la evidencia de funcionamiento se generan de forma automatizada con **Playwright** sobre la interfaz web y se guardan en `docs/screenshots/` (34 imágenes: 8 públicas, 8 de cliente, 10 de experto y 8 de admin).
+
+Prerrequisitos: MariaDB arriba con `sispro3d_db` sembrada (ver “Cargar datos de ejemplo”).
+
+```bash
+# La primera vez: instala la dependencia y descarga Chromium (requiere red)
+(cd scripts/screenshots && npm install && npx playwright install chromium)
+
+# Un solo comando: arranca la app si no está en ejecución, prepara por API los
+# estados que falten, captura todas las pantallas y detiene la app si la arrancó
+bash scripts/capture-screenshots.sh
+```
+
+Si la app ya está corriendo, el script reutiliza esa instancia y no la detiene. Usa las credenciales de demostración (ver abajo) para iniciar sesión por rol. Ajustes por variable de entorno: `BASE_URL`, `OUT_DIR`, `SCREENSHOT_SCALE` y `SCREENSHOT_SERVICE_ID`.
+
 ## Autenticación y login (Spring Security)
 
 El login usa **Spring Security** con usuarios en la base de datos (`account`) y contraseñas con hash BCrypt:
 
 - Página de login: `http://localhost:8080/login` (formulario con `email` y `password`).
 - Tras iniciar sesión aterrizas según tu rol: cliente → `/client/quotes`, experto → `/expert/dashboard`, admin → `/admin/dashboard`. Si entraste a `/login` desde un enlace protegido, la sesión te devuelve a ese destino.
-- Cerrar sesión: botón en el header (POST `/logout`).
+- Cerrar sesión: en el header, junto al nombre de la cuenta (cluster de usuario, POST `/logout`).
 
 Áreas públicas (sin login): `/`, `/login`, `/register`, el **catálogo público** `/services` (listado) y `/services/{id}` (detalle con ficha del experto, estilo marketplace), archivos estáticos (`/css/**`, `/js/**`, `/vendor/**`) y la API REST `/api/v1/**`. El catálogo solo muestra servicios `APPROVED`; los no aprobados responden 404.
-Áreas protegidas por rol: `/admin/**` solo `ADMIN`, `/expert/**` solo `EXPERT`; el resto (incluido el detalle de orden `/orders/{id}` y su chat) requiere sesión iniciada — el detalle de una orden solo lo ven sus dos partes.
+Áreas protegidas por rol: `/admin/**` solo `ADMIN`, `/expert/**` solo `EXPERT`; el resto (incluido el detalle de orden `/orders/{id}` y su chat) requiere sesión iniciada — el detalle de una orden solo lo ven sus dos partes, y los archivos en `/files/**` solo los descarga el cliente o el experto de la orden propietaria (el resto recibe 404).
+
+**Páginas de error de la web:** los errores de la interfaz web (no de la API) se renderizan con plantillas propias en español — `templates/error/404.html`, `templates/error/500.html` y el fallback genérico `templates/error.html` (reemplaza la página Whitelabel). Reutilizan el header/footer y muestran un mensaje genérico con navegación, sin filtrar mensajes técnicos ni trazas; el contrato de error JSON de `/api/v1/**` (`ErrorDetail`) no cambia.
+
+**Navegación por rol:** en el header, los enlaces del rol (cliente, experto o admin) se agrupan en un menú desplegable «Menú»; el nombre de la cuenta y el control «Cerrar sesión» forman un cluster de usuario a la derecha, separado del menú. Los visitantes anónimos ven solo el catálogo y las acciones de iniciar sesión y registro.
+
+**Página de inicio (landing):** `/` es una landing pública con portada (hero) y llamada a la acción al catálogo, una sección de **servicios destacados** (solo `APPROVED`, del más reciente al más antiguo, máximo 6), una sección de **categorías** que enlazan al catálogo filtrado, una sección **«cómo funciona»** y una llamada a la acción de cierre. Reutiliza el header/footer del sitio (reflejan la sesión) y usa imágenes locales de `static/images/` (sin CDN).
 
 ### Credenciales de demostración
 
@@ -264,20 +287,34 @@ El módulo `workorder` gestiona la orden de trabajo:
 - **Iniciar orden / Marcar en revisión:** Solo el `EXPERT` propietario.
 - **Solicitar cambios / Completar / Cancelar:** Solo el `CLIENT`.
 
-El módulo `deliverable`/`preview` permite al `EXPERT` propietario subir entregables y vistas previas solo mientras la orden está `IN_PROGRESS` o `IN_REVIEW`.
+El módulo `deliverable`/`preview` permite al `EXPERT` propietario subir entregables y vistas previas solo mientras la orden está `IN_PROGRESS` o `IN_REVIEW`. Desde el detalle de la orden (`/orders/{id}`) el experto también puede **eliminar** cada vista previa (una en una) o un entregable completo; al borrar un entregable se eliminan sus vistas previas y todos los archivos asociados.
 
-> **Siguiente iteración:** la subida y descarga de los archivos 3D en sí (multipart upload, almacenamiento y streaming) quedan como trabajo a futuro. Hoy los entregables y vistas previas guardan una referencia (`urlFile`/`urlFile`); el manejo real de los binarios está fuera del alcance de este curso.
+Desde la interfaz web, el experto adjunta el archivo real desde el formulario del entregable (`.obj`, `.fbx`, `.stl` o `.blend`, o un paquete comprimido `.zip`, `.rar` o `.7z`) y la imagen de cada vista previa (`.png`, `.jpg`, `.jpeg` o `.webp`), hasta 25 MB para modelos e imágenes y hasta 100 MB para los comprimidos. El archivo se guarda en la carpeta configurada por `app.storage.location` (por defecto `uploads/`) bajo un nombre único (UUID) y la fila conserva solo la ruta relativa en `urlFile`; `fileType` se deduce de la extensión. Los archivos se sirven en `/files/**`, donde solo el cliente o el experto de la orden propietaria pueden descargarlos (cualquier otra cuenta, incluido un admin, recibe 404 para no revelar su existencia); se borran al eliminar o reemplazar el entregable o la vista previa. Las filas creadas por la API REST siguen guardando URLs externas, que las plantillas renderizan tal cual.
+
+> **Nota:** la API REST `/api/v1` todavía recibe una referencia (`urlFile`) en lugar de un multipart; la subida de binarios solo aplica a la interfaz web. La referencia del archivo (`url_file`, `VARCHAR(255)`) se reutiliza sin cambios de esquema.
 
 El módulo `thread`/`message` implementa el chat de la orden:
 
 - **Crear hilo:** Solo el `CLIENT` o el `EXPERT` de la orden (un hilo por orden).
 - **Enviar mensaje:** Solo los participantes del hilo (cliente o experto de la orden).
 
+### Búsqueda y filtros del catálogo público
+
+El catálogo `/services` admite búsqueda y filtros por parámetros de consulta (resultados compartibles por URL), siempre sobre servicios `APPROVED`: **texto libre** (`q`) que coincide, sin distinguir mayúsculas, como subcadena del título, la descripción o el nombre del experto; **categoría** (`categoryId`); **rango de precio** base inclusive (`minPrice`, `maxPrice`); **tiempo de entrega máximo** en días (`maxDeliveryDays`); y **orden de resultados** (`sort`: `NEWEST` por defecto, `PRICE_ASC` o `PRICE_DESC`). Los filtros se combinan con una conjunción. Cuando ningún servicio coincide, la página muestra un estado de «sin resultados» distinto del catálogo vacío; si `minPrice` es mayor que `maxPrice` se muestra un mensaje de validación y no se aplica el filtro de precio.
+
+### Conversión de precios a USD (API externa)
+
+El catálogo público muestra, junto al precio base en pesos, una línea aproximada en dólares (`≈ $… USD`) tanto en el listado `/services` como en el detalle `/services/{id}`; el precio en MXN queda inalterado. La conversión la hace el **backend** consumiendo la API pública de tipos de cambio de referencia del BCE (**Frankfurter**, `https://api.frankfurter.dev/v1/latest`), sin llave ni credenciales; el navegador nunca llama a la API externa. El tipo de cambio MXN→USD se obtiene una vez al día y se cachea en memoria. Si la API externa no responde, tarda demasiado o devuelve un valor inesperado, el catálogo sigue funcionando y solo se muestra el precio en MXN. Se configura con las propiedades `external.exchange-rate.*` (`base-url`, `base-currency`, `target-currency`, `connect-timeout`, `read-timeout`, `enabled`) en `application.properties`. Solo aplica al catálogo público; cotizaciones y órdenes siguen mostrando únicamente precios en MXN.
+
+### Reportes de administración
+
+Desde `/admin/reports` (solo `ADMIN`, con enlace en la navegación) el administrador ve métricas derivadas de los datos existentes: **servicios más solicitados** (ranking por número de cotizaciones recibidas, con las órdenes generadas), **desempeño de expertos** (servicios, cotizaciones respondidas, órdenes por estado, órdenes completadas y calificación promedio, o «sin reseñas») y **resumen de actividad** (cuentas por rol, servicios/cotizaciones/órdenes por estado y total de reseñas). El formulario acepta un rango opcional de fechas `from`/`to` que filtra por fecha de creación (inclusive en ambos extremos); si `from` es posterior a `to` se muestra un mensaje de validación y se presentan los totales históricos. La página es de solo lectura: no crea ni modifica registros.
+
 
 1. Suite: mvn -o test → 329 verdes.
 2. Web (necesita MariaDB + spring-boot:run).
 3. 
-3. Flujo completo verificado por curl: login CLIENT (mariana.stein@estudio.com/Client123!) 
+3. Flujo completo verificado por curl: login CLIENT (bm/Client123!) 
 → «Contratar» → solicitud → login EXPERT (emilio.vargas@email.com/Expert123!) 
 4. → responda en /expert/quotes → cliente acepta → orden → experto inicia/envía a revisión 
 5. → registra entregable+preview → cliente completa → /orders/{id} muestra chat → reseña 

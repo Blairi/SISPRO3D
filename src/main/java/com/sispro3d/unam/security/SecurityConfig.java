@@ -58,6 +58,7 @@ public class SecurityConfig {
                                 "/services", "/services/{id}")
                         .permitAll()
                         .requestMatchers("/services/*/quote").authenticated()
+                        .requestMatchers("/files/**").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/expert/**").hasRole("EXPERT")
                         .requestMatchers("/client/**").hasRole("CLIENT")

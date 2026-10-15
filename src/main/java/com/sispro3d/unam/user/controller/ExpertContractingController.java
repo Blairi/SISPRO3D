@@ -6,6 +6,7 @@ import com.sispro3d.unam.deliverable.service.DeliverableService;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
 import com.sispro3d.unam.preview.dto.PreviewRequest;
+import com.sispro3d.unam.preview.dto.PreviewResponse;
 import com.sispro3d.unam.preview.service.PreviewService;
 import com.sispro3d.unam.quote.dto.QuoteAnswerForm;
 import com.sispro3d.unam.quote.dto.QuoteRequest;
@@ -264,6 +265,64 @@ public class ExpertContractingController {
             preview.setExpertId(userId);
             previewService.create(preview);
             attributes.addFlashAttribute("success", "Previsualización añadida al entregable.");
+        } catch (RuntimeException ex) {
+            attributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/orders/" + orderId;
+    }
+
+    @PostMapping("/orders/{orderId}/deliverables/{deliverableId}/delete")
+    public String deleteDeliverable(@PathVariable Long orderId,
+                                    @PathVariable Long deliverableId,
+                                    RedirectAttributes attributes) {
+        Long userId = currentUser.id();
+
+        if (requireActiveOrder(orderId, userId, attributes) == null) {
+            return "redirect:/expert/orders";
+        }
+
+        if (findDeliverableOfOrder(deliverableId, orderId) == null) {
+            attributes.addFlashAttribute("error", "El entregable no pertenece a esa orden");
+            return "redirect:/orders/" + orderId;
+        }
+
+        try {
+            deliverableService.delete(deliverableId);
+            attributes.addFlashAttribute("success", "Entregable eliminado.");
+        } catch (RuntimeException ex) {
+            attributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/orders/" + orderId;
+    }
+
+    @PostMapping("/orders/{orderId}/deliverables/{deliverableId}/previews/{previewId}/delete")
+    public String deletePreview(@PathVariable Long orderId,
+                                @PathVariable Long deliverableId,
+                                @PathVariable Long previewId,
+                                RedirectAttributes attributes) {
+        Long userId = currentUser.id();
+
+        if (requireActiveOrder(orderId, userId, attributes) == null) {
+            return "redirect:/expert/orders";
+        }
+
+        if (findDeliverableOfOrder(deliverableId, orderId) == null) {
+            attributes.addFlashAttribute("error", "El entregable no pertenece a esa orden");
+            return "redirect:/orders/" + orderId;
+        }
+
+        boolean belongs = previewService.findById(previewId)
+                .map(PreviewResponse::getDeliverableId)
+                .map(deliverableId::equals)
+                .orElse(false);
+        if (!belongs) {
+            attributes.addFlashAttribute("error", "La previsualización no pertenece a ese entregable");
+            return "redirect:/orders/" + orderId;
+        }
+
+        try {
+            previewService.delete(previewId);
+            attributes.addFlashAttribute("success", "Previsualización eliminada.");
         } catch (RuntimeException ex) {
             attributes.addFlashAttribute("error", ex.getMessage());
         }

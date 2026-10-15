@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/header :: head('SISPRO3D - Reportes')}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<nav th:replace="~{fragments/header :: navbar}"></nav>
+
+<main class="flex-grow">
+    <div class="max-w-7xl mx-auto px-4 py-10">
+
+        <div class="flex flex-wrap justify-between items-end gap-4 mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Reportes</h1>
+                <p class="text-sm text-gray-500">Demanda del catálogo, desempeño de los expertos y actividad de la plataforma.</p>
+            </div>
+            <a href="/admin/dashboard"
+               class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Volver al dashboard</a>
+        </div>
+
+        <!-- Filtro por rango de fechas -->
+        <form method="get" action="/admin/reports"
+              class="bg-white rounded-xl shadow border border-gray-200 p-5 mb-10">
+            <div class="flex flex-wrap items-end gap-4">
+                <div>
+                    <label for="from" class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+                    <input type="date" id="from" name="from" th:value="${from}"
+                           class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label for="to" class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+                    <input type="date" id="to" name="to" th:value="${to}"
+                           class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="submit"
+                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
+                    Aplicar filtro
+                </button>
+                <a href="/admin/reports" class="text-sm text-gray-500 hover:text-gray-700 font-medium">Ver todo el histórico</a>
+            </div>
+            <p th:if="${rangeError != null}" class="mt-3 text-sm text-red-600" th:text="${rangeError}"></p>
+        </form>
+
+        <!-- Servicios más solicitados -->
+        <section class="mb-12">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Servicios más solicitados</h2>
+
+            <div th:if="${#lists.isEmpty(mostRequestedServices)}"
+                 class="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-500">
+                No hay servicios solicitados para el rango seleccionado.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(mostRequestedServices)}"
+                 class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                        <tr>
+                            <th class="text-left px-4 py-3 font-medium">Servicio</th>
+                            <th class="text-left px-4 py-3 font-medium">Categoría</th>
+                            <th class="text-left px-4 py-3 font-medium">Experto</th>
+                            <th class="text-right px-4 py-3 font-medium">Cotizaciones</th>
+                            <th class="text-right px-4 py-3 font-medium">Órdenes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr th:each="row : ${mostRequestedServices}">
+                            <td class="px-4 py-3 font-medium text-gray-900" th:text="${row.title}"></td>
+                            <td class="px-4 py-3 text-gray-600" th:text="${row.categoryName}"></td>
+                            <td class="px-4 py-3 text-gray-600" th:text="${row.expertName}"></td>
+                            <td class="px-4 py-3 text-right font-semibold text-indigo-600" th:text="${row.quoteCount}"></td>
+                            <td class="px-4 py-3 text-right text-gray-700" th:text="${row.orderCount}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Desempeño de expertos -->
+        <section class="mb-12">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Desempeño de expertos</h2>
+
+            <div th:if="${#lists.isEmpty(expertPerformance)}"
+                 class="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-500">
+                No hay expertos con servicios para el rango seleccionado.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(expertPerformance)}" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div th:each="expert : ${expertPerformance}"
+                     class="bg-white rounded-xl shadow border border-gray-200 p-5">
+                    <h3 class="text-lg font-semibold text-gray-900" th:text="${expert.expertName}"></h3>
+
+                    <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <dt class="text-gray-500">Servicios</dt>
+                            <dd class="font-semibold text-gray-900" th:text="${expert.serviceCount}"></dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Cotizaciones respondidas</dt>
+                            <dd class="font-semibold text-gray-900" th:text="${expert.answeredQuotes}"></dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Órdenes completadas</dt>
+                            <dd class="font-semibold text-gray-900" th:text="${expert.completedOrders}"></dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500">Calificación promedio</dt>
+                            <dd class="font-semibold text-gray-900">
+                                <span th:if="${expert.averageRating != null}"
+                                      th:text="${#numbers.formatDecimal(expert.averageRating, 1, 1)}"></span>
+                                <span th:if="${expert.averageRating == null}" class="text-gray-400">sin reseñas</span>
+                            </dd>
+                        </div>
+                    </dl>
+
+                    <div class="mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                        <span class="font-medium text-gray-600">Órdenes por estado:</span>
+                        <span th:each="entry, it : ${expert.ordersByStatus}"
+                              th:text="${entry.key + ': ' + entry.value + (it.last ? '' : ' · ')}"></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resumen de actividad -->
+        <section th:with="totalActividad=${#aggregates.sum(activitySummary.accountsByRole.values())
+                                + #aggregates.sum(activitySummary.servicesByStatus.values())
+                                + #aggregates.sum(activitySummary.quotesByStatus.values())
+                                + #aggregates.sum(activitySummary.ordersByStatus.values())
+                                + activitySummary.reviewCount}">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Resumen de actividad</h2>
+
+            <div th:if="${totalActividad == 0}"
+                 class="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-500">
+                No hay actividad registrada para el rango seleccionado.
+            </div>
+
+            <div th:unless="${totalActividad == 0}" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Cuentas por rol</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li th:each="entry : ${activitySummary.accountsByRole}" class="flex justify-between">
+                            <span class="text-gray-600" th:text="${entry.key}"></span>
+                            <span class="font-semibold text-gray-900" th:text="${entry.value}"></span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Servicios por estado</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li th:each="entry : ${activitySummary.servicesByStatus}" class="flex justify-between">
+                            <span class="text-gray-600" th:text="${entry.key}"></span>
+                            <span class="font-semibold text-gray-900" th:text="${entry.value}"></span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Cotizaciones por estado</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li th:each="entry : ${activitySummary.quotesByStatus}" class="flex justify-between">
+                            <span class="text-gray-600" th:text="${entry.key}"></span>
+                            <span class="font-semibold text-gray-900" th:text="${entry.value}"></span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-xl shadow border border-gray-200 p-5">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Órdenes por estado</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li th:each="entry : ${activitySummary.ordersByStatus}" class="flex justify-between">
+                            <span class="text-gray-600" th:text="${entry.key}"></span>
+                            <span class="font-semibold text-gray-900" th:text="${entry.value}"></span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-xl shadow border border-gray-200 p-5 md:col-span-2">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">Reseñas</h3>
+                    <p class="text-2xl font-bold text-indigo-600" th:text="${activitySummary.reviewCount}"></p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>

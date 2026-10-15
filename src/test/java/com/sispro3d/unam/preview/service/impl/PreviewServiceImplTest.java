@@ -5,6 +5,7 @@ import com.sispro3d.unam.category.repository.CategoryRepository;
 import com.sispro3d.unam.core.exception.BadRequestException;
 import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.core.storage.FileStorageService;
 import com.sispro3d.unam.deliverable.domain.Deliverable;
 import com.sispro3d.unam.deliverable.dto.DeliverableRequest;
 import com.sispro3d.unam.deliverable.dto.DeliverableResponse;
@@ -31,12 +32,18 @@ import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -49,11 +56,22 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Transactional
 class PreviewServiceImplTest {
 
+    @TempDir
+    static Path uploadsDir;
+
+    @DynamicPropertySource
+    static void storageLocation(DynamicPropertyRegistry registry) {
+        registry.add("app.storage.location", () -> uploadsDir.toString());
+    }
+
     @Autowired
     private PreviewService previewService;
 
     @Autowired
     private PreviewRepository previewRepository;
+
+    @Autowired
+    private FileStorageService fileStorageService;
 
     @Autowired
     private DeliverableService deliverableService;
@@ -138,13 +156,20 @@ class PreviewServiceImplTest {
         return workOrderService.start(created.getId(), expert.getIdUser());
     }
 
+    private MockMultipartFile modelFile(String filename) {
+        return new MockMultipartFile("file", filename, "application/octet-stream", "model-bytes".getBytes());
+    }
+
+    private MockMultipartFile imageFile(String filename) {
+        return new MockMultipartFile("file", filename, "image/png", "image-bytes".getBytes());
+    }
+
     private DeliverableResponse createDeliverable(Account expert, WorkOrderResponse order) {
         var request = DeliverableRequest.builder()
                 .expertId(expert.getIdUser())
                 .workOrderId(order.getId())
                 .name("Modelo FBX")
-                .urlFile("https://files.render3d.mx/modelo.fbx")
-                .fileType("model/fbx")
+                .file(modelFile("modelo.fbx"))
                 .build();
         return deliverableService.create(request);
     }
@@ -154,7 +179,7 @@ class PreviewServiceImplTest {
                 .expertId(expert.getIdUser())
                 .deliverableId(deliverable.getId())
                 .caption("Vista frontal del personaje")
-                .urlFile("https://files.render3d.mx/preview-frente.png")
+                .file(imageFile("preview-frente.png"))
                 .build();
     }
 
@@ -170,8 +195,30 @@ class PreviewServiceImplTest {
 
         assertThat(res.getId()).isNotNull();
         assertThat(res.getCaption()).isEqualTo("Vista frontal del personaje");
-        assertThat(res.getUrlFile()).isEqualTo("https://files.render3d.mx/preview-frente.png");
+        assertThat(res.getUrlFile()).startsWith("previews/").endsWith(".png");
         assertThat(res.getDeliverableId()).isEqualTo(deliverable.getId());
+        assertThat(Files.exists(fileStorageService.resolve(res.getUrlFile()))).isTrue();
+    }
+
+    @Test
+    void create_whenFileTypeNotAllowed_throwsBadRequest_andStoresNothing() {
+        var expert = createExpert("preview.expert.badtype@sispro3d.com");
+        var client = createClient("preview.client.badtype@sispro3d.com");
+        var service = createApprovedService("Tipo invalido", expert);
+        WorkOrderResponse order = createInProgressOrder(client, service, expert);
+        DeliverableResponse deliverable = createDeliverable(expert, order);
+
+        var request = PreviewRequest.builder()
+                .expertId(expert.getIdUser())
+                .deliverableId(deliverable.getId())
+                .caption("Mal tipo")
+                .file(modelFile("preview.gif"))
+                .build();
+
+        assertThatThrownBy(() -> previewService.create(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Formato no permitido");
+        assertThat(previewService.findByDeliverableId(deliverable.getId())).isEmpty();
     }
 
     @Test
@@ -182,7 +229,7 @@ class PreviewServiceImplTest {
                 .expertId(expert.getIdUser())
                 .deliverableId(999L)
                 .caption("Vista frontal")
-                .urlFile("https://files.render3d.mx/preview.png")
+                .file(imageFile("preview.png"))
                 .build();
 
         assertThatThrownBy(() -> previewService.create(request))
@@ -236,7 +283,7 @@ class PreviewServiceImplTest {
                 .expertId(expert.getIdUser())
                 .deliverableId(deliverable.getId())
                 .caption("Vista frontal")
-                .urlFile("https://files.render3d.mx/preview.png")
+                .file(imageFile("preview.png"))
                 .build();
 
         assertThatThrownBy(() -> previewService.create(request))
@@ -286,17 +333,20 @@ class PreviewServiceImplTest {
         WorkOrderResponse order = createInProgressOrder(client, service, expert);
         DeliverableResponse deliverable = createDeliverable(expert, order);
         PreviewResponse created = previewService.create(createPreviewRequest(expert, deliverable));
+        Path previous = fileStorageService.resolve(created.getUrlFile());
 
         var updateRequest = PreviewRequest.builder()
                 .expertId(expert.getIdUser())
                 .deliverableId(deliverable.getId())
                 .caption("Vista lateral del personaje")
-                .urlFile("https://files.render3d.mx/preview-lateral.png")
+                .file(imageFile("preview-lateral.jpg"))
                 .build();
         PreviewResponse updated = previewService.update(created.getId(), updateRequest);
 
         assertThat(updated.getCaption()).isEqualTo("Vista lateral del personaje");
-        assertThat(updated.getUrlFile()).isEqualTo("https://files.render3d.mx/preview-lateral.png");
+        assertThat(updated.getUrlFile()).startsWith("previews/").endsWith(".jpg");
+        assertThat(Files.exists(previous)).isFalse();
+        assertThat(Files.exists(fileStorageService.resolve(updated.getUrlFile()))).isTrue();
     }
 
     @Test
@@ -317,10 +367,12 @@ class PreviewServiceImplTest {
         WorkOrderResponse order = createInProgressOrder(client, service, expert);
         DeliverableResponse deliverable = createDeliverable(expert, order);
         PreviewResponse created = previewService.create(createPreviewRequest(expert, deliverable));
+        Path stored = fileStorageService.resolve(created.getUrlFile());
 
         previewService.delete(created.getId());
 
         assertThat(previewRepository.existsById(created.getId())).isFalse();
+        assertThat(Files.exists(stored)).isFalse();
     }
 
     @Test

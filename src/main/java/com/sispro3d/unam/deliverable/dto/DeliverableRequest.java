@@ -1,7 +1,9 @@
 package com.sispro3d.unam.deliverable.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Setter
@@ -16,9 +18,6 @@ public class DeliverableRequest {
     @NotBlank(message = "{del.NotBlank.name}")
     private String name;
 
-    @NotBlank(message = "{del.NotBlank.urlFile}")
-    private String urlFile;
-
-    @NotBlank(message = "{del.NotBlank.fileType}")
-    private String fileType;
+    @NotNull(message = "{del.NotNull.file}")
+    private MultipartFile file;
 }

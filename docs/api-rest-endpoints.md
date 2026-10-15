@@ -305,19 +305,68 @@ Eliminar un mensaje.
 
 ## Favoritos (N:M cliente–servicio)
 
+Requiere autenticación JWT: `Authorization: Bearer <access_token>`. Solo clientes (`CLIENT`) pueden acceder. 
+Si el `clientId` indicado en la ruta no coincide con el del token, se devuelve `403`. 
+La autorización se resuelve desde el token (no desde el cuerpo).
+
 ### POST `/api/v1/clients/{clientId}/favorite-services/{serviceId}`
-Marcar servicio como favorito; 409 si el par ya existe.
+Marcar servicio como favorito; 409 si el par ya existe. 403 si no coincide el propietario.
 
 ```
 POST http://localhost:8080/api/v1/clients/5/favorite-services/2
+Authorization: Bearer <access_token>
 ```
 
 → 201 Created + `Location: /api/v1/services/2`
 
 ### GET `/api/v1/clients/{clientId}/favorite-services`
-Listar los servicios favoritos del cliente (más reciente primero).
+Listar los servicios favoritos del cliente (más reciente primero). 403 si no coincide el propietario.
+
+```
+GET http://localhost:8080/api/v1/clients/5/favorite-services
+Authorization: Bearer <access_token>
+```
+
+→ 200 OK
 
 ### DELETE `/api/v1/clients/{clientId}/favorite-services/{serviceId}`
-Quitar favorito; 404 si no existe la asociación.
+Quitar favorito; 404 si no existe la asociación. 403 si no coincide el propietario.
+
+```
+DELETE http://localhost:8080/api/v1/clients/5/favorite-services/2
+Authorization: Bearer <access_token>
+```
 
 → 204 No Content
+
+### POST `/api/v1/me/favorite-services/{serviceId}`
+Marcar servicio como favorito para el cliente autenticado (identificado por token). 409 si ya existe.
+
+```
+POST http://localhost:8080/api/v1/me/favorite-services/2
+Authorization: Bearer <access_token>
+```
+
+→ 201 Created + `Location: /api/v1/services/2`
+
+### GET `/api/v1/me/favorite-services`
+Listar favoritos del cliente autenticado.
+
+```
+GET http://localhost:8080/api/v1/me/favorite-services
+Authorization: Bearer <access_token>
+```
+
+→ 200 OK
+
+### DELETE `/api/v1/me/favorite-services/{serviceId}`
+Quitar favorito para el cliente autenticado. 404 si no existe la asociación.
+
+```
+DELETE http://localhost:8080/api/v1/me/favorite-services/2
+Authorization: Bearer <access_token>
+```
+
+→ 204 No Content
+
+**Errores:** 401 (sin token), 403 (no CLIENT / acceso cruzado), 404 (cliente/servicio no encontrado o asociación inexistente), 409 (ya es favorito).

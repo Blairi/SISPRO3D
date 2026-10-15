@@ -18,7 +18,6 @@ public class PreviewMapper {
         }
         var preview = new Preview();
         preview.setCaption(request.getCaption());
-        preview.setUrlFile(request.getUrlFile());
         return preview;
     }
 
@@ -37,6 +36,5 @@ public class PreviewMapper {
 
     public void updateEntityFromRequest(PreviewRequest request, Preview preview) {
         preview.setCaption(request.getCaption());
-        preview.setUrlFile(request.getUrlFile());
     }
 }

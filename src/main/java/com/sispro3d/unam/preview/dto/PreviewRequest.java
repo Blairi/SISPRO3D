@@ -1,7 +1,8 @@
 package com.sispro3d.unam.preview.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Setter
@@ -14,6 +15,6 @@ public class PreviewRequest {
     private Long deliverableId;
     private String caption;
 
-    @NotBlank(message = "{prev.NotBlank.urlFile}")
-    private String urlFile;
+    @NotNull(message = "{prev.NotNull.file}")
+    private MultipartFile file;
 }

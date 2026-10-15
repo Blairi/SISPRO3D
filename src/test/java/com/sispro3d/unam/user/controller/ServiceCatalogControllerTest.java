@@ -171,4 +171,172 @@ class ServiceCatalogControllerTest {
         mockMvc.perform(get("/services/999999"))
                 .andExpect(status().isNotFound());
     }
+
+    private Category createCategory(String name) {
+        Category cat = new Category();
+        cat.setName(name);
+        cat.setDescription("Categoría " + name);
+        return categoryRepository.save(cat);
+    }
+
+    private Long createApprovedService(String title, String description, Category cat, String price, int deliveryDays,
+                                       LocalDateTime createdAt) {
+        OfferedService service = new OfferedService();
+        service.setTitle(title);
+        service.setDescription(description);
+        service.setBasePrice(new BigDecimal(price));
+        service.setExpert(accountRepository.getReferenceById(expertId));
+        service.setCategory(cat);
+        service.setStatus(ServiceStatus.APPROVED);
+        service.setAdmin(accountRepository.getReferenceById(adminId));
+        service.setDeliveryTimeDays(deliveryDays);
+        service.setCreatedAt(createdAt);
+        service.setUpdatedAt(createdAt);
+        return offeredServiceRepository.save(service).getId();
+    }
+
+    @Test
+    void search_byKeyword_matchesTitleDescriptionAndExpertCaseInsensitively() throws Exception {
+        createApprovedService("Dragón épico", "Escultura digital", category, "100.00", 5, LocalDateTime.now());
+        createApprovedService("Nave espacial", "Modelo sci-fi", category, "200.00", 6, LocalDateTime.now());
+
+        mockMvc.perform(get("/services").param("q", "DRAGÓN"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Dragón épico")))
+                .andExpect(content().string(not(containsString("Nave espacial"))));
+
+        mockMvc.perform(get("/services").param("q", "escultura"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Dragón épico")))
+                .andExpect(content().string(not(containsString("Nave espacial"))));
+
+        mockMvc.perform(get("/services").param("q", "lucia"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Dragón épico")))
+                .andExpect(content().string(containsString("Nave espacial")));
+    }
+
+    @Test
+    void search_emptyKeywordShowsAllApproved() throws Exception {
+        createApprovedService("Uno", "d", category, "100.00", 5, LocalDateTime.now());
+        createApprovedService("Dos", "d", category, "200.00", 6, LocalDateTime.now());
+
+        mockMvc.perform(get("/services").param("q", ""))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Uno")))
+                .andExpect(content().string(containsString("Dos")));
+    }
+
+    @Test
+    void search_byCategory() throws Exception {
+        Category animacion = createCategory("Animación");
+        createApprovedService("En modelado", "d", category, "100.00", 5, LocalDateTime.now());
+        createApprovedService("En animación", "d", animacion, "200.00", 6, LocalDateTime.now());
+
+        mockMvc.perform(get("/services").param("categoryId", String.valueOf(category.getId())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("En modelado")))
+                .andExpect(content().string(not(containsString("En animación"))));
+    }
+
+    @Test
+    void search_byPriceRangeInclusiveAndByEachBound() throws Exception {
+        createApprovedService("Barato", "d", category, "100.00", 5, LocalDateTime.now());
+        createApprovedService("Medio", "d", category, "200.00", 5, LocalDateTime.now());
+        createApprovedService("Caro", "d", category, "300.00", 5, LocalDateTime.now());
+
+        mockMvc.perform(get("/services").param("minPrice", "100.00").param("maxPrice", "200.00"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Barato")))
+                .andExpect(content().string(containsString("Medio")))
+                .andExpect(content().string(not(containsString("Caro"))));
+
+        mockMvc.perform(get("/services").param("minPrice", "200.00"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Medio")))
+                .andExpect(content().string(containsString("Caro")))
+                .andExpect(content().string(not(containsString("Barato"))));
+
+        mockMvc.perform(get("/services").param("maxPrice", "200.00"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Barato")))
+                .andExpect(content().string(containsString("Medio")))
+                .andExpect(content().string(not(containsString("Caro"))));
+    }
+
+    @Test
+    void search_invertedPriceRange_showsValidationAndIgnoresPriceFilter() throws Exception {
+        createApprovedService("Servicio único", "d", category, "100.00", 5, LocalDateTime.now());
+
+        mockMvc.perform(get("/services").param("minPrice", "300.00").param("maxPrice", "100.00"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("El precio mínimo no puede ser mayor que el precio máximo")))
+                .andExpect(content().string(containsString("Servicio único")));
+    }
+
+    @Test
+    void search_byMaxDeliveryDays() throws Exception {
+        createApprovedService("Rápido", "d", category, "100.00", 3, LocalDateTime.now());
+        createApprovedService("Lento", "d", category, "100.00", 30, LocalDateTime.now());
+
+        mockMvc.perform(get("/services").param("maxDeliveryDays", "10"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Rápido")))
+                .andExpect(content().string(not(containsString("Lento"))));
+    }
+
+    @Test
+    void search_sortsByPriceAscendingAndDescending() throws Exception {
+        createApprovedService("Medio", "d", category, "200.00", 5, LocalDateTime.now());
+        createApprovedService("Caro", "d", category, "300.00", 5, LocalDateTime.now());
+        createApprovedService("Barato", "d", category, "100.00", 5, LocalDateTime.now());
+
+        String ascending = mockMvc.perform(get("/services").param("sort", "PRICE_ASC"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.junit.jupiter.api.Assertions.assertTrue(
+                ascending.indexOf("Barato") < ascending.indexOf("Medio")
+                        && ascending.indexOf("Medio") < ascending.indexOf("Caro"),
+                "El orden por precio ascendente debe ir de menor a mayor");
+
+        String descending = mockMvc.perform(get("/services").param("sort", "PRICE_DESC"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        org.junit.jupiter.api.Assertions.assertTrue(
+                descending.indexOf("Caro") < descending.indexOf("Medio")
+                        && descending.indexOf("Medio") < descending.indexOf("Barato"),
+                "El orden por precio descendente debe ir de mayor a menor");
+    }
+
+    @Test
+    void search_withoutResults_showsNoResultsState() throws Exception {
+        createApprovedService("Servicio existente", "d", category, "100.00", 5, LocalDateTime.now());
+
+        mockMvc.perform(get("/services").param("q", "inexistente"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("No se encontraron servicios con esos filtros")))
+                .andExpect(content().string(not(containsString("No hay servicios disponibles"))));
+    }
+
+    @Test
+    void search_neverExposesNonApprovedServices() throws Exception {
+        createService("Pendiente coincidente", ServiceStatus.PENDING, LocalDateTime.now());
+        createService("Rechazado coincidente", ServiceStatus.REJECTED, LocalDateTime.now());
+        createApprovedService("Aprobado coincidente", "d", category, "100.00", 5, LocalDateTime.now());
+
+        mockMvc.perform(get("/services").param("q", "coincidente"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Aprobado coincidente")))
+                .andExpect(content().string(not(containsString("Pendiente coincidente"))))
+                .andExpect(content().string(not(containsString("Rechazado coincidente"))));
+    }
+
+    @Test
+    void search_withFilters_isAccessibleWithoutAuthentication() throws Exception {
+        createApprovedService("Público", "d", category, "100.00", 5, LocalDateTime.now());
+
+        mockMvc.perform(get("/services").param("q", "público").param("categoryId", String.valueOf(category.getId())))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Público")));
+    }
 }
