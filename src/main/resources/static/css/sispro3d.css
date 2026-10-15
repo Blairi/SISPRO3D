@@ -10,3 +10,11 @@ body {
 a {
     text-decoration: none;
 }
+
+summary {
+    list-style: none;
+}
+
+summary::-webkit-details-marker {
+    display: none;
+}
