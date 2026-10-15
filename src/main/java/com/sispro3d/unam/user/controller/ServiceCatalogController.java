@@ -3,6 +3,7 @@ package com.sispro3d.unam.user.controller;
 import com.sispro3d.unam.category.dto.CategoryResponse;
 import com.sispro3d.unam.category.service.CategoryService;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import com.sispro3d.unam.external.exchangerate.ExchangeRateService;
 import com.sispro3d.unam.offeredservice.domain.ServiceStatus;
 import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
 import com.sispro3d.unam.offeredservice.dto.ServiceSearchCriteria;
@@ -59,6 +60,9 @@ public class ServiceCatalogController {
     @Autowired
     private WorkOrderService workOrderService;
 
+    @Autowired
+    private ExchangeRateService exchangeRateService;
+
     @GetMapping
     public String index(@RequestParam(required = false) String q,
                         @RequestParam(required = false) String categoryId,
@@ -98,7 +102,13 @@ public class ServiceCatalogController {
 
         List<CategoryResponse> categories = categoryService.findAll();
 
+        Map<Long, BigDecimal> usdPrices = new HashMap<>();
+        for (OfferedServiceResponse service : services) {
+            usdPrices.put(service.getId(), exchangeRateService.convert(service.getBasePrice()));
+        }
+
         model.addAttribute("services", services);
+        model.addAttribute("usdPrices", usdPrices);
         model.addAttribute("categories", categories);
         model.addAttribute("filterQuery", query);
         model.addAttribute("filterCategoryId", parsedCategoryId);
@@ -124,6 +134,7 @@ public class ServiceCatalogController {
         List<ReviewResponse> reviews = reviewService.findByOfferedServiceId(id);
 
         model.addAttribute("service", service);
+        model.addAttribute("usdPrice", exchangeRateService.convert(service.getBasePrice()));
         model.addAttribute("expert", expert);
         model.addAttribute("reviews", reviews);
         model.addAttribute("reviewerNames", reviewerNames(reviews));

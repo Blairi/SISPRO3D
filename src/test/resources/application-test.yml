@@ -20,3 +20,11 @@ app:
     issuer: sispro3d-test
   storage:
     location: target/test-uploads
+
+# Dirección inalcanzable: la conexión se rechaza al instante y el servicio
+# degrada a solo-MXN, de modo que los tests nunca hacen una petición de red.
+external:
+  exchange-rate:
+    base-url: http://127.0.0.1:1
+    connect-timeout: 500ms
+    read-timeout: 500ms
