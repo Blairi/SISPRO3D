@@ -38,3 +38,7 @@ build/
 ### Archivos subidos (entregables y previsualizaciones) ###
 /uploads/
 /target/test-uploads/
+
+### Automatización de capturas (local, no versionado) ###
+/scripts/screenshots/
+/scripts/capture-screenshots.sh

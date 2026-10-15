@@ -72,6 +72,23 @@ mvn test -Dtest=AccountServiceImplTest             # una clase
 mvn test -Dtest=AccountServiceImplTest#testCreate  # un método
 ```
 
+## Regenerar las capturas de pantalla (documentación)
+
+Las capturas de la evidencia de funcionamiento se generan de forma automatizada con **Playwright** sobre la interfaz web y se guardan en `docs/screenshots/` (34 imágenes: 8 públicas, 8 de cliente, 10 de experto y 8 de admin).
+
+Prerrequisitos: MariaDB arriba con `sispro3d_db` sembrada (ver “Cargar datos de ejemplo”).
+
+```bash
+# La primera vez: instala la dependencia y descarga Chromium (requiere red)
+(cd scripts/screenshots && npm install && npx playwright install chromium)
+
+# Un solo comando: arranca la app si no está en ejecución, prepara por API los
+# estados que falten, captura todas las pantallas y detiene la app si la arrancó
+bash scripts/capture-screenshots.sh
+```
+
+Si la app ya está corriendo, el script reutiliza esa instancia y no la detiene. Usa las credenciales de demostración (ver abajo) para iniciar sesión por rol. Ajustes por variable de entorno: `BASE_URL`, `OUT_DIR`, `SCREENSHOT_SCALE` y `SCREENSHOT_SERVICE_ID`.
+
 ## Autenticación y login (Spring Security)
 
 El login usa **Spring Security** con usuarios en la base de datos (`account`) y contraseñas con hash BCrypt:

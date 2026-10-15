@@ -412,6 +412,46 @@ sequenceDiagram
     RC-->>C: 201 Created + Location
 ```
 
+### 2.5 Consumo de API externa: conversión MXN→USD
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant V as Visitante (navegador)
+    participant C as ServiceCatalogController
+    participant S as ExchangeRateService
+    participant CL as FrankfurterExchangeRateClient
+    participant R as RestClient
+    participant F as Frankfurter API (externa)
+
+    V->>C: GET /services (o /services/id)
+    C->>S: convert(basePrice)
+    S->>S: ¿habilitado y tasa del día en caché?
+
+    alt Tasa cacheada hoy
+        S-->>C: tasa cacheada
+    else Sin caché
+        S->>CL: fetchRate(MXN, USD)
+        CL->>R: GET /v1/latest?base=MXN&symbols=USD
+        R->>F: petición HTTPS
+        alt Respuesta válida
+            F-->>R: 200 con rates.USD
+            R-->>CL: FrankfurterRatesResponse
+            CL-->>S: Optional con la tasa
+            S->>S: guarda cachedRate y cachedDate
+        else Timeout o error
+            F--xR: sin respuesta o error
+            R--xCL: excepción capturada
+            CL-->>S: Optional vacío
+        end
+    end
+
+    S-->>C: tasa (o null si no disponible)
+    C->>C: usdPrice = basePrice x tasa (2 decimales)
+    C-->>V: HTML con precio MXN + equivalente USD (o solo MXN)
+    Note over V,F: El navegador nunca llama directamente a la API externa
+```
+
 ## 3. Diagramas de actividad
 
 ### 3.1 Ciclo de contratación (actividad)
@@ -422,7 +462,7 @@ flowchart TD
     CTA -- Anónimo --> Login[[redirect a /login]]
     Login --> Form
     CTA -- EXPERT/ADMIN --> FinX([✗ rechazado por rol])
-    CTA -- CLIENT --> Form[Formulario de solicitud<br/>/services/{id}/quote]
+    CTA -- CLIENT --> Form["Formulario de solicitud<br/>/services/{id}/quote"]
 
     Form --> Guardar{¿Servicio APPROVED?}
     Guardar -- No --> Err1[[400/404 · no se crea nada]]
