@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/header :: head('SISPRO3D - Categorías')}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<nav th:replace="~{fragments/header :: navbar}"></nav>
+
+<main class="flex-grow">
+    <div class="max-w-5xl mx-auto px-4 py-10">
+
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Categorías</h1>
+            <a href="/admin/categories/new"
+               class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition">
+                + Nueva categoría
+            </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(categories)}" class="text-center py-20">
+            <p class="text-gray-500 text-lg">No hay categorías registradas.</p>
+        </div>
+
+        <div th:if="${!#lists.isEmpty(categories)}" class="bg-white shadow rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr th:each="cat : ${categories}" class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900" th:text="${cat.name}"></td>
+                        <td class="px-6 py-4 text-sm text-gray-500" th:text="${cat.description}"></td>
+                        <td class="px-6 py-4">
+                            <div class="flex gap-2">
+                                <a th:href="@{/admin/categories/{id}/edit(id=${cat.id})}"
+                                   class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-700 transition">
+                                    Editar
+                                </a>
+                                <a th:href="@{/admin/categories/{id}/delete(id=${cat.id})}"
+                                   onclick="return confirm('¿Eliminar esta categoría?')"
+                                   class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-700 transition">
+                                    Eliminar
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>

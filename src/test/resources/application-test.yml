@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  # no ejecutar los insert del data.sql
+  sql:
+    init:
+      mode: never
+
+app:
+  jwt:
+    secret: test-only-signing-key-para-los-tests-de-sispro3d-0123456789
+    access-ttl: PT30M
+    refresh-ttl: P7D
+    issuer: sispro3d-test
+  storage:
+    location: target/test-uploads
+
+# Dirección inalcanzable: la conexión se rechaza al instante y el servicio
+# degrada a solo-MXN, de modo que los tests nunca hacen una petición de red.
+external:
+  exchange-rate:
+    base-url: http://127.0.0.1:1
+    connect-timeout: 500ms
+    read-timeout: 500ms

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/header :: head('SISPRO3D - Admin')}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<nav th:replace="~{fragments/header :: navbar}"></nav>
+
+<main class="flex-grow">
+    <div class="max-w-7xl mx-auto px-4 py-10">
+
+        <!-- Sección de administradores -->
+        <div class="mb-12">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold text-gray-900">Administradores</h1>
+                <a href="/admin/admins/new"
+                   class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
+                    + Nuevo admin
+                </a>
+            </div>
+
+            <div th:if="${#lists.isEmpty(admins)}" class="text-center py-8 bg-white rounded-xl border border-gray-200">
+                <p class="text-gray-500">No hay administradores registrados.</p>
+            </div>
+
+            <div th:if="${!#lists.isEmpty(admins)}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div th:each="admin : ${admins}"
+                     class="bg-white rounded-xl shadow border border-gray-200 p-5 flex items-center gap-4">
+                    <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <span class="text-indigo-600 font-semibold text-sm"
+                              th:text="${admin.name.substring(0,1) + admin.lastName.substring(0,1)}"></span>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate"
+                           th:text="${admin.name + ' ' + admin.lastName}"></p>
+                        <p class="text-xs text-gray-500 truncate" th:text="${admin.email}"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de servicios -->
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">Servicios</h1>
+
+            <div th:if="${#maps.isEmpty(groupedServices)}" class="text-center py-20">
+                <p class="text-gray-500 text-lg">No hay servicios registrados.</p>
+            </div>
+
+            <div th:each="entry : ${groupedServices}" class="mb-10">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200"
+                    th:text="${entry.key}"></h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div th:each="svc : ${entry.value}"
+                         class="bg-white rounded-xl shadow border border-gray-200 p-6 flex flex-col">
+
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="text-lg font-semibold text-gray-900" th:text="${svc.title}"></h3>
+                            <span th:if="${svc.status.name() == 'PENDING'}"
+                                  class="text-xs font-medium bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full whitespace-nowrap">Pendiente</span>
+                            <span th:if="${svc.status.name() == 'APPROVED'}"
+                                  class="text-xs font-medium bg-green-100 text-green-700 px-2.5 py-1 rounded-full whitespace-nowrap">Aprobado</span>
+                            <span th:if="${svc.status.name() == 'REJECTED'}"
+                                  class="text-xs font-medium bg-red-100 text-red-700 px-2.5 py-1 rounded-full whitespace-nowrap">Rechazado</span>
+                        </div>
+
+                        <p class="text-gray-600 text-sm flex-grow line-clamp-3 mb-4" th:text="${svc.description}"></p>
+
+                        <div class="text-sm text-gray-500 mb-3">
+                            <p><span class="font-medium text-gray-700">Experto:</span> <span th:text="${svc.expertName}"></span></p>
+                            <p class="text-xs text-gray-400" th:text="${svc.expertEmail}"></p>
+                        </div>
+
+                        <div class="flex justify-between items-center text-sm mb-4">
+                            <span class="font-bold text-indigo-600 text-lg" th:text="'$' + ${#numbers.formatDecimal(svc.basePrice, 1, 2)}"></span>
+                            <span class="text-gray-500" th:text="${svc.deliveryTimeDays} + ' días de entrega'"></span>
+                        </div>
+
+                        <div th:if="${svc.status.name() == 'PENDING'}" class="flex gap-2 pt-3 border-t border-gray-100">
+                            <form th:action="@{/admin/services/{id}/approve(id=${svc.id})}" method="post" class="flex-1">
+                                <button type="submit"
+                                        class="w-full bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">
+                                    Aprobar
+                                </button>
+                            </form>
+                            <form th:action="@{/admin/services/{id}/reject(id=${svc.id})}" method="post" class="flex-1">
+                                <button type="submit"
+                                        class="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition">
+                                    Rechazar
+                                </button>
+                            </form>
+                        </div>
+
+                        <div th:if="${svc.status.name() == 'APPROVED' or svc.status.name() == 'REJECTED'}" class="pt-3 border-t border-gray-100">
+                            <form th:action="@{/admin/services/{id}/pending(id=${svc.id})}" method="post">
+                                <button type="submit"
+                                        class="w-full bg-yellow-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-yellow-600 transition">
+                                    Marcar como pendiente
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>

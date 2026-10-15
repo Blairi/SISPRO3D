@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<span th:fragment="badge(status, type)"
+      class="text-xs font-semibold px-3 py-1 rounded-full"
+      th:classappend="${type == 'quote'} ? (${status.name() == 'PENDING'} ? 'bg-amber-50 text-amber-700'
+          : (${status.name() == 'ACCEPTED'} ? 'bg-green-50 text-green-700'
+          : (${status.name() == 'REJECTED'} ? 'bg-gray-100 text-gray-600'
+          : 'bg-red-50 text-red-700')))
+          : (${status.name() == 'PENDING'} ? 'bg-amber-50 text-amber-700'
+          : (${status.name() == 'IN_PROGRESS'} ? 'bg-blue-50 text-blue-700'
+          : (${status.name() == 'IN_REVIEW'} ? 'bg-indigo-50 text-indigo-700'
+          : (${status.name() == 'COMPLETED'} ? 'bg-green-50 text-green-700'
+          : 'bg-red-50 text-red-700'))))"
+      th:text="${#messages.msg('status.' + type + '.' + status.name())}"></span>
+</html>

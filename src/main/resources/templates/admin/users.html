@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/header :: head('SISPRO3D - Usuarios')}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<nav th:replace="~{fragments/header :: navbar}"></nav>
+
+<main class="flex-grow">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Usuarios</h1>
+
+        <!-- Clientes -->
+        <div class="mb-10">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">Clientes</h2>
+
+            <div th:if="${#lists.isEmpty(clients)}" class="text-center py-8 bg-white rounded-xl border border-gray-200">
+                <p class="text-gray-500">No hay clientes registrados.</p>
+            </div>
+
+            <div th:if="${!#lists.isEmpty(clients)}" class="bg-white shadow rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr th:each="client : ${clients}" class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900" th:text="${client.name + ' ' + client.lastName}"></td>
+                            <td class="px-6 py-4 text-sm text-gray-500" th:text="${client.email}"></td>
+                            <td class="px-6 py-4 text-sm text-gray-500" th:text="${client.phone}"></td>
+                            <td class="px-6 py-4">
+                                <div class="flex gap-2">
+                                    <a th:href="@{/admin/users/{id}/edit(id=${client.idUser})}"
+                                       class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-700 transition">Editar</a>
+                                    <a th:href="@{/admin/users/{id}/delete(id=${client.idUser})}"
+                                       onclick="return confirm('¿Eliminar este cliente?')"
+                                       class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-700 transition">Eliminar</a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Expertos -->
+        <div>
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">Expertos</h2>
+
+            <div th:if="${#lists.isEmpty(experts)}" class="text-center py-8 bg-white rounded-xl border border-gray-200">
+                <p class="text-gray-500">No hay expertos registrados.</p>
+            </div>
+
+            <div th:if="${!#lists.isEmpty(experts)}" class="bg-white shadow rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Especialidad</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr th:each="expert : ${experts}" class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900" th:text="${expert.name + ' ' + expert.lastName}"></td>
+                            <td class="px-6 py-4 text-sm text-gray-500" th:text="${expert.email}"></td>
+                            <td class="px-6 py-4 text-sm text-gray-500" th:text="${expert.specialty}"></td>
+                            <td class="px-6 py-4">
+                                <div class="flex gap-2">
+                                    <a th:href="@{/admin/users/{id}/edit(id=${expert.idUser})}"
+                                       class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-700 transition">Editar</a>
+                                    <a th:href="@{/admin/users/{id}/delete(id=${expert.idUser})}"
+                                       onclick="return confirm('¿Eliminar este experto?')"
+                                       class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-700 transition">Eliminar</a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>

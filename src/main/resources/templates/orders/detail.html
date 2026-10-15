@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/header :: head('Orden #' + ${order.id} + ' - SISPRO3D')}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<nav th:replace="~{fragments/header :: navbar}"></nav>
+
+<main class="flex-grow">
+    <div class="max-w-7xl mx-auto px-4 py-10">
+
+        <div th:if="${success != null}"
+             class="mb-6 rounded-lg bg-green-50 border border-green-200 text-green-800 px-4 py-3">
+            <p th:text="${success}"></p>
+        </div>
+        <div th:if="${error != null}"
+             class="mb-6 rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-3">
+            <p th:text="${error}"></p>
+        </div>
+
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900"
+                    th:text="'Orden #' + ${order.id}"></h1>
+                <p class="text-gray-500 mt-1">
+                    <a th:href="@{/services/{id}(id=${service.id})}" class="text-indigo-600 hover:text-indigo-800"
+                       th:text="${service.title}"></a>
+                    &middot; <span th:text="${clientName}"></span> &harr; <span th:text="${expertName}"></span>
+                </p>
+            </div>
+
+            <span class="shrink-0" th:replace="~{fragments/status-badge :: badge(${order.status}, 'order')}"></span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Columna principal: estado, entregables y chat -->
+            <div class="lg:col-span-2 space-y-8">
+
+                <!-- Estado y monto -->
+                <section class="bg-white rounded-xl shadow border border-gray-200 p-6">
+                    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Estado del trabajo</h2>
+                    <div th:replace="~{fragments/order-timeline :: timeline(${order})}" class="mb-6"></div>
+                    <dl class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <dt class="text-xs font-semibold text-gray-400 uppercase">Monto acordado</dt>
+                            <dd class="mt-1 font-bold text-indigo-600"
+                                th:text="${amount != null}
+                                    ? ('$' + ${#numbers.formatDecimal(amount, 1, 2)})
+                                    : '—'"></dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold text-gray-400 uppercase">Creada</dt>
+                            <dd class="mt-1 text-gray-700"
+                                th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold text-gray-400 uppercase">Iniciada</dt>
+                            <dd class="mt-1 text-gray-700"
+                                th:text="${order.startedAt != null}
+                                    ? ${#temporals.format(order.startedAt, 'dd/MM/yyyy HH:mm')}
+                                    : '—'"></dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold text-gray-400 uppercase">Completada</dt>
+                            <dd class="mt-1 text-gray-700"
+                                th:text="${order.completedAt != null}
+                                    ? ${#temporals.format(order.completedAt, 'dd/MM/yyyy HH:mm')}
+                                    : '—'"></dd>
+                        </div>
+                    </dl>
+
+                    <!-- Acciones permitidas según estado y rol -->
+                    <div class="mt-6 flex flex-wrap gap-3 pt-4 border-t border-gray-100">
+                        <form th:if="${isClient and order.status.name() == 'IN_REVIEW'}"
+                              th:action="@{/orders/{id}/complete(id=${order.id})}" method="post">
+                            <button type="submit"
+                                    class="bg-green-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-green-700 transition">
+                                Aprobar y completar
+                            </button>
+                        </form>
+                        <form th:if="${isClient and order.status.name() == 'IN_REVIEW'}"
+                              th:action="@{/orders/{id}/request-changes(id=${order.id})}" method="post">
+                            <button type="submit"
+                                    class="border border-amber-300 text-amber-700 px-5 py-2 rounded-lg font-medium hover:bg-amber-50 transition">
+                                Pedir cambios
+                            </button>
+                        </form>
+                        <form th:if="${isClient and (order.status.name() == 'PENDING' or order.status.name() == 'IN_PROGRESS')}"
+                              th:action="@{/orders/{id}/cancel(id=${order.id})}" method="post">
+                            <button type="submit"
+                                    class="border border-red-300 text-red-700 px-5 py-2 rounded-lg font-medium hover:bg-red-50 transition">
+                                Cancelar
+                            </button>
+                        </form>
+                        <form th:if="${isExpert and order.status.name() == 'PENDING'}"
+                              th:action="@{/orders/{id}/start(id=${order.id})}" method="post">
+                            <button type="submit"
+                                    class="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
+                                Iniciar trabajo
+                            </button>
+                        </form>
+                        <form th:if="${isExpert and order.status.name() == 'IN_PROGRESS'}"
+                              th:action="@{/orders/{id}/mark-in-review(id=${order.id})}" method="post">
+                            <button type="submit"
+                                    class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-indigo-700 transition">
+                                Enviar a revisión
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Entregables -->
+                <section class="bg-white rounded-xl shadow border border-gray-200 p-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide">Entregables y previsualizaciones</h2>
+                        <a th:if="${isExpert and (order.status.name() == 'IN_PROGRESS' or order.status.name() == 'IN_REVIEW')}"
+                           th:href="@{/expert/orders/{id}/deliverables/new(id=${order.id})}"
+                           class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                            + Registrar entregable
+                        </a>
+                    </div>
+
+                    <p th:if="${#lists.isEmpty(deliverables)}" class="text-sm text-gray-500">
+                        Todavía no hay entregables registrados.
+                    </p>
+
+                    <div th:unless="${#lists.isEmpty(deliverables)}" class="space-y-4">
+                        <div th:each="deliverable : ${deliverables}"
+                             class="rounded-lg border border-gray-200 p-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <p class="font-semibold text-gray-900" th:text="${deliverable.name}"></p>
+                                    <p class="text-xs text-gray-500">
+                                        <span th:text="${deliverable.fileType}"></span> &middot;
+                                        <a th:href="${#strings.startsWith(deliverable.urlFile, 'http') ? deliverable.urlFile : '/files/' + deliverable.urlFile}"
+                                           target="_blank" rel="noopener"
+                                           class="text-indigo-600 hover:text-indigo-800 font-medium">Descargar archivo</a>
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <a th:if="${isExpert and (order.status.name() == 'IN_PROGRESS' or order.status.name() == 'IN_REVIEW')}"
+                                       th:href="@{/expert/orders/{orderId}/deliverables/{deliverableId}/previews/new(orderId=${order.id}, deliverableId=${deliverable.id})}"
+                                       class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                                        + Añadir previsualización
+                                    </a>
+                                    <form th:if="${isExpert and (order.status.name() == 'IN_PROGRESS' or order.status.name() == 'IN_REVIEW')}"
+                                          th:action="@{/expert/orders/{orderId}/deliverables/{deliverableId}/delete(orderId=${order.id}, deliverableId=${deliverable.id})}"
+                                          method="post">
+                                        <button type="submit"
+                                                class="text-sm text-red-600 hover:text-red-800 font-medium">
+                                            Eliminar entregable
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div th:if="${!#lists.isEmpty(previewsByDeliverable[deliverable.id])}"
+                                 class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <figure th:each="preview : ${previewsByDeliverable[deliverable.id]}"
+                                        class="rounded-lg overflow-hidden border border-gray-200">
+                                    <img th:src="${#strings.startsWith(preview.urlFile, 'http') ? preview.urlFile : '/files/' + preview.urlFile}"
+                                         th:alt="${preview.caption}"
+                                         class="w-full h-32 object-cover">
+                                    <figcaption th:if="${preview.caption != null}"
+                                                class="px-3 py-2 text-xs text-gray-600" th:text="${preview.caption}"></figcaption>
+                                    <form th:if="${isExpert and (order.status.name() == 'IN_PROGRESS' or order.status.name() == 'IN_REVIEW')}"
+                                          th:action="@{/expert/orders/{orderId}/deliverables/{deliverableId}/previews/{previewId}/delete(orderId=${order.id}, deliverableId=${deliverable.id}, previewId=${preview.id})}"
+                                          method="post" class="px-3 pb-2">
+                                        <button type="submit"
+                                                class="text-xs text-red-600 hover:text-red-800 font-medium">
+                                            Eliminar
+                                        </button>
+                                    </form>
+                                </figure>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Chat -->
+                <section class="bg-white rounded-xl shadow border border-gray-200 p-6">
+                    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Conversación</h2>
+
+                    <div th:if="${#lists.isEmpty(messages)}" class="text-sm text-gray-500 mb-4">
+                        Todavía no hay mensajes en esta orden.
+                    </div>
+
+                    <div th:unless="${#lists.isEmpty(messages)}" class="space-y-3 mb-6 max-h-96 overflow-y-auto">
+                        <div th:each="msg : ${messages}"
+                             class="flex gap-3"
+                             th:classappend="${msg.userId != sessionUser.idUser} ? 'flex-row-reverse' : ''">
+                            <div class="rounded-lg px-4 py-2 max-w-[75%]"
+                                 th:classappend="${msg.userId != sessionUser.idUser}
+                                     ? 'bg-gray-100 text-gray-800'
+                                     : 'bg-indigo-50 text-gray-900'">
+                                <p class="text-xs font-semibold text-gray-500"
+                                   th:text="${authorNames[msg.userId]}"></p>
+                                <p class="text-sm whitespace-pre-line" th:text="${msg.content}"></p>
+                                <p class="text-[10px] text-gray-400 mt-1"
+                                   th:text="${#temporals.format(msg.timestamp, 'dd/MM/yyyy HH:mm')}"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Solo se puede escribir mientras la orden no ha concluido -->
+                    <p th:if="${isConcluded}" class="text-sm text-gray-500">
+                        La orden ha concluido y ya no se pueden enviar mensajes.
+                    </p>
+                    <form th:unless="${isConcluded}"
+                          th:action="@{/orders/{id}/messages(id=${order.id})}" method="post"
+                          th:object="${message}" class="flex gap-3">
+                        <input type="hidden" th:field="*{threadId}">
+                        <input type="text" th:field="*{content}" id="content"
+                               th:errorclass="border-red-500"
+                               placeholder="Escribe un mensaje..."
+                               class="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="submit"
+                                class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-indigo-700 transition">
+                            Enviar
+                        </button>
+                        <p th:if="${#fields.hasErrors('content')}" th:errors="*{content}"
+                           class="mt-2 text-sm text-red-600"></p>
+                    </form>
+                </section>
+            </div>
+
+            <!-- Sidebar -->
+            <aside class="space-y-6">
+                <section class="bg-white rounded-xl shadow border border-gray-200 p-6">
+                    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Resumen</h2>
+                    <dl class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <dt class="text-gray-500">Cliente</dt>
+                            <dd class="font-medium text-gray-900" th:text="${clientName}"></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-gray-500">Experto</dt>
+                            <dd class="font-medium text-gray-900" th:text="${expertName}"></dd>
+                        </div>
+                        <div class="flex justify-between">
+                            <dt class="text-gray-500">Servicio</dt>
+                            <dd>
+                                <a th:href="@{/services/{id}(id=${service.id})}"
+                                   class="text-indigo-600 hover:text-indigo-800 font-medium">
+                                    <span th:text="${service.title}"></span>
+                                </a>
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+            </aside>
+
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>

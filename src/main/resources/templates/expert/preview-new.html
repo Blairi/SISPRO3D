@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head th:replace="~{fragments/header :: head('Añadir previsualización - SISPRO3D')}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+<nav th:replace="~{fragments/header :: navbar}"></nav>
+
+<main class="flex-grow">
+    <div class="max-w-3xl mx-auto px-4 py-10">
+
+        <a th:href="@{/orders/{id}(id=${order.id})}" class="inline-block text-sm text-indigo-600 hover:text-indigo-800 font-medium mb-6">
+            &larr; Volver a la orden #<span th:text="${order.id}"></span>
+        </a>
+
+        <div class="bg-white rounded-xl shadow border border-gray-200 p-8">
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Añadir previsualización</h1>
+            <p class="text-sm text-gray-500 mb-8">
+                Adjunta una imagen de muestra al entregable «<span th:text="${deliverable.name}"></span>».
+            </p>
+
+            <form th:action="@{/expert/orders/{orderId}/deliverables/{deliverableId}/previews(orderId=${order.id}, deliverableId=${deliverable.id})}"
+                  method="post" enctype="multipart/form-data" th:object="${preview}" class="space-y-6">
+
+                <div>
+                    <label for="file" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Imagen de la previsualización
+                    </label>
+                    <input type="file" name="file" id="file" accept=".png,.jpg,.jpeg,.webp"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="mt-1 text-xs text-gray-500">Formatos: .PNG, .JPG, .JPEG, .WEBP (máx. 25 MB).</p>
+                    <p th:if="${#fields.hasErrors('file')}" th:errors="*{file}"
+                       class="mt-1 text-sm text-red-600"></p>
+                </div>
+
+                <div>
+                    <label th:for="caption" class="block text-sm font-semibold text-gray-900 mb-2">
+                        Descripción (opcional)
+                    </label>
+                    <input type="text" th:field="*{caption}" id="caption"
+                           placeholder="Ej. Render frontal sin textura"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button type="submit"
+                            class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 transition">
+                        Añadir previsualización
+                    </button>
+                    <a th:href="@{/orders/{id}(id=${order.id})}"
+                       class="text-gray-600 hover:text-gray-900 font-medium">Cancelar</a>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>
