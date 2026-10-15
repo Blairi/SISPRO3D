@@ -78,12 +78,16 @@ El login usa **Spring Security** con usuarios en la base de datos (`account`) y 
 
 - Página de login: `http://localhost:8080/login` (formulario con `email` y `password`).
 - Tras iniciar sesión aterrizas según tu rol: cliente → `/client/quotes`, experto → `/expert/dashboard`, admin → `/admin/dashboard`. Si entraste a `/login` desde un enlace protegido, la sesión te devuelve a ese destino.
-- Cerrar sesión: botón en el header (POST `/logout`).
+- Cerrar sesión: en el header, junto al nombre de la cuenta (cluster de usuario, POST `/logout`).
 
 Áreas públicas (sin login): `/`, `/login`, `/register`, el **catálogo público** `/services` (listado) y `/services/{id}` (detalle con ficha del experto, estilo marketplace), archivos estáticos (`/css/**`, `/js/**`, `/vendor/**`) y la API REST `/api/v1/**`. El catálogo solo muestra servicios `APPROVED`; los no aprobados responden 404.
 Áreas protegidas por rol: `/admin/**` solo `ADMIN`, `/expert/**` solo `EXPERT`; el resto (incluido el detalle de orden `/orders/{id}` y su chat) requiere sesión iniciada — el detalle de una orden solo lo ven sus dos partes, y los archivos en `/files/**` solo los descarga el cliente o el experto de la orden propietaria (el resto recibe 404).
 
 **Páginas de error de la web:** los errores de la interfaz web (no de la API) se renderizan con plantillas propias en español — `templates/error/404.html`, `templates/error/500.html` y el fallback genérico `templates/error.html` (reemplaza la página Whitelabel). Reutilizan el header/footer y muestran un mensaje genérico con navegación, sin filtrar mensajes técnicos ni trazas; el contrato de error JSON de `/api/v1/**` (`ErrorDetail`) no cambia.
+
+**Navegación por rol:** en el header, los enlaces del rol (cliente, experto o admin) se agrupan en un menú desplegable «Menú»; el nombre de la cuenta y el control «Cerrar sesión» forman un cluster de usuario a la derecha, separado del menú. Los visitantes anónimos ven solo el catálogo y las acciones de iniciar sesión y registro.
+
+**Página de inicio (landing):** `/` es una landing pública con portada (hero) y llamada a la acción al catálogo, una sección de **servicios destacados** (solo `APPROVED`, del más reciente al más antiguo, máximo 6), una sección de **categorías** que enlazan al catálogo filtrado, una sección **«cómo funciona»** y una llamada a la acción de cierre. Reutiliza el header/footer del sitio (reflejan la sesión) y usa imágenes locales de `static/images/` (sin CDN).
 
 ### Credenciales de demostración
 
