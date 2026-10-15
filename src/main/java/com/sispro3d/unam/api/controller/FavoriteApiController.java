@@ -48,4 +48,25 @@ public class FavoriteApiController {
         favoriteService.remove(clientId, serviceId);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping(value = "/api/v1/me/favorite-services/{serviceId}", produces = "application/json")
+    public ResponseEntity<ServiceResponseDTO> associateMe(@PathVariable @Positive Long serviceId) {
+        ServiceResponseDTO associated = favoriteService.associateForCurrentUser(serviceId);
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/v1/services/{serviceId}")
+                .buildAndExpand(serviceId)
+                .toUri();
+        return ResponseEntity.created(location).body(associated);
+    }
+
+    @GetMapping(value = "/api/v1/me/favorite-services", produces = "application/json")
+    public ResponseEntity<List<ServiceResponseDTO>> findMe() {
+        return ResponseEntity.ok(favoriteService.findForCurrentUser());
+    }
+
+    @DeleteMapping(value = "/api/v1/me/favorite-services/{serviceId}")
+    public ResponseEntity<Void> removeMe(@PathVariable @Positive Long serviceId) {
+        favoriteService.removeForCurrentUser(serviceId);
+        return ResponseEntity.noContent().build();
+    }
 }

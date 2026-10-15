@@ -2,18 +2,31 @@
   "info": {
     "name": "SISPRO3D REST API - Ejercicio 1",
     "_postman_id": "7c0e4f4a-8d5a-4f6f-9a1b-3e0f0f0f0f0f",
-    "description": "Colección de evidencia para la capa REST /api/v1 de SISPRO3D. Toda la API exige un access token JWT (variable accessToken). Ejecuta primero 'auth/login' y copia el accessToken (y refreshToken) devuelto a las variables de la colección — o corre 'auth/refresh'. Los ejemplos asumen scripts/data.sql cargado (ids de ejemplo) y el servidor en http://localhost:8080. Los actores se toman del token: los cuerpos NO llevan clientId/expertId/adminId/actorId.",
+    "description": "Colecci\u00f3n de evidencia para la capa REST /api/v1 de SISPRO3D. Toda la API exige un access token JWT (variable accessToken). Ejecuta primero 'auth/login' y copia el accessToken (y refreshToken) devuelto a las variables de la colecci\u00f3n \u2014 o corre 'auth/refresh'. Los ejemplos asumen scripts/data.sql cargado (ids de ejemplo) y el servidor en http://localhost:8080. Los actores se toman del token: los cuerpos NO llevan clientId/expertId/adminId/actorId.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "accessToken", "value": "" },
-    { "key": "refreshToken", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    }
   ],
   "auth": {
     "type": "bearer",
     "bearer": [
-      { "key": "token", "value": "{{accessToken}}", "type": "string" }
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
     ]
   },
   "item": [
@@ -21,36 +34,84 @@
       "name": "auth/login -> 200 (guardar accessToken y refreshToken)",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"email\": \"mariana.stein@estudio.com\",\n  \"password\": \"Client123!\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "login"
+          ]
+        }
       }
     },
     {
       "name": "auth/refresh -> 200",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "refresh"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "refresh"
+          ]
+        }
       }
     },
     {
       "name": "auth/logout -> 204",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "logout"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/auth/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "auth",
+            "logout"
+          ]
+        }
       }
     },
     {
@@ -58,31 +119,73 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/services/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services", "1"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/services/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "services",
+            "1"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 2 - POST service valido -> 201",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"title\": \"Modelado de personaje API\",\n  \"description\": \"Creado via REST\",\n  \"basePrice\": 12000.00,\n  \"categoryId\": 1,\n  \"deliveryTimeDays\": 15\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/services", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/services",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "services"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 3 - PUT service existente -> 200",
       "request": {
         "method": "PUT",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"title\": \"Modelado de personaje estilizado (editado)\",\n  \"description\": \"Descripcion editada\",\n  \"basePrice\": 9800.00,\n  \"categoryId\": 1,\n  \"deliveryTimeDays\": 20\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/services/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services", "1"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/services/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "services",
+            "1"
+          ]
+        }
       }
     },
     {
@@ -90,7 +193,18 @@
       "request": {
         "method": "DELETE",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/deliverables/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "deliverables", "1"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/deliverables/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "deliverables",
+            "1"
+          ]
+        }
       }
     },
     {
@@ -98,19 +212,47 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/services/99999", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services", "99999"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/services/99999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "services",
+            "99999"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 6 - POST review rating=8 -> 400",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"rating\": 8,\n  \"comment\": \"fuera de rango\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/services/1/reviews", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services", "1", "reviews"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/services/1/reviews",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "services",
+            "1",
+            "reviews"
+          ]
+        }
       }
     },
     {
@@ -118,7 +260,18 @@
       "request": {
         "method": "DELETE",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/categories/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "categories", "1"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/categories/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "categories",
+            "1"
+          ]
+        }
       }
     },
     {
@@ -126,15 +279,43 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/services?categoryId=1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services"], "query": [{ "key": "categoryId", "value": "1" }] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/services?categoryId=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "services"
+          ],
+          "query": [
+            {
+              "key": "categoryId",
+              "value": "1"
+            }
+          ]
+        }
       }
     },
     {
-      "name": "Extras - GET reseñas de un servicio",
+      "name": "Extras - GET rese\u00f1as de un servicio",
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/services/1/reviews", "host": ["{{baseUrl}}"], "path": ["api", "v1", "services", "1", "reviews"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/services/1/reviews",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "services",
+            "1",
+            "reviews"
+          ]
+        }
       }
     },
     {
@@ -142,16 +323,45 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "1"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/work-orders/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "work-orders",
+            "1"
+          ]
+        }
       }
     },
     {
       "name": "Extras - POST work-order para cotizacion aceptada -> 201",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{\n  \"quoteId\": 1\n}" },
-        "url": { "raw": "{{baseUrl}}/api/v1/work-orders", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders"] }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"quoteId\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/work-orders",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "work-orders"
+          ]
+        }
       }
     },
     {
@@ -159,7 +369,17 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/work-orders", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/work-orders",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "work-orders"
+          ]
+        }
       }
     },
     {
@@ -167,16 +387,48 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/status/IN_PROGRESS", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "status", "IN_PROGRESS"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/work-orders/status/IN_PROGRESS",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "work-orders",
+            "status",
+            "IN_PROGRESS"
+          ]
+        }
       }
     },
     {
       "name": "Extras - PUT status de orden (transicion invalida -> 400)",
       "request": {
         "method": "PUT",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{\n  \"status\": \"COMPLETED\"\n}" },
-        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/5/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "5", "status"] }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/work-orders/5/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "work-orders",
+            "5",
+            "status"
+          ]
+        }
       }
     },
     {
@@ -184,19 +436,48 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/1/deliverables", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "1", "deliverables"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/work-orders/1/deliverables",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "work-orders",
+            "1",
+            "deliverables"
+          ]
+        }
       }
     },
     {
       "name": "Extras - POST entregable a una orden -> 201",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"name\": \"Modelo final\",\n  \"urlFile\": \"https://files.render3d.mx/orden1/modelo-final.fbx\",\n  \"fileType\": \"model/fbx\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/1/deliverables", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "1", "deliverables"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/work-orders/1/deliverables",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "work-orders",
+            "1",
+            "deliverables"
+          ]
+        }
       }
     },
     {
@@ -204,7 +485,18 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/deliverables/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "deliverables", "1"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/deliverables/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "deliverables",
+            "1"
+          ]
+        }
       }
     },
     {
@@ -212,31 +504,74 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/accounts/2", "host": ["{{baseUrl}}"], "path": ["api", "v1", "accounts", "2"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/accounts/2",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "accounts",
+            "2"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 8 - POST cotizacion valida -> 201",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"offeredServiceId\": 1,\n  \"description\": \"Cotizacion para modelo base\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/quotes", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/quotes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "quotes"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 9 - PUT reply de cotizacion -> 200",
       "request": {
         "method": "PUT",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"totalAmount\": 15000.00,\n  \"validUntil\": \"2026-12-31\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/quotes/1/reply", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1", "reply"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/quotes/1/reply",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "quotes",
+            "1",
+            "reply"
+          ]
+        }
       }
     },
     {
@@ -244,7 +579,19 @@
       "request": {
         "method": "PUT",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/quotes/1/accept", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1", "accept"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/quotes/1/accept",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "quotes",
+            "1",
+            "accept"
+          ]
+        }
       }
     },
     {
@@ -252,7 +599,18 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/quotes/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/quotes/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "quotes",
+            "1"
+          ]
+        }
       }
     },
     {
@@ -260,7 +618,17 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/quotes", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/quotes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "quotes"
+          ]
+        }
       }
     },
     {
@@ -268,16 +636,48 @@
       "request": {
         "method": "PUT",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/quotes/1/expire", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "1", "expire"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/quotes/1/expire",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "quotes",
+            "1",
+            "expire"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 12 - POST hilo en orden 1 (ya existe) -> 409 (unicidad)",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{}" },
-        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/1/thread", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "1", "thread"] }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/work-orders/1/thread",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "work-orders",
+            "1",
+            "thread"
+          ]
+        }
       }
     },
     {
@@ -285,19 +685,48 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/work-orders/1/thread", "host": ["{{baseUrl}}"], "path": ["api", "v1", "work-orders", "1", "thread"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/work-orders/1/thread",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "work-orders",
+            "1",
+            "thread"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 14 - POST mensaje al hilo -> 201",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"content\": \"Hola, ¿podrias adjuntar una vista previa?\"\n}"
+          "raw": "{\n  \"content\": \"Hola, \u00bfpodrias adjuntar una vista previa?\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/threads/1/messages", "host": ["{{baseUrl}}"], "path": ["api", "v1", "threads", "1", "messages"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/threads/1/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "threads",
+            "1",
+            "messages"
+          ]
+        }
       }
     },
     {
@@ -305,19 +734,48 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/threads/1/messages", "host": ["{{baseUrl}}"], "path": ["api", "v1", "threads", "1", "messages"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/threads/1/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "threads",
+            "1",
+            "messages"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 16 - POST vista previa -> 201",
       "request": {
         "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"caption\": \"Vista previa del rig\",\n  \"urlFile\": \"https://files.render3d.mx/orden3/preview-rig.png\"\n}"
         },
-        "url": { "raw": "{{baseUrl}}/api/v1/deliverables/9/previews", "host": ["{{baseUrl}}"], "path": ["api", "v1", "deliverables", "9", "previews"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/deliverables/9/previews",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "deliverables",
+            "9",
+            "previews"
+          ]
+        }
       }
     },
     {
@@ -325,40 +783,127 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/deliverables/9/previews", "host": ["{{baseUrl}}"], "path": ["api", "v1", "deliverables", "9", "previews"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/deliverables/9/previews",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "deliverables",
+            "9",
+            "previews"
+          ]
+        }
       }
     },
     {
       "name": "Extras - PUT vista previa (solo participantes) -> 200",
       "request": {
         "method": "PUT",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{\n  \"caption\": \"Vista previa corregida\",\n  \"urlFile\": \"https://files.render3d.mx/orden3/preview-rig-v2.png\"\n}" },
-        "url": { "raw": "{{baseUrl}}/api/v1/previews/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "previews", "1"] }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"caption\": \"Vista previa corregida\",\n  \"urlFile\": \"https://files.render3d.mx/orden3/preview-rig-v2.png\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/previews/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "previews",
+            "1"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 18 - POST marcado favorito -> 201",
       "request": {
         "method": "POST",
-        "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/clients/5/favorite-services/2", "host": ["{{baseUrl}}"], "path": ["api", "v1", "clients", "5", "favorite-services", "2"] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/clients/5/favorite-services/2",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "clients",
+            "5",
+            "favorite-services",
+            "2"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 19 - GET favoritos del cliente",
       "request": {
         "method": "GET",
-        "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/clients/5/favorite-services", "host": ["{{baseUrl}}"], "path": ["api", "v1", "clients", "5", "favorite-services"] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/clients/5/favorite-services",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "clients",
+            "5",
+            "favorite-services"
+          ]
+        }
       }
     },
     {
       "name": "Escenario 20 - DELETE favorito -> 204",
       "request": {
         "method": "DELETE",
-        "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/clients/5/favorite-services/2", "host": ["{{baseUrl}}"], "path": ["api", "v1", "clients", "5", "favorite-services", "2"] }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/clients/5/favorite-services/2",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "clients",
+            "5",
+            "favorite-services",
+            "2"
+          ]
+        }
       }
     },
     {
@@ -366,7 +911,95 @@
       "request": {
         "method": "GET",
         "header": [],
-        "url": { "raw": "{{baseUrl}}/api/v1/quotes/0", "host": ["{{baseUrl}}"], "path": ["api", "v1", "quotes", "0"] }
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/quotes/0",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "quotes",
+            "0"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Me - GET favoritos",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/me/favorite-services",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "me",
+            "favorite-services"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Me - POST agregar favorito -> 201",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/me/favorite-services/2",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "me",
+            "favorite-services",
+            "2"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Me - DELETE quitar favorito -> 204",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/me/favorite-services/2",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "me",
+            "favorite-services",
+            "2"
+          ]
+        }
       }
     }
   ]

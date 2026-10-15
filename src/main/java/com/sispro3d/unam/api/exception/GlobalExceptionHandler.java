@@ -17,6 +17,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,8 +47,8 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation failed", request, details);
     }
 
-    @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<ErrorDetail> handleForbidden(ForbiddenException ex, jakarta.servlet.http.HttpServletRequest request) {
+    @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class})
+    public ResponseEntity<ErrorDetail> handleForbidden(RuntimeException ex, jakarta.servlet.http.HttpServletRequest request) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage(), request, List.of());
     }
 
