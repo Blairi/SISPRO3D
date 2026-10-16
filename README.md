@@ -322,3 +322,55 @@ Desde `/admin/reports` (solo `ADMIN`, con enlace en la navegación) el administr
 7. orden concluida, outsider 404, entregable en fase incorrecta.
 8. 
 3. API: POST /api/v1/auth/login → usar accessToken en Authorization: Bearer; verifiqué 401 sin token, refresh, logout y reuso del refresh revocado → 401.
+## Guía de uso
+
+### Prerrequisitos
+- Java 21
+- Maven (se recomienda usar la versión de Maven incluida en IntelliJ IDEA)
+- MariaDB corriendo en `localhost:3306`
+
+### Ejecutar la aplicación
+
+#### Desde IntelliJ
+1. Abrir `SISPRO3DApplication.java` en `src/main/java/com/sispro3d/unam/`.
+2. Ejecutar la clase desde el botón Run. La aplicación estará disponible en `http://localhost:8080`.
+
+#### Desde la terminal
+```bash
+mvn spring-boot:run
+```
+
+### URLs principales
+- Web: `http://localhost:8080`
+- Catálogo público: `http://localhost:8080/services`
+- API REST (base): `http://localhost:8080/api/v1`
+
+### Autenticación y credenciales de demostración
+El sistema usa Spring Security con login por formulario (email/password). Credenciales de ejemplo incluidas en `scripts/data.sql`:
+
+| Rol | Email | Contraseña |
+|---|------|------------|
+| Admin | `ricardo.solano@render3d.mx` | `Admin123!` |
+| Experto | `emilio.vargas@email.com` | `Expert123!` |
+| Cliente | `mariana.stein@estudio.com` | `Client123!` |
+
+- Login: `http://localhost:8080/login`
+- Logout: desde el header (POST `/logout`, requiere token CSRF en formularios web)
+
+### Flujos principales por rol
+
+- **Cliente:** Explorar `/services`, solicitar cotización (`/services/{id}/quote`), ver cotizaciones en `/client/quotes`, aceptar/rechazar, consultar órdenes en `/client/orders`, completar órdenes y dejar reseñas (cuando corresponde).
+- **Experto:** Gestionar servicios en `/expert/dashboard` (crear/editar), revisar cotizaciones en `/expert/quotes`, gestionar órdenes en `/expert/orders` (iniciar, marcar en revisión, subir entregables/previews).
+- **Admin:** Panel `/admin/dashboard`, gestionar usuarios `/admin/users`, categorías `/admin/categories`, aprobar/rechazar servicios y ver reportes `/admin/reports`.
+
+### API REST
+La API es stateless y opera bajo `/api/v1/**`. Para ver endpoints detallados, consultar `docs/api-rest-endpoints.md` o `docs/postman_collection.json`.
+
+### Capturas
+Las pantallas de la aplicación se encuentran en `docs/screenshots/` y pueden regenerarse con el script `scripts/capture-screenshots.sh` (ver sección anterior).
+
+### Comandos útiles
+```bash
+mvn test                                           # todos los tests (H2, no requiere MariaDB)
+mvn test -Dtest=<Clase>#<método>                   # test específico
+```
