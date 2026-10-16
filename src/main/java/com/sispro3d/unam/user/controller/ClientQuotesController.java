@@ -6,6 +6,7 @@ import com.sispro3d.unam.quote.dto.QuoteResponse;
 import com.sispro3d.unam.quote.domain.QuoteStatus;
 import com.sispro3d.unam.quote.service.QuoteService;
 import com.sispro3d.unam.security.CurrentUser;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,6 +27,7 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/client/quotes")
+@Slf4j
 public class ClientQuotesController {
 
     @Autowired
@@ -40,6 +42,7 @@ public class ClientQuotesController {
     @GetMapping
     public String list(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /client/quotes - usuario={}", userId);
 
         List<QuoteResponse> quotes = quoteService.findByClientId(userId);
 
@@ -62,6 +65,7 @@ public class ClientQuotesController {
     @PostMapping("/{id}/accept")
     public String accept(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /client/quotes/{}/accept - usuario={}", id, userId);
 
         try {
             var acceptance = quoteService.accept(id, userId);
@@ -77,6 +81,7 @@ public class ClientQuotesController {
     @PostMapping("/{id}/reject")
     public String reject(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /client/quotes/{}/reject - usuario={}", id, userId);
 
         try {
             quoteService.reject(id, userId);
@@ -90,6 +95,7 @@ public class ClientQuotesController {
     @PostMapping("/{id}/cancel")
     public String cancel(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /client/quotes/{}/cancel - usuario={}", id, userId);
 
         try {
             quoteService.cancel(id, userId);

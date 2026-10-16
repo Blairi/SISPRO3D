@@ -13,12 +13,14 @@ import com.sispro3d.unam.review.dto.ReviewRequest;
 import com.sispro3d.unam.review.repository.ReviewRepository;
 import com.sispro3d.unam.review.service.ReviewService;
 import com.sispro3d.unam.user.repository.AccountRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Slf4j
 public class ApiReviewService {
 
     private final ReviewRepository reviewRepository;
@@ -67,6 +69,7 @@ public class ApiReviewService {
                 .comment(request.getComment())
                 .build());
 
+        log.info("Reseña creada (API): id={}, cliente={}, servicio={}", created.getId(), clientId, serviceId);
         return mapper.toResponse(findReview(created.getId()));
     }
 
@@ -79,6 +82,7 @@ public class ApiReviewService {
         if (reviewRepository.findByClient_IdUserAndOfferedService_Id(clientId, serviceId)
                 .filter(r -> !r.getId().equals(id))
                 .isPresent()) {
+            log.warn("Rechazado: reseña duplicada (API): cliente={}, servicio={}", clientId, serviceId);
             throw new ConflictException("Client with id " + clientId
                     + " has already reviewed service with id " + serviceId);
         }
@@ -89,12 +93,15 @@ public class ApiReviewService {
         mapper.updateEntityFromRequest(request, existing);
         existing.setClient(client);
 
-        return mapper.toResponse(reviewRepository.save(existing));
+        var updated = reviewRepository.save(existing);
+        log.info("Reseña actualizada (API): id={}", updated.getId());
+        return mapper.toResponse(updated);
     }
 
     public void delete(Long id) {
         var existing = reviewRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.forId("Review", id));
         reviewRepository.delete(existing);
+        log.info("Reseña eliminada (API): id={}", id);
     }
 }

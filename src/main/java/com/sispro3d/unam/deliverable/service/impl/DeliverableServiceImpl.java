@@ -18,6 +18,7 @@ import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class DeliverableServiceImpl implements DeliverableService {
 
     private static final String SUBFOLDER = "deliverables";
@@ -69,6 +71,7 @@ public class DeliverableServiceImpl implements DeliverableService {
 
         String error = uploadValidator.deliverableError(request.getFile());
         if (error != null) {
+            log.warn("Archivo de entregable rechazado: orden={}, motivo={}", request.getWorkOrderId(), error);
             throw new BadRequestException(error);
         }
 
@@ -79,6 +82,7 @@ public class DeliverableServiceImpl implements DeliverableService {
         deliverable.setFileType(fileTypeOf(request));
 
         Deliverable saved = deliverableRepository.save(deliverable);
+        log.info("Entregable creado: id={}, orden={}", saved.getId(), request.getWorkOrderId());
         return deliverableMapper.toResponse(saved);
     }
 
@@ -97,6 +101,7 @@ public class DeliverableServiceImpl implements DeliverableService {
         if (request.getFile() != null && !request.getFile().isEmpty()) {
             String error = uploadValidator.deliverableError(request.getFile());
             if (error != null) {
+                log.warn("Archivo de entregable rechazado en actualización: entregable={}, motivo={}", id, error);
                 throw new BadRequestException(error);
             }
             String previous = existing.getUrlFile();
@@ -106,6 +111,7 @@ public class DeliverableServiceImpl implements DeliverableService {
         }
 
         Deliverable updated = deliverableRepository.save(existing);
+        log.info("Entregable actualizado: id={}", updated.getId());
         return deliverableMapper.toResponse(updated);
     }
 
@@ -120,6 +126,7 @@ public class DeliverableServiceImpl implements DeliverableService {
 
         deliverableRepository.delete(existing);
         fileStorageService.delete(existing.getUrlFile());
+        log.info("Entregable eliminado: id={}, previsualizaciones={}", id, previews.size());
     }
 
     @Override
@@ -132,11 +139,13 @@ public class DeliverableServiceImpl implements DeliverableService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", expertId));
 
         if (expert.getRole() != Role.EXPERT) {
+            log.warn("Intento de gestionar entregables por cuenta no experta: id={}", expertId);
             throw new ForbiddenException("Solo cuentas de tipo EXPERT pueden gestionar entregables");
         }
 
         var serviceExpert = order.getQuote().getOfferedService().getExpert();
         if (serviceExpert == null || !expertId.equals(serviceExpert.getIdUser())) {
+            log.warn("Intento de gestionar entregables por experto no propietario: orden={}, experto={}", order.getId(), expertId);
             throw new ForbiddenException("Solo el experto propietario del servicio puede gestionar la orden");
         }
     }
@@ -144,6 +153,7 @@ public class DeliverableServiceImpl implements DeliverableService {
     private void requireActiveOrder(WorkOrder order) {
         if (order.getStatus() != WorkOrderStatus.IN_PROGRESS
                 && order.getStatus() != WorkOrderStatus.IN_REVIEW) {
+            log.warn("Intento de gestionar entregables en orden no activa: orden={}, estado={}", order.getId(), order.getStatus());
             throw new BadRequestException("Solo se pueden gestionar entregables en órdenes en estado IN_PROGRESS o IN_REVIEW");
         }
     }

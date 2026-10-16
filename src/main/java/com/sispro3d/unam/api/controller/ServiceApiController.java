@@ -4,6 +4,7 @@ import com.sispro3d.unam.api.dto.ServiceRequestDTO;
 import com.sispro3d.unam.api.dto.ServiceResponseDTO;
 import com.sispro3d.unam.api.service.ApiServiceService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/services")
+@Slf4j
 public class ServiceApiController {
 
     private final ApiServiceService serviceService;
@@ -33,16 +35,19 @@ public class ServiceApiController {
     public ResponseEntity<List<ServiceResponseDTO>> findAll(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long expertId) {
+        log.debug("GET /api/v1/services - categoria={}, experto={}", categoryId, expertId);
         return ResponseEntity.ok(serviceService.findAll(categoryId, expertId));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ServiceResponseDTO> findById(@PathVariable Long id) {
+        log.debug("GET /api/v1/services/{}", id);
         return ResponseEntity.ok(serviceService.findById(id));
     }
 
     @PostMapping
     public ResponseEntity<ServiceResponseDTO> create(@Valid @RequestBody ServiceRequestDTO request) {
+        log.debug("POST /api/v1/services");
         ServiceResponseDTO created = serviceService.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -54,11 +59,13 @@ public class ServiceApiController {
     @PutMapping("/{id}")
     public ResponseEntity<ServiceResponseDTO> update(@PathVariable Long id,
                                                      @Valid @RequestBody ServiceRequestDTO request) {
+        log.debug("PUT /api/v1/services/{}", id);
         return ResponseEntity.ok(serviceService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
+        log.debug("DELETE /api/v1/services/{}", id);
         serviceService.delete(id);
         return ResponseEntity.noContent().build();
     }

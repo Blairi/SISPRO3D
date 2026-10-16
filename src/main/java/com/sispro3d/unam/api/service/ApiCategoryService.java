@@ -7,12 +7,14 @@ import com.sispro3d.unam.api.mapper.ApiCategoryMapper;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
 import com.sispro3d.unam.category.repository.CategoryRepository;
 import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Slf4j
 public class ApiCategoryService {
 
     private final CategoryRepository categoryRepository;
@@ -41,6 +43,7 @@ public class ApiCategoryService {
 
     public CategoryResponseDTO create(CategoryRequestDTO request) {
         var saved = categoryRepository.save(mapper.toEntity(request));
+        log.info("Categoría creada (API): id={}", saved.getId());
         return mapper.toResponse(saved);
     }
 
@@ -48,7 +51,9 @@ public class ApiCategoryService {
         var existing = categoryRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.forId("Category", id));
         mapper.updateEntityFromRequest(request, existing);
-        return mapper.toResponse(categoryRepository.save(existing));
+        var updated = categoryRepository.save(existing);
+        log.info("Categoría actualizada (API): id={}", updated.getId());
+        return mapper.toResponse(updated);
     }
 
     @Transactional
@@ -56,9 +61,11 @@ public class ApiCategoryService {
         var existing = categoryRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.forId("Category", id));
         if (!offeredServiceRepository.findByCategory_Id(id).isEmpty()) {
+            log.warn("Rechazado: categoría con servicios no eliminable (API): id={}", id);
             throw new DataIntegrityException("Category with id " + id
                     + " has associated offered services and cannot be deleted");
         }
         categoryRepository.delete(existing);
+        log.info("Categoría eliminada (API): id={}", id);
     }
 }

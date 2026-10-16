@@ -12,12 +12,14 @@ import com.sispro3d.unam.thread.service.ThreadService;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class ThreadServiceImpl implements ThreadService {
 
     private final ThreadRepository threadRepository;
@@ -59,6 +61,7 @@ public class ThreadServiceImpl implements ThreadService {
         requireParticipant(order, actor.getIdUser());
 
         if (threadRepository.existsByWorkOrder_Id(order.getId())) {
+            log.warn("Intento de crear hilo duplicado para la orden: id={}", order.getId());
             throw new ConflictException("Solo puede existir un hilo de conversación por orden");
         }
 
@@ -66,6 +69,7 @@ public class ThreadServiceImpl implements ThreadService {
         thread.setWorkOrder(order);
 
         Thread saved = threadRepository.save(thread);
+        log.info("Hilo creado: id={}, orden={}", saved.getId(), order.getId());
         return threadMapper.toResponse(saved);
     }
 
@@ -80,6 +84,7 @@ public class ThreadServiceImpl implements ThreadService {
 
         existing.setWorkOrder(workOrderRepository.getReferenceById(request.getWorkOrderId()));
         Thread updated = threadRepository.save(existing);
+        log.info("Hilo actualizado: id={}", updated.getId());
         return threadMapper.toResponse(updated);
     }
 
@@ -89,6 +94,7 @@ public class ThreadServiceImpl implements ThreadService {
             throw ResourceNotFoundException.forId("Thread", id);
         }
         threadRepository.deleteById(id);
+        log.info("Hilo eliminado: id={}", id);
     }
 
     @Override
@@ -104,6 +110,7 @@ public class ThreadServiceImpl implements ThreadService {
         boolean isExpert = expert != null && userId.equals(expert.getIdUser());
 
         if (!isClient && !isExpert) {
+            log.warn("Intento de acceso a hilo por no participante: orden={}, cuenta={}", order.getId(), userId);
             throw new ForbiddenException("Solo el cliente o el experto de la orden pueden acceder al hilo");
         }
     }

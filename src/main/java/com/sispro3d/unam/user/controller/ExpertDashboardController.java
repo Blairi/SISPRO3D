@@ -5,6 +5,7 @@ import com.sispro3d.unam.offeredservice.dto.OfferedServiceRequest;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
 import com.sispro3d.unam.security.CurrentUser;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/expert")
+@Slf4j
 public class ExpertDashboardController {
 
     @Autowired
@@ -27,6 +29,7 @@ public class ExpertDashboardController {
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /expert/dashboard - usuario={}", userId);
 
         var services = offeredServiceService.findByExpertId(userId);
         model.addAttribute("services", services);
@@ -36,6 +39,7 @@ public class ExpertDashboardController {
     @GetMapping("/services/new")
     public String showCreateForm(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /expert/services/new - usuario={}", userId);
 
         model.addAttribute("offeredservice", new OfferedServiceRequest());
         model.addAttribute("categories", categoryRepository.findAll());
@@ -48,6 +52,7 @@ public class ExpertDashboardController {
             BindingResult result,
             Model model) {
         Long userId = currentUser.id();
+        log.debug("POST /expert/services/new - usuario={}", userId);
 
         if (result.hasErrors()) {
             model.addAttribute("categories", categoryRepository.findAll());
@@ -62,6 +67,7 @@ public class ExpertDashboardController {
     @GetMapping("/services/{id}/edit")
     public String showEditForm(@PathVariable Long id, Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /expert/services/{}/edit - usuario={}", id, userId);
 
         offeredServiceService.findById(id)
                 .filter(svc -> svc.getExpertId().equals(userId))
@@ -89,6 +95,7 @@ public class ExpertDashboardController {
             BindingResult result,
             Model model) {
         Long userId = currentUser.id();
+        log.debug("POST /expert/services/{}/edit - usuario={}", id, userId);
 
         if (!offeredServiceService.findById(id)
                 .filter(svc -> svc.getExpertId().equals(userId))
@@ -110,6 +117,7 @@ public class ExpertDashboardController {
     @GetMapping("/services/{id}/delete")
     public String deleteService(@PathVariable Long id) {
         Long userId = currentUser.id();
+        log.debug("GET /expert/services/{}/delete - usuario={}", id, userId);
 
         offeredServiceService.findById(id)
                 .filter(svc -> svc.getExpertId().equals(userId))

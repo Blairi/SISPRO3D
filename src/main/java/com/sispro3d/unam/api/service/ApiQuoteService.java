@@ -23,6 +23,7 @@ import com.sispro3d.unam.user.domain.Account;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -35,6 +36,7 @@ import java.util.List;
  * que es quien aplica la máquina de estados.
  */
 @Service
+@Slf4j
 public class ApiQuoteService {
 
     private final QuoteRepository quoteRepository;
@@ -69,6 +71,8 @@ public class ApiQuoteService {
         var service = offeredServiceRepository.findById(request.getOfferedServiceId())
                 .orElseThrow(() -> ResourceNotFoundException.forId("OfferedService", request.getOfferedServiceId()));
         if (service.getStatus() != ServiceStatus.APPROVED) {
+            log.warn("Rechazado: servicio no aprobado para cotizar (API): servicio={}, estado={}",
+                    request.getOfferedServiceId(), service.getStatus());
             throw new BadRequestException("Only APPROVED services can be quoted");
         }
 
@@ -79,7 +83,9 @@ public class ApiQuoteService {
         quote.setDescription(request.getDescription());
         quote.setCreatedAt(LocalDateTime.now());
 
-        return mapper.toResponse(quoteRepository.save(quote));
+        Quote saved = quoteRepository.save(quote);
+        log.info("Cotización creada (API): id={}, cliente={}", saved.getId(), clientId);
+        return mapper.toResponse(saved);
     }
 
     public QuoteResponseDTO findById(Long id) {
@@ -140,6 +146,7 @@ public class ApiQuoteService {
                 .validUntil(request.getValidUntil())
                 .build());
 
+        log.info("Cotización respondida (API): id={}, experto={}", id, expertId);
         return mapper.toResponse(findQuote(id));
     }
 
@@ -151,6 +158,7 @@ public class ApiQuoteService {
         Long clientId = ApiCurrentUser.requireAccountId();
         var acceptance = quoteService.accept(id, clientId);
 
+        log.info("Cotización aceptada (API): id={}, cliente={}", id, clientId);
         return QuoteAcceptanceDTO.builder()
                 .quote(mapper.toResponse(findQuote(acceptance.quote().getId())))
                 .workOrder(workOrderRepository.findByQuote_Id(id)
@@ -162,6 +170,7 @@ public class ApiQuoteService {
     public QuoteResponseDTO reject(Long id) {
         Long clientId = ApiCurrentUser.requireAccountId();
         quoteService.reject(id, clientId);
+        log.info("Cotización rechazada (API): id={}, cliente={}", id, clientId);
         return mapper.toResponse(findQuote(id));
     }
 
@@ -176,14 +185,17 @@ public class ApiQuoteService {
         boolean isClient = belongsToClient(quote, actor.getIdUser());
         boolean isExpert = belongsToExpert(quote, actor.getIdUser());
         if (!isClient && !isExpert) {
+            log.warn("Rechazado: expiración por no participante (API): cotización={}, cuenta={}", id, actor.getIdUser());
             throw new ForbiddenException("Only the requesting client or the expert of the service can expire this quote");
         }
 
         if (quote.getValidUntil() == null || !quote.getValidUntil().isBefore(LocalDate.now())) {
+            log.warn("Rechazado: cotización aún vigente (API): id={}, vigencia={}", id, quote.getValidUntil());
             throw new BadRequestException("The quote is still valid until " + quote.getValidUntil());
         }
 
         quoteService.expire(id);
+        log.info("Cotización expirada (API): id={}", id);
         return mapper.toResponse(findQuote(id));
     }
 
@@ -192,10 +204,12 @@ public class ApiQuoteService {
             throw ResourceNotFoundException.forId("Quote", id);
         }
         if (workOrderRepository.findByQuote_Id(id).isPresent()) {
+            log.warn("Rechazado: cotización referenciada por orden no eliminable (API): id={}", id);
             throw new ConflictException("Quote with id " + id
                     + " is referenced by a work order and cannot be deleted");
         }
         quoteRepository.deleteById(id);
+        log.info("Cotización eliminada (API): id={}", id);
     }
 
     private Quote findQuote(Long id) {
@@ -213,6 +227,8 @@ public class ApiQuoteService {
         var account = accountRepository.findById(accountId)
                 .orElseThrow(() -> ResourceNotFoundException.forId(entity, accountId));
         if (account.getRole() != role) {
+            log.warn("Rechazado por rol (API): cuenta={}, rolRequerido={}, rolActual={}",
+                    accountId, role, account.getRole());
             throw new ForbiddenException(message);
         }
         return account;

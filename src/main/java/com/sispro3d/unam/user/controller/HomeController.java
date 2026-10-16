@@ -5,6 +5,7 @@ import com.sispro3d.unam.offeredservice.dto.OfferedServiceResponse;
 import com.sispro3d.unam.offeredservice.dto.ServiceSearchCriteria;
 import com.sispro3d.unam.offeredservice.dto.ServiceSortOrder;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import java.util.List;
 
 @Controller
+@Slf4j
 public class HomeController {
 
     private static final int FEATURED_SERVICES_LIMIT = 6;
@@ -25,6 +27,7 @@ public class HomeController {
 
     @GetMapping("/")
     public String home(Model model) {
+        log.debug("GET /");
         List<OfferedServiceResponse> featured = offeredServiceService.search(
                 new ServiceSearchCriteria(null, null, null, null, null, ServiceSortOrder.NEWEST));
         if (featured.size() > FEATURED_SERVICES_LIMIT) {

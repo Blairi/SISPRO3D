@@ -4,6 +4,7 @@ import com.sispro3d.unam.category.dto.CategoryRequest;
 import com.sispro3d.unam.category.service.CategoryService;
 import com.sispro3d.unam.security.CurrentUser;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/admin/categories")
+@Slf4j
 public class CategoryController {
 
     @Autowired
@@ -23,6 +25,7 @@ public class CategoryController {
     @GetMapping
     public String list(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /admin/categories - usuario={}", userId);
 
         model.addAttribute("categories", categoryService.findAll());
         return "admin/categories";
@@ -31,6 +34,7 @@ public class CategoryController {
     @GetMapping("/new")
     public String showCreateForm(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /admin/categories/new - usuario={}", userId);
 
         model.addAttribute("category", new CategoryRequest());
         return "admin/category-create";
@@ -39,6 +43,7 @@ public class CategoryController {
     @PostMapping("/new")
     public String create(@Valid @ModelAttribute("category") CategoryRequest request, BindingResult result) {
         Long userId = currentUser.id();
+        log.debug("POST /admin/categories/new - usuario={}", userId);
 
         if (result.hasErrors()) {
             return "admin/category-create";
@@ -51,6 +56,7 @@ public class CategoryController {
     @GetMapping("/{id}/edit")
     public String showEditForm(@PathVariable Long id, Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /admin/categories/{}/edit - usuario={}", id, userId);
 
         var category = categoryService.findById(id).orElseThrow();
         model.addAttribute("category", category);
@@ -60,6 +66,7 @@ public class CategoryController {
     @PostMapping("/{id}/edit")
     public String update(@PathVariable Long id, @Valid @ModelAttribute("category") CategoryRequest request, BindingResult result, Model model) {
         Long userId = currentUser.id();
+        log.debug("POST /admin/categories/{}/edit - usuario={}", id, userId);
 
         if (result.hasErrors()) {
             model.addAttribute("categoryId", id);
@@ -73,6 +80,7 @@ public class CategoryController {
     @GetMapping("/{id}/delete")
     public String delete(@PathVariable Long id) {
         Long userId = currentUser.id();
+        log.debug("GET /admin/categories/{}/delete - usuario={}", id, userId);
 
         categoryService.delete(id);
         return "redirect:/admin/categories";

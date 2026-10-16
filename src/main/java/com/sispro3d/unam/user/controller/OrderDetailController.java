@@ -21,6 +21,7 @@ import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -45,6 +46,7 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/orders")
+@Slf4j
 public class OrderDetailController {
 
     @Autowired
@@ -76,6 +78,7 @@ public class OrderDetailController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
+        log.debug("GET /orders/{} - usuario={}", id, currentUser.id());
         return loadDetail(id, model, new MessageRequest());
     }
 
@@ -85,6 +88,7 @@ public class OrderDetailController {
                               BindingResult result,
                               Model model,
                               RedirectAttributes attributes) {
+        log.debug("POST /orders/{}/messages - usuario={}", id, currentUser.id());
         requireParticipant(id);
 
         if (result.hasErrors()) {
@@ -105,12 +109,14 @@ public class OrderDetailController {
     @PostMapping("/{id}/complete")
     public String complete(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /orders/{}/complete - usuario={}", id, userId);
         return run(id, attributes, () -> workOrderService.complete(id, userId), "Orden completada.");
     }
 
     @PostMapping("/{id}/request-changes")
     public String requestChanges(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /orders/{}/request-changes - usuario={}", id, userId);
         return run(id, attributes, () -> workOrderService.requestChanges(id, userId),
                 "Solicitaste cambios en el trabajo.");
     }
@@ -118,18 +124,21 @@ public class OrderDetailController {
     @PostMapping("/{id}/cancel")
     public String cancel(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /orders/{}/cancel - usuario={}", id, userId);
         return run(id, attributes, () -> workOrderService.cancel(id, userId), "Orden cancelada.");
     }
 
     @PostMapping("/{id}/start")
     public String start(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /orders/{}/start - usuario={}", id, userId);
         return run(id, attributes, () -> workOrderService.start(id, userId), "Orden iniciada.");
     }
 
     @PostMapping("/{id}/mark-in-review")
     public String markInReview(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /orders/{}/mark-in-review - usuario={}", id, userId);
         return run(id, attributes, () -> workOrderService.markInReview(id, userId),
                 "Orden enviada a revisión del cliente.");
     }

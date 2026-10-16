@@ -2,6 +2,7 @@ package com.sispro3d.unam.user.controller;
 
 import com.sispro3d.unam.report.dto.ReportDateRange;
 import com.sispro3d.unam.report.service.AdminReportService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
@@ -14,6 +15,7 @@ import java.time.LocalDate;
 
 @Controller
 @RequestMapping("/admin/reports")
+@Slf4j
 public class AdminReportsController {
 
     @Autowired
@@ -24,6 +26,7 @@ public class AdminReportsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             Model model) {
+        log.debug("GET /admin/reports - desde={}, hasta={}", from, to);
 
         ReportDateRange range = ReportDateRange.of(from, to);
         if (range.invalid()) {

@@ -15,6 +15,7 @@ import com.sispro3d.unam.offeredservice.repository.OfferedServiceRepository;
 import com.sispro3d.unam.offeredservice.service.OfferedServiceService;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class OfferedServiceServiceImpl implements OfferedServiceService {
 
     @Autowired
@@ -57,6 +59,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", request.getExpertId()));
 
         if (expert.getRole() != Role.EXPERT) {
+            log.warn("Intento de publicar servicio por cuenta no experta: id={}", expert.getIdUser());
             throw new ForbiddenException("Solo cuentas de tipo EXPERT pueden publicar servicios");
         }
 
@@ -70,6 +73,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         service.setStatus(ServiceStatus.PENDING);
 
         OfferedService saved = offeredServiceRepository.save(service);
+        log.info("Servicio ofrecido creado: id={}, experto={}", saved.getId(), expert.getIdUser());
         return offeredServiceMapper.toResponse(saved);
     }
 
@@ -90,6 +94,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         existing.setCategory(categoryRepository.getReferenceById(request.getCategoryId()));
         existing.setUpdatedAt(LocalDateTime.now());
         OfferedService updated = offeredServiceRepository.save(existing);
+        log.info("Servicio ofrecido actualizado: id={}", updated.getId());
         return offeredServiceMapper.toResponse(updated);
     }
 
@@ -99,6 +104,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
             throw ResourceNotFoundException.forId("OfferedService", id);
         }
         offeredServiceRepository.deleteById(id);
+        log.info("Servicio ofrecido eliminado: id={}", id);
     }
 
     @Override
@@ -115,10 +121,12 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (admin)", adminId));
 
         if (admin.getRole() != Role.ADMIN) {
+            log.warn("Intento de aprobar servicio por cuenta no admin: id={}", adminId);
             throw new ForbiddenException("Solo cuentas de tipo ADMIN pueden aprobar servicios");
         }
 
         if (service.getStatus() != ServiceStatus.PENDING) {
+            log.warn("Intento de aprobar servicio no PENDING: id={}, estado={}", id, service.getStatus());
             throw new BadRequestException("Solo se pueden aprobar servicios en estado PENDING");
         }
 
@@ -126,6 +134,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         service.setAdmin(admin);
 
         OfferedService updated = offeredServiceRepository.save(service);
+        log.info("Servicio ofrecido aprobado: id={}, admin={}", updated.getId(), adminId);
         return offeredServiceMapper.toResponse(updated);
     }
 
@@ -139,10 +148,12 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (admin)", adminId));
 
         if (admin.getRole() != Role.ADMIN) {
+            log.warn("Intento de rechazar servicio por cuenta no admin: id={}", adminId);
             throw new ForbiddenException("Solo cuentas de tipo ADMIN pueden aprobar servicios");
         }
 
         if (service.getStatus() != ServiceStatus.PENDING) {
+            log.warn("Intento de rechazar servicio no PENDING: id={}, estado={}", id, service.getStatus());
             throw new BadRequestException("Solo se pueden aprobar servicios en estado PENDING");
         }
 
@@ -150,6 +161,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         service.setAdmin(admin);
 
         OfferedService updated = offeredServiceRepository.save(service);
+        log.info("Servicio ofrecido rechazado: id={}, admin={}", updated.getId(), adminId);
         return offeredServiceMapper.toResponse(updated);
     }
 
@@ -162,6 +174,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (admin)", adminId));
 
         if (admin.getRole() != Role.ADMIN) {
+            log.warn("Intento de modificar estado de servicio por cuenta no admin: id={}", adminId);
             throw new ForbiddenException("Solo cuentas de tipo ADMIN pueden modificar el estado de un servicio");
         }
 
@@ -169,6 +182,7 @@ public class OfferedServiceServiceImpl implements OfferedServiceService {
         service.setAdmin(admin);
 
         OfferedService updated = offeredServiceRepository.save(service);
+        log.info("Servicio ofrecido marcado como PENDING: id={}, admin={}", updated.getId(), adminId);
         return offeredServiceMapper.toResponse(updated);
     }
 

@@ -20,6 +20,7 @@ import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -44,6 +45,7 @@ import java.util.Optional;
  */
 @Controller
 @RequestMapping("/expert")
+@Slf4j
 public class ExpertContractingController {
 
     @Autowired
@@ -70,6 +72,7 @@ public class ExpertContractingController {
     @GetMapping("/quotes")
     public String quotes(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /expert/quotes - usuario={}", userId);
 
         List<QuoteResponse> quotes = quoteService.findByExpertId(userId);
 
@@ -85,6 +88,7 @@ public class ExpertContractingController {
     @GetMapping("/quotes/{id}/answer")
     public String showAnswerForm(@PathVariable Long id, Model model, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("GET /expert/quotes/{}/answer - usuario={}", id, userId);
 
         Optional<QuoteResponse> quote = quoteService.findById(id);
         if (quote.isEmpty() || !isOwnQuote(userId, quote.get())) {
@@ -108,6 +112,7 @@ public class ExpertContractingController {
                          Model model,
                          RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /expert/quotes/{}/answer - usuario={}", id, userId);
 
         QuoteResponse quote = quoteService.findById(id).orElse(null);
         if (quote == null || !isOwnQuote(userId, quote)) {
@@ -137,6 +142,7 @@ public class ExpertContractingController {
     @GetMapping("/orders")
     public String orders(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /expert/orders - usuario={}", userId);
 
         List<WorkOrderResponse> orders = workOrderService.findByExpertId(userId);
 
@@ -155,12 +161,14 @@ public class ExpertContractingController {
     @PostMapping("/orders/{id}/start")
     public String start(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /expert/orders/{}/start - usuario={}", id, userId);
         return runOrder(attributes, () -> workOrderService.start(id, userId), "Orden iniciada.");
     }
 
     @PostMapping("/orders/{id}/mark-in-review")
     public String markInReview(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /expert/orders/{}/mark-in-review - usuario={}", id, userId);
         return runOrder(attributes, () -> workOrderService.markInReview(id, userId),
                 "Orden enviada a revisión del cliente.");
     }
@@ -168,6 +176,7 @@ public class ExpertContractingController {
     @GetMapping("/orders/{orderId}/deliverables/new")
     public String showDeliverableForm(@PathVariable Long orderId, Model model, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("GET /expert/orders/{}/deliverables/new - usuario={}", orderId, userId);
 
         WorkOrderResponse order = requireActiveOrder(orderId, userId, attributes);
         if (order == null) {
@@ -186,6 +195,7 @@ public class ExpertContractingController {
                                       Model model,
                                       RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /expert/orders/{}/deliverables - usuario={}", orderId, userId);
 
         WorkOrderResponse order = requireActiveOrder(orderId, userId, attributes);
         if (order == null) {
@@ -215,6 +225,7 @@ public class ExpertContractingController {
                                   Model model,
                                   RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("GET /expert/orders/{}/deliverables/{}/previews/new - usuario={}", orderId, deliverableId, userId);
 
         WorkOrderResponse order = requireActiveOrder(orderId, userId, attributes);
         if (order == null) {
@@ -241,6 +252,7 @@ public class ExpertContractingController {
                                   Model model,
                                   RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /expert/orders/{}/deliverables/{}/previews - usuario={}", orderId, deliverableId, userId);
 
         WorkOrderResponse order = requireActiveOrder(orderId, userId, attributes);
         if (order == null) {
@@ -276,6 +288,7 @@ public class ExpertContractingController {
                                     @PathVariable Long deliverableId,
                                     RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /expert/orders/{}/deliverables/{}/delete - usuario={}", orderId, deliverableId, userId);
 
         if (requireActiveOrder(orderId, userId, attributes) == null) {
             return "redirect:/expert/orders";
@@ -301,6 +314,7 @@ public class ExpertContractingController {
                                 @PathVariable Long previewId,
                                 RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /expert/orders/{}/deliverables/{}/previews/{}/delete - usuario={}", orderId, deliverableId, previewId, userId);
 
         if (requireActiveOrder(orderId, userId, attributes) == null) {
             return "redirect:/expert/orders";

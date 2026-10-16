@@ -15,11 +15,13 @@ import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@Slf4j
 public class ApiWorkOrderService {
 
     private final WorkOrderRepository workOrderRepository;
@@ -58,9 +60,10 @@ public class ApiWorkOrderService {
                 .quoteId(request.getQuoteId())
                 .build());
 
-        return workOrderRepository.findByQuote_Id(request.getQuoteId())
-                .map(mapper::toResponse)
+        var created = workOrderRepository.findByQuote_Id(request.getQuoteId())
                 .orElseThrow(() -> new IllegalStateException("The work order could not be created"));
+        log.info("Orden de trabajo creada (API): id={}, cotización={}, cliente={}", created.getId(), request.getQuoteId(), clientId);
+        return mapper.toResponse(created);
     }
 
     /** Listado acotado a la identidad del token de acceso. */
@@ -74,6 +77,7 @@ public class ApiWorkOrderService {
     public List<WorkOrderResponseDTO> findByClient(Long clientId) {
         var actor = requireActor();
         if (actor.getRole() == Role.CLIENT && !actor.getIdUser().equals(clientId)) {
+            log.warn("Rechazado: listado de órdenes ajenas (API cliente): cuenta={}, solicitado={}", actor.getIdUser(), clientId);
             throw new ForbiddenException("A client can only list their own work orders");
         }
         return workOrderRepository.findByQuote_Client_IdUser(clientId).stream()
@@ -84,6 +88,7 @@ public class ApiWorkOrderService {
     public List<WorkOrderResponseDTO> findByExpert(Long expertId) {
         var actor = requireActor();
         if (actor.getRole() == Role.EXPERT && !actor.getIdUser().equals(expertId)) {
+            log.warn("Rechazado: listado de órdenes ajenas (API experto): cuenta={}, solicitado={}", actor.getIdUser(), expertId);
             throw new ForbiddenException("An expert can only list their own work orders");
         }
         return workOrderRepository.findByQuote_OfferedService_Expert_IdUser(expertId).stream()
@@ -124,7 +129,10 @@ public class ApiWorkOrderService {
         var order = findOrder(id);
 
         switch (newStatus) {
-            case PENDING -> throw new BadRequestException("Una orden no puede volver al estado PENDING");
+            case PENDING -> {
+                log.warn("Rechazado: transición a PENDING no permitida (API): orden={}", id);
+                throw new BadRequestException("Una orden no puede volver al estado PENDING");
+            }
             case IN_PROGRESS -> {
                 if (order.getStatus() == WorkOrderStatus.IN_REVIEW) {
                     workOrderService.requestChanges(id, actorId);
@@ -137,6 +145,7 @@ public class ApiWorkOrderService {
             case CANCELED -> workOrderService.cancel(id, actorId);
         }
 
+        log.info("Orden de trabajo {} (API): id={}, actor={}", newStatus, id, actorId);
         return workOrderRepository.findById(id)
                 .map(mapper::toResponse)
                 .orElseThrow(() -> ResourceNotFoundException.forId("WorkOrder", id));

@@ -10,6 +10,7 @@ import com.sispro3d.unam.user.dto.AccountResponse;
 import com.sispro3d.unam.user.mapper.AccountMapper;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.user.service.AccountService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class AccountServiceImpl implements AccountService {
 
     @Autowired
@@ -53,6 +55,7 @@ public class AccountServiceImpl implements AccountService {
         account.setPassword(passwordEncoder.encode(account.getPassword()));
         account.setCreatedAt(LocalDateTime.now());
         Account saved = accountRepository.save(account);
+        log.info("Cuenta creada: id={}, email={}, rol={}", saved.getIdUser(), saved.getEmail(), saved.getRole());
         return accountMapper.toResponse(saved);
     }
 
@@ -64,6 +67,7 @@ public class AccountServiceImpl implements AccountService {
         accountMapper.updateEntityFromRequest(request, existing);
         existing.setPassword(encodeIfChanged(request.getPassword(), existing.getPassword()));
         Account updated = accountRepository.save(existing);
+        log.info("Cuenta actualizada: id={}", updated.getIdUser());
         return accountMapper.toResponse(updated);
     }
 
@@ -90,6 +94,7 @@ public class AccountServiceImpl implements AccountService {
 
         offeredServiceRepository.deleteAll(offeredServiceRepository.findByExpert_IdUser(id));
         accountRepository.delete(account);
+        log.info("Cuenta eliminada: id={}", id);
     }
 
     @Override

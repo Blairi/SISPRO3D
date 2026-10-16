@@ -3,6 +3,7 @@ package com.sispro3d.unam.api.service;
 import com.sispro3d.unam.core.exception.ForbiddenException;
 import com.sispro3d.unam.security.ApiCurrentUser;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
  * cuerpo de la petición.
  */
 @Component
+@Slf4j
 public class ApiOrderAccess {
 
     public Long currentAccountId() {
@@ -18,13 +20,19 @@ public class ApiOrderAccess {
     }
 
     public void requireParticipant(WorkOrder order) {
-        if (!isParticipant(order, currentAccountId())) {
+        Long accountId = currentAccountId();
+        if (!isParticipant(order, accountId)) {
+            log.warn("Rechazado: acceso a orden por no participante (API): orden={}, cuenta={}",
+                    order != null ? order.getId() : null, accountId);
             throw new ForbiddenException("Only the order's client or expert can access this resource");
         }
     }
 
     public void requireExpertOwner(WorkOrder order) {
-        if (!isExpertOwner(order, currentAccountId())) {
+        Long accountId = currentAccountId();
+        if (!isExpertOwner(order, accountId)) {
+            log.warn("Rechazado: acción de experto no propietario (API): orden={}, cuenta={}",
+                    order != null ? order.getId() : null, accountId);
             throw new ForbiddenException("Only the expert owning the order can perform this action");
         }
     }

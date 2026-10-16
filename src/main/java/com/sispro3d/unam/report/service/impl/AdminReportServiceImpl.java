@@ -19,6 +19,7 @@ import com.sispro3d.unam.user.service.AccountService;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class AdminReportServiceImpl implements AdminReportService {
 
     @Autowired
@@ -47,6 +49,7 @@ public class AdminReportServiceImpl implements AdminReportService {
 
     @Override
     public List<MostRequestedService> mostRequestedServices(ReportDateRange range) {
+        log.info("Generando reporte: servicios más solicitados");
         List<OfferedServiceResponse> services = servicesInRange(range);
         List<QuoteResponse> quotes = quotesInRange(range);
         List<WorkOrderResponse> orders = ordersInRange(range);
@@ -74,6 +77,7 @@ public class AdminReportServiceImpl implements AdminReportService {
 
     @Override
     public List<ExpertPerformance> expertPerformance(ReportDateRange range) {
+        log.info("Generando reporte: desempeño de expertos");
         List<OfferedServiceResponse> services = servicesInRange(range);
         List<QuoteResponse> quotes = quotesInRange(range);
         List<WorkOrderResponse> orders = ordersInRange(range);
@@ -143,6 +147,7 @@ public class AdminReportServiceImpl implements AdminReportService {
 
     @Override
     public ActivitySummary activitySummary(ReportDateRange range) {
+        log.info("Generando reporte: resumen de actividad");
         return new ActivitySummary(
                 countBy(accountService.findAll().stream()
                                 .filter(a -> range.includes(a.getCreatedAt()))

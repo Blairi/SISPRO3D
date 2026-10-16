@@ -15,6 +15,7 @@ import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class ReviewServiceImpl implements ReviewService {
 
     @Autowired
@@ -55,6 +57,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (client)", request.getClientId()));
 
         if (client.getRole() != Role.CLIENT) {
+            log.warn("Intento de publicar reseña por cuenta no cliente: id={}", request.getClientId());
             throw new ForbiddenException("Solo cuentas de tipo CLIENT pueden publicar reseñas");
         }
 
@@ -70,6 +73,7 @@ public class ReviewServiceImpl implements ReviewService {
         review.setOfferedService(service);
         review.setCreatedAt(LocalDateTime.now());
         Review saved = reviewRepository.save(review);
+        log.info("Reseña creada: id={}, cliente={}, servicio={}", saved.getId(), request.getClientId(), request.getOfferedServiceId());
         return reviewMapper.toResponse(saved);
     }
 
@@ -79,6 +83,7 @@ public class ReviewServiceImpl implements ReviewService {
                         clientId, offeredServiceId, WorkOrderStatus.COMPLETED);
 
         if (completed.isEmpty()) {
+            log.warn("Intento de reseñar sin orden completada: cliente={}, servicio={}", clientId, offeredServiceId);
             throw new BadRequestException(
                     "Solo se puede reseñar un servicio con una orden de trabajo completada");
         }
@@ -86,12 +91,14 @@ public class ReviewServiceImpl implements ReviewService {
 
     private void requireSinReseñaPrevia(Long clientId, Long offeredServiceId) {
         if (reviewRepository.findByClient_IdUserAndOfferedService_Id(clientId, offeredServiceId).isPresent()) {
+            log.warn("Intento de reseñar servicio ya reseñado: cliente={}, servicio={}", clientId, offeredServiceId);
             throw new ConflictException("El cliente ya publicó una reseña para este servicio");
         }
     }
 
     private void requireRatingValido(Integer rating) {
         if (rating == null || rating < 1 || rating > 5) {
+            log.warn("Calificación inválida al crear reseña: valor={}", rating);
             throw new BadRequestException("La calificación debe estar entre 1 y 5");
         }
     }
@@ -112,6 +119,7 @@ public class ReviewServiceImpl implements ReviewService {
         existing.setClient(accountRepository.getReferenceById(request.getClientId()));
         existing.setOfferedService(offeredServiceRepository.getReferenceById(request.getOfferedServiceId()));
         Review updated = reviewRepository.save(existing);
+        log.info("Reseña actualizada: id={}", updated.getId());
         return reviewMapper.toResponse(updated);
     }
 
@@ -121,6 +129,7 @@ public class ReviewServiceImpl implements ReviewService {
             throw ResourceNotFoundException.forId("Review", id);
         }
         reviewRepository.deleteById(id);
+        log.info("Reseña eliminada: id={}", id);
     }
 
     @Override

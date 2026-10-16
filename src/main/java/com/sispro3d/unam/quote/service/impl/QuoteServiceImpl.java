@@ -18,6 +18,7 @@ import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.dto.WorkOrderRequest;
 import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class QuoteServiceImpl implements QuoteService {
 
     private final QuoteRepository quoteRepository;
@@ -66,6 +68,7 @@ public class QuoteServiceImpl implements QuoteService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (client)", request.getClientId()));
 
         if (client.getRole() != Role.CLIENT) {
+            log.warn("Intento de cotizar por cuenta no cliente: id={}", request.getClientId());
             throw new ForbiddenException("Solo cuentas de tipo CLIENT pueden solicitar cotizaciones");
         }
 
@@ -73,6 +76,7 @@ public class QuoteServiceImpl implements QuoteService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("OfferedService", request.getOfferedServiceId()));
 
         if (service.getStatus() != ServiceStatus.APPROVED) {
+            log.warn("Intento de cotizar servicio no aprobado: id={}, estado={}", request.getOfferedServiceId(), service.getStatus());
             throw new BadRequestException("Solo se pueden cotizar servicios en estado APPROVED");
         }
 
@@ -83,6 +87,7 @@ public class QuoteServiceImpl implements QuoteService {
         quote.setCreatedAt(LocalDateTime.now());
 
         Quote saved = quoteRepository.save(quote);
+        log.info("Cotización creada: id={}, cliente={}, servicio={}", saved.getId(), request.getClientId(), request.getOfferedServiceId());
         return quoteMapper.toResponse(saved);
     }
 
@@ -107,6 +112,7 @@ public class QuoteServiceImpl implements QuoteService {
 
         quoteMapper.updateEntityFromRequest(request, existing);
         Quote updated = quoteRepository.save(existing);
+        log.info("Cotización actualizada: id={}", updated.getId());
         return quoteMapper.toResponse(updated);
     }
 
@@ -116,6 +122,7 @@ public class QuoteServiceImpl implements QuoteService {
             throw ResourceNotFoundException.forId("Quote", id);
         }
         quoteRepository.deleteById(id);
+        log.info("Cotización eliminada: id={}", id);
     }
 
     @Override
@@ -132,15 +139,18 @@ public class QuoteServiceImpl implements QuoteService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", expertId));
 
         if (expert.getRole() != Role.EXPERT) {
+            log.warn("Intento de responder cotización por cuenta no experta: id={}", expertId);
             throw new ForbiddenException("Solo cuentas de tipo EXPERT pueden responder cotizaciones");
         }
 
         var service = quote.getOfferedService();
         if (service.getExpert() == null || !expert.getIdUser().equals(service.getExpert().getIdUser())) {
+            log.warn("Intento de responder cotización por experto no propietario: cotización={}, experto={}", id, expertId);
             throw new ForbiddenException("Solo el experto propietario del servicio puede responder la cotización");
         }
 
         if (quote.getStatus() != QuoteStatus.PENDING) {
+            log.warn("Intento de responder cotización no PENDING: id={}, estado={}", id, quote.getStatus());
             throw new BadRequestException("Solo se pueden responder cotizaciones en estado PENDING");
         }
 
@@ -148,6 +158,7 @@ public class QuoteServiceImpl implements QuoteService {
         quote.setValidUntil(request.getValidUntil());
 
         Quote updated = quoteRepository.save(quote);
+        log.info("Cotización respondida: id={}, experto={}, total={}", updated.getId(), expertId, updated.getTotalAmount());
         return quoteMapper.toResponse(updated);
     }
 
@@ -189,14 +200,17 @@ public class QuoteServiceImpl implements QuoteService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (client)", clientId));
 
         if (client.getRole() != Role.CLIENT) {
+            log.warn("Intento de gestionar cotización por cuenta no cliente: id={}", clientId);
             throw new ForbiddenException("Solo cuentas de tipo CLIENT pueden gestionar cotizaciones");
         }
 
         if (quote.getClient() == null || !clientId.equals(quote.getClient().getIdUser())) {
+            log.warn("Intento de gestionar cotización por cliente no propietario: cotización={}, cliente={}", id, clientId);
             throw new ForbiddenException("Solo el cliente propietario puede gestionar la cotización");
         }
 
         if (quote.getStatus() != QuoteStatus.PENDING) {
+            log.warn("Intento de gestionar cotización no PENDING: id={}, estado={}", id, quote.getStatus());
             throw new BadRequestException("Solo se pueden gestionar cotizaciones en estado PENDING");
         }
 
@@ -204,6 +218,7 @@ public class QuoteServiceImpl implements QuoteService {
 
         quote.setStatus(target);
         Quote updated = quoteRepository.save(quote);
+        log.info("Cotización {}: id={}, cliente={}", target, updated.getId(), clientId);
         return quoteMapper.toResponse(updated);
     }
 
@@ -222,11 +237,13 @@ public class QuoteServiceImpl implements QuoteService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Quote", id));
 
         if (quote.getStatus() != QuoteStatus.PENDING) {
+            log.warn("Intento de expirar cotización no PENDING: id={}, estado={}", id, quote.getStatus());
             throw new BadRequestException("Solo se pueden expirar cotizaciones en estado PENDING");
         }
 
         quote.setStatus(QuoteStatus.EXPIRED);
         Quote updated = quoteRepository.save(quote);
+        log.info("Cotización EXPIRED: id={}", updated.getId());
         return quoteMapper.toResponse(updated);
     }
 

@@ -14,6 +14,7 @@ import com.sispro3d.unam.thread.repository.ThreadRepository;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class MessageServiceImpl implements MessageService {
 
     private final MessageRepository messageRepository;
@@ -68,6 +70,7 @@ public class MessageServiceImpl implements MessageService {
         message.setTimestamp(LocalDateTime.now());
 
         Message saved = messageRepository.save(message);
+        log.info("Mensaje creado: id={}, hilo={}, autor={}", saved.getId(), request.getThreadId(), request.getUserId());
         return messageMapper.toResponse(saved);
     }
 
@@ -87,6 +90,7 @@ public class MessageServiceImpl implements MessageService {
         existing.setThread(threadRepository.getReferenceById(request.getThreadId()));
         existing.setAccount(accountRepository.getReferenceById(request.getUserId()));
         Message updated = messageRepository.save(existing);
+        log.info("Mensaje actualizado: id={}", updated.getId());
         return messageMapper.toResponse(updated);
     }
 
@@ -96,6 +100,7 @@ public class MessageServiceImpl implements MessageService {
             throw ResourceNotFoundException.forId("Message", id);
         }
         messageRepository.deleteById(id);
+        log.info("Mensaje eliminado: id={}", id);
     }
 
     @Override
@@ -111,6 +116,7 @@ public class MessageServiceImpl implements MessageService {
         boolean isExpert = expert != null && userId.equals(expert.getIdUser());
 
         if (!isClient && !isExpert) {
+            log.warn("Intento de enviar mensaje por no participante: orden={}, cuenta={}", order.getId(), userId);
             throw new ForbiddenException("Solo el cliente o el experto de la orden pueden enviar mensajes");
         }
     }
@@ -118,6 +124,7 @@ public class MessageServiceImpl implements MessageService {
     private void requireOrderActiva(WorkOrder order) {
         WorkOrderStatus status = order.getStatus();
         if (status == WorkOrderStatus.COMPLETED || status == WorkOrderStatus.CANCELED) {
+            log.warn("Intento de enviar mensaje en orden concluida: orden={}, estado={}", order.getId(), status);
             throw new BadRequestException("No se pueden enviar mensajes cuando la orden ha concluido");
         }
     }

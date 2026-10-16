@@ -6,6 +6,7 @@ import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
 import com.sispro3d.unam.user.service.AccountService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/admin/users")
+@Slf4j
 public class AdminUsersController {
 
     @Autowired
@@ -27,6 +29,7 @@ public class AdminUsersController {
     @GetMapping
     public String list(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /admin/users - usuario={}", userId);
 
         List<AccountResponse> clients = accountService.findByRole(Role.CLIENT);
         List<AccountResponse> experts = accountService.findByRole(Role.EXPERT);
@@ -38,6 +41,7 @@ public class AdminUsersController {
 
     @GetMapping("/{id}/edit")
     public String showEditForm(@PathVariable Long id, Model model) {
+        log.debug("GET /admin/users/{}/edit - usuario={}", id, currentUser.id());
         var account = accountService.findById(id).orElseThrow();
 
         AccountRequest request = AccountRequest.builder()
@@ -60,6 +64,7 @@ public class AdminUsersController {
     @PostMapping("/{id}/edit")
     public String update(@PathVariable Long id, @Valid @ModelAttribute("user") AccountRequest request, BindingResult result, Model model) {
         Long userId = currentUser.id();
+        log.debug("POST /admin/users/{}/edit - usuario={}", id, userId);
 
         if (request.getPassword() != null && !request.getPassword().isBlank()
                 && request.getPassword().length() < 6) {
@@ -78,6 +83,7 @@ public class AdminUsersController {
     @GetMapping("/{id}/delete")
     public String delete(@PathVariable Long id) {
         Long userId = currentUser.id();
+        log.debug("GET /admin/users/{}/delete - usuario={}", id, userId);
 
         accountService.delete(id);
         return "redirect:/admin/users";

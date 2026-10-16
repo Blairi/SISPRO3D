@@ -6,6 +6,7 @@ import com.sispro3d.unam.security.CurrentUser;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.workorder.dto.WorkOrderResponse;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -26,6 +27,7 @@ import java.util.Map;
  */
 @Controller
 @RequestMapping("/client/orders")
+@Slf4j
 public class ClientOrdersController {
 
     @Autowired
@@ -40,6 +42,7 @@ public class ClientOrdersController {
     @GetMapping
     public String list(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /client/orders - usuario={}", userId);
 
         List<WorkOrderResponse> orders = workOrderService.findByClientId(userId);
 
@@ -65,12 +68,14 @@ public class ClientOrdersController {
     @PostMapping("/{id}/complete")
     public String complete(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /client/orders/{}/complete - usuario={}", id, userId);
         return run(attributes, () -> workOrderService.complete(id, userId), "Orden completada.");
     }
 
     @PostMapping("/{id}/request-changes")
     public String requestChanges(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /client/orders/{}/request-changes - usuario={}", id, userId);
         return run(attributes, () -> workOrderService.requestChanges(id, userId),
                 "Solicitaste cambios en el trabajo.");
     }
@@ -78,6 +83,7 @@ public class ClientOrdersController {
     @PostMapping("/{id}/cancel")
     public String cancel(@PathVariable Long id, RedirectAttributes attributes) {
         Long userId = currentUser.id();
+        log.debug("POST /client/orders/{}/cancel - usuario={}", id, userId);
         return run(attributes, () -> workOrderService.cancel(id, userId), "Orden cancelada.");
     }
 

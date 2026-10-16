@@ -12,12 +12,14 @@ import com.sispro3d.unam.message.repository.MessageRepository;
 import com.sispro3d.unam.thread.repository.ThreadRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.user.repository.AccountRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Slf4j
 public class ApiMessageService {
 
     private final MessageRepository messageRepository;
@@ -45,11 +47,13 @@ public class ApiMessageService {
         access.requireParticipant(thread.getWorkOrder());
 
         if (request.getContent() == null || request.getContent().isBlank()) {
+            log.warn("Rechazado: mensaje vacío (API): hilo={}", threadId);
             throw new BadRequestException("A message cannot be blank");
         }
 
         WorkOrderStatus status = thread.getWorkOrder().getStatus();
         if (status == WorkOrderStatus.COMPLETED || status == WorkOrderStatus.CANCELED) {
+            log.warn("Rechazado: mensaje en orden concluida (API): hilo={}, estado={}", threadId, status);
             throw new BadRequestException("No messages can be posted to a concluded order");
         }
 
@@ -63,7 +67,9 @@ public class ApiMessageService {
         message.setContent(request.getContent());
         message.setTimestamp(LocalDateTime.now());
 
-        return mapper.toResponse(messageRepository.save(message));
+        var saved = messageRepository.save(message);
+        log.info("Mensaje creado (API): id={}, hilo={}, autor={}", saved.getId(), threadId, authorId);
+        return mapper.toResponse(saved);
     }
 
     public List<MessageResponseDTO> findByThreadId(Long threadId) {
@@ -85,6 +91,7 @@ public class ApiMessageService {
         var message = findMessage(id);
         access.requireParticipant(message.getThread().getWorkOrder());
         messageRepository.delete(message);
+        log.info("Mensaje eliminado (API): id={}", id);
     }
 
     private Message findMessage(Long id) {

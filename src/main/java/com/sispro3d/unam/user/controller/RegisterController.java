@@ -5,6 +5,7 @@ import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.RegisterRequest;
 import com.sispro3d.unam.user.service.AccountService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/register")
+@Slf4j
 public class RegisterController {
 
     @Autowired
@@ -20,6 +22,7 @@ public class RegisterController {
 
     @GetMapping
     public String showForm(Model model) {
+        log.debug("GET /register");
         if (!model.containsAttribute("registerRequest")) {
             model.addAttribute("registerRequest", new RegisterRequest());
         }
@@ -31,6 +34,7 @@ public class RegisterController {
             @Valid @ModelAttribute RegisterRequest registerRequest,
             BindingResult result,
             Model model) {
+        log.debug("POST /register - rol={}", registerRequest.getRole());
 
         if ("EXPERT".equals(registerRequest.getRole())) {
             if (registerRequest.getSpecialty() == null || registerRequest.getSpecialty().isBlank()) {

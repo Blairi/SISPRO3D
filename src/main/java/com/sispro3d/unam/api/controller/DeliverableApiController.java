@@ -4,6 +4,7 @@ import com.sispro3d.unam.api.dto.DeliverableRequestDTO;
 import com.sispro3d.unam.api.dto.DeliverableResponseDTO;
 import com.sispro3d.unam.api.service.ApiDeliverableService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
+@Slf4j
 public class DeliverableApiController {
 
     private final ApiDeliverableService deliverableService;
@@ -30,6 +32,7 @@ public class DeliverableApiController {
 
     @GetMapping("/work-orders/{orderId}/deliverables")
     public ResponseEntity<List<DeliverableResponseDTO>> findByWorkOrderId(@PathVariable Long orderId) {
+        log.debug("GET /api/v1/work-orders/{}/deliverables", orderId);
         return ResponseEntity.ok(deliverableService.findByWorkOrderId(orderId));
     }
 
@@ -37,6 +40,7 @@ public class DeliverableApiController {
     public ResponseEntity<DeliverableResponseDTO> create(
             @PathVariable Long orderId,
             @Valid @RequestBody DeliverableRequestDTO request) {
+        log.debug("POST /api/v1/work-orders/{}/deliverables", orderId);
         DeliverableResponseDTO created = deliverableService.create(orderId, request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/../{id}")
@@ -47,17 +51,20 @@ public class DeliverableApiController {
 
     @GetMapping("/deliverables/{id}")
     public ResponseEntity<DeliverableResponseDTO> findById(@PathVariable Long id) {
+        log.debug("GET /api/v1/deliverables/{}", id);
         return ResponseEntity.ok(deliverableService.findById(id));
     }
 
     @PutMapping("/deliverables/{id}")
     public ResponseEntity<DeliverableResponseDTO> update(@PathVariable Long id,
-                                                         @Valid @RequestBody DeliverableRequestDTO request) {
+                                                          @Valid @RequestBody DeliverableRequestDTO request) {
+        log.debug("PUT /api/v1/deliverables/{}", id);
         return ResponseEntity.ok(deliverableService.update(id, request));
     }
 
     @DeleteMapping("/deliverables/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
+        log.debug("DELETE /api/v1/deliverables/{}", id);
         deliverableService.delete(id);
         return ResponseEntity.noContent().build();
     }

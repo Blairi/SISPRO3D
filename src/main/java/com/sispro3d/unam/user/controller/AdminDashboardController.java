@@ -8,6 +8,7 @@ import com.sispro3d.unam.user.dto.AccountRequest;
 import com.sispro3d.unam.user.dto.AccountResponse;
 import com.sispro3d.unam.user.service.AccountService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,6 +21,7 @@ import java.util.Map;
 
 @Controller
 @RequestMapping("/admin")
+@Slf4j
 public class AdminDashboardController {
 
     @Autowired
@@ -34,6 +36,7 @@ public class AdminDashboardController {
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /admin/dashboard - usuario={}", userId);
 
         List<OfferedServiceResponse> services = offeredServiceService.findAll().stream()
                 .sorted((a, b) -> {
@@ -59,6 +62,7 @@ public class AdminDashboardController {
     @GetMapping("/admins/new")
     public String showCreateAdminForm(Model model) {
         Long userId = currentUser.id();
+        log.debug("GET /admin/admins/new - usuario={}", userId);
 
         if (!model.containsAttribute("user")) {
             model.addAttribute("user", new AccountRequest());
@@ -70,6 +74,7 @@ public class AdminDashboardController {
     public String createAdmin(
             @Valid @ModelAttribute("user") AccountRequest request,
             BindingResult result) {
+        log.debug("POST /admin/admins/new - usuario={}", currentUser.id());
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             result.rejectValue("password", "acc.NotBlank.password", "La contraseña es obligatoria");
         } else if (request.getPassword().length() < 6) {
@@ -87,6 +92,7 @@ public class AdminDashboardController {
     @PostMapping("/services/{id}/approve")
     public String approve(@PathVariable Long id) {
         Long userId = currentUser.id();
+        log.debug("POST /admin/services/{}/approve - usuario={}", id, userId);
 
         offeredServiceService.approve(id, userId);
         return "redirect:/admin/dashboard";
@@ -95,6 +101,7 @@ public class AdminDashboardController {
     @PostMapping("/services/{id}/reject")
     public String reject(@PathVariable Long id) {
         Long userId = currentUser.id();
+        log.debug("POST /admin/services/{}/reject - usuario={}", id, userId);
 
         offeredServiceService.reject(id, userId);
         return "redirect:/admin/dashboard";
@@ -103,6 +110,7 @@ public class AdminDashboardController {
     @PostMapping("/services/{id}/pending")
     public String markPending(@PathVariable Long id) {
         Long userId = currentUser.id();
+        log.debug("POST /admin/services/{}/pending - usuario={}", id, userId);
 
         offeredServiceService.markPending(id, userId);
         return "redirect:/admin/dashboard";

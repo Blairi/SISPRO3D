@@ -9,6 +9,7 @@ import com.sispro3d.unam.quote.service.QuoteService;
 import com.sispro3d.unam.security.CurrentUser;
 import com.sispro3d.unam.user.domain.Role;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
  */
 @Controller
 @RequestMapping("/services")
+@Slf4j
 public class QuoteRequestController {
 
     @Autowired
@@ -40,6 +42,7 @@ public class QuoteRequestController {
 
     @GetMapping("/{id}/quote")
     public String showForm(@PathVariable Long id, Model model) {
+        log.debug("GET /services/{}/quote - usuario={}", id, currentUser.id());
         requireClientRole();
 
         OfferedServiceResponse service = findApprovedService(id);
@@ -54,6 +57,7 @@ public class QuoteRequestController {
                                @Valid @ModelAttribute("quote") QuoteRequest request,
                                BindingResult result,
                                Model model) {
+        log.debug("POST /services/{}/quote - usuario={}", id, currentUser.id());
         requireClientRole();
 
         OfferedServiceResponse service = findApprovedService(id);

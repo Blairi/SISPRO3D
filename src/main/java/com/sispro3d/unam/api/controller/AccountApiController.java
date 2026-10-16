@@ -4,6 +4,7 @@ import com.sispro3d.unam.api.dto.AccountRequestDTO;
 import com.sispro3d.unam.api.dto.AccountResponseDTO;
 import com.sispro3d.unam.api.service.ApiAccountService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ import java.net.URI;
 
 @RestController
 @RequestMapping("/api/v1/accounts")
+@Slf4j
 public class AccountApiController {
 
     private final ApiAccountService accountService;
@@ -29,11 +31,13 @@ public class AccountApiController {
 
     @GetMapping("/{id}")
     public ResponseEntity<AccountResponseDTO> findById(@PathVariable Long id) {
+        log.debug("GET /api/v1/accounts/{}", id);
         return ResponseEntity.ok(accountService.findById(id));
     }
 
     @PostMapping
     public ResponseEntity<AccountResponseDTO> create(@Valid @RequestBody AccountRequestDTO request) {
+        log.debug("POST /api/v1/accounts");
         AccountResponseDTO created = accountService.create(request);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -45,11 +49,13 @@ public class AccountApiController {
     @PutMapping("/{id}")
     public ResponseEntity<AccountResponseDTO> update(@PathVariable Long id,
                                                      @Valid @RequestBody AccountRequestDTO request) {
+        log.debug("PUT /api/v1/accounts/{}", id);
         return ResponseEntity.ok(accountService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
+        log.debug("DELETE /api/v1/accounts/{}", id);
         accountService.delete(id);
         return ResponseEntity.noContent().build();
     }

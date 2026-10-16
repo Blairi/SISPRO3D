@@ -11,6 +11,7 @@ import com.sispro3d.unam.review.repository.ReviewRepository;
 import com.sispro3d.unam.security.ApiCurrentUser;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Slf4j
 public class ApiFavoriteService {
 
     private final FavoriteServiceRepository favoriteServiceRepository;
@@ -42,6 +44,7 @@ public class ApiFavoriteService {
     public ServiceResponseDTO associate(Long clientId, Long serviceId) {
         var principal = ApiCurrentUser.require();
         if (principal.role() != Role.CLIENT) {
+            log.warn("Rechazado: gestión de favoritos por cuenta no cliente (API): cuenta={}", principal.accountId());
             throw new AccessDeniedException("Only CLIENTs can manage favorites");
         }
         Long actorId = principal.accountId();
@@ -64,6 +67,7 @@ public class ApiFavoriteService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("OfferedService", serviceId));
 
         if (favoriteServiceRepository.existsByClient_IdUserAndService_Id(clientId, serviceId)) {
+            log.warn("Rechazado: servicio ya es favorito (API): cliente={}, servicio={}", clientId, serviceId);
             throw new DataIntegrityException("Service with id " + serviceId
                     + " is already a favorite of client " + clientId);
         }
@@ -74,6 +78,7 @@ public class ApiFavoriteService {
         favorite.setCreatedAt(LocalDateTime.now());
         favoriteServiceRepository.save(favorite);
 
+        log.info("Favorito agregado (API): cliente={}, servicio={}", clientId, serviceId);
         return mapper.toResponse(service, reviewRepository.findByOfferedService_Id(serviceId));
     }
 
@@ -81,6 +86,7 @@ public class ApiFavoriteService {
         Long actorId = ApiCurrentUser.requireAccountId();
         var principal = ApiCurrentUser.require();
         if (principal.role() != Role.CLIENT) {
+            log.warn("Rechazado: gestión de favoritos por cuenta no cliente (API): cuenta={}", principal.accountId());
             throw new AccessDeniedException("Only CLIENTs can manage favorites");
         }
         return associateAsClient(actorId, serviceId);
@@ -126,6 +132,7 @@ public class ApiFavoriteService {
     public void remove(Long clientId, Long serviceId) {
         var principal = ApiCurrentUser.require();
         if (principal.role() != Role.CLIENT) {
+            log.warn("Rechazado: gestión de favoritos por cuenta no cliente (API): cuenta={}", principal.accountId());
             throw new AccessDeniedException("Only CLIENTs can manage favorites");
         }
         Long actorId = principal.accountId();
@@ -138,12 +145,14 @@ public class ApiFavoriteService {
                     + effectiveClientId + " and service " + serviceId);
         }
         favoriteServiceRepository.deleteByClient_IdUserAndService_Id(effectiveClientId, serviceId);
+        log.info("Favorito eliminado (API): cliente={}, servicio={}", effectiveClientId, serviceId);
     }
 
     @Transactional
     public void removeForCurrentUser(Long serviceId) {
         var principal = ApiCurrentUser.require();
         if (principal.role() != Role.CLIENT) {
+            log.warn("Rechazado: gestión de favoritos por cuenta no cliente (API): cuenta={}", principal.accountId());
             throw new AccessDeniedException("Only CLIENTs can manage favorites");
         }
         Long actorId = principal.accountId();
@@ -152,5 +161,6 @@ public class ApiFavoriteService {
                     + actorId + " and service " + serviceId);
         }
         favoriteServiceRepository.deleteByClient_IdUserAndService_Id(actorId, serviceId);
+        log.info("Favorito eliminado (API): cliente={}, servicio={}", actorId, serviceId);
     }
 }

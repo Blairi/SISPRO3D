@@ -11,6 +11,7 @@ import com.sispro3d.unam.deliverable.repository.DeliverableRepository;
 import com.sispro3d.unam.preview.repository.PreviewRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Slf4j
 public class ApiDeliverableService {
 
     private final DeliverableRepository deliverableRepository;
@@ -66,6 +68,7 @@ public class ApiDeliverableService {
 
         if (order.getStatus() != WorkOrderStatus.IN_PROGRESS
                 && order.getStatus() != WorkOrderStatus.IN_REVIEW) {
+            log.warn("Rechazado: entregable en orden no activa (API): orden={}, estado={}", workOrderId, order.getStatus());
             throw new BadRequestException(
                     "Deliverables can only be registered while the order is IN_PROGRESS or IN_REVIEW");
         }
@@ -74,7 +77,9 @@ public class ApiDeliverableService {
         deliverable.setWorkOrder(order);
         deliverable.setCreatedAt(LocalDateTime.now());
 
-        return mapper.toResponse(deliverableRepository.save(deliverable));
+        var saved = deliverableRepository.save(deliverable);
+        log.info("Entregable creado (API): id={}, orden={}", saved.getId(), workOrderId);
+        return mapper.toResponse(saved);
     }
 
     public DeliverableResponseDTO update(Long id, DeliverableRequestDTO request) {
@@ -83,7 +88,9 @@ public class ApiDeliverableService {
         access.requireExpertOwner(existing.getWorkOrder());
 
         mapper.updateEntityFromRequest(request, existing);
-        return mapper.toResponse(deliverableRepository.save(existing));
+        var updated = deliverableRepository.save(existing);
+        log.info("Entregable actualizado (API): id={}", updated.getId());
+        return mapper.toResponse(updated);
     }
 
     @Transactional
@@ -97,6 +104,7 @@ public class ApiDeliverableService {
         previewRepository.deleteAll(previews);
         deliverableRepository.delete(existing);
         fileStorageService.delete(existing.getUrlFile());
+        log.info("Entregable eliminado (API): id={}", id);
     }
 
     private Deliverable findDeliverable(Long id) {

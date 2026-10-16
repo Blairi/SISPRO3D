@@ -19,6 +19,7 @@ import com.sispro3d.unam.user.service.AccountService;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 import com.sispro3d.unam.workorder.service.WorkOrderService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -43,6 +44,7 @@ import java.util.Map;
 
 @Controller
 @RequestMapping("/services")
+@Slf4j
 public class ServiceCatalogController {
 
     @Autowired
@@ -71,6 +73,7 @@ public class ServiceCatalogController {
                         @RequestParam(required = false) String maxDeliveryDays,
                         @RequestParam(required = false) String sort,
                         Model model) {
+        log.debug("GET /services - q={}, categoria={}", q, categoryId);
         List<String> filterErrors = new ArrayList<>();
 
         Long parsedCategoryId = parseLong(categoryId, filterErrors, "La categoría indicada no es válida.");
@@ -124,6 +127,7 @@ public class ServiceCatalogController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
+        log.debug("GET /services/{}", id);
         OfferedServiceResponse service = offeredServiceService.findById(id)
                 .filter(svc -> svc.getStatus() == ServiceStatus.APPROVED)
                 .orElseThrow(() -> ResourceNotFoundException.forId("OfferedService", id));
@@ -151,6 +155,7 @@ public class ServiceCatalogController {
                          BindingResult result,
                          RedirectAttributes attributes) {
         Long clientId = authenticatedUserId();
+        log.debug("POST /services/{}/review - usuario={}", id, clientId);
         if (clientId == null) {
             throw new AccessDeniedException("Debes iniciar sesión para publicar una reseña");
         }

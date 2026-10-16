@@ -17,6 +17,7 @@ import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class PreviewServiceImpl implements PreviewService {
 
     private static final String SUBFOLDER = "previews";
@@ -73,6 +75,7 @@ public class PreviewServiceImpl implements PreviewService {
 
         String error = uploadValidator.previewError(request.getFile());
         if (error != null) {
+            log.warn("Archivo de previsualización rechazado: entregable={}, motivo={}", request.getDeliverableId(), error);
             throw new BadRequestException(error);
         }
 
@@ -82,6 +85,7 @@ public class PreviewServiceImpl implements PreviewService {
         preview.setUrlFile(fileStorageService.store(request.getFile(), SUBFOLDER));
 
         Preview saved = previewRepository.save(preview);
+        log.info("Previsualización creada: id={}, entregable={}", saved.getId(), request.getDeliverableId());
         return previewMapper.toResponse(saved);
     }
 
@@ -100,6 +104,7 @@ public class PreviewServiceImpl implements PreviewService {
         if (request.getFile() != null && !request.getFile().isEmpty()) {
             String error = uploadValidator.previewError(request.getFile());
             if (error != null) {
+                log.warn("Archivo de previsualización rechazado en actualización: previsualización={}, motivo={}", id, error);
                 throw new BadRequestException(error);
             }
             String previous = existing.getUrlFile();
@@ -108,6 +113,7 @@ public class PreviewServiceImpl implements PreviewService {
         }
 
         Preview updated = previewRepository.save(existing);
+        log.info("Previsualización actualizada: id={}", updated.getId());
         return previewMapper.toResponse(updated);
     }
 
@@ -117,6 +123,7 @@ public class PreviewServiceImpl implements PreviewService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Preview", id));
         previewRepository.deleteById(id);
         fileStorageService.delete(existing.getUrlFile());
+        log.info("Previsualización eliminada: id={}", id);
     }
 
     @Override
@@ -129,11 +136,13 @@ public class PreviewServiceImpl implements PreviewService {
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", expertId));
 
         if (expert.getRole() != Role.EXPERT) {
+            log.warn("Intento de gestionar previsualizaciones por cuenta no experta: id={}", expertId);
             throw new ForbiddenException("Solo cuentas de tipo EXPERT pueden gestionar previsualizaciones");
         }
 
         var serviceExpert = order.getQuote().getOfferedService().getExpert();
         if (serviceExpert == null || !expertId.equals(serviceExpert.getIdUser())) {
+            log.warn("Intento de gestionar previsualizaciones por experto no propietario: orden={}, experto={}", order.getId(), expertId);
             throw new ForbiddenException("Solo el experto propietario del servicio puede gestionar la orden");
         }
     }
@@ -141,6 +150,7 @@ public class PreviewServiceImpl implements PreviewService {
     private void requireActiveOrder(WorkOrder order) {
         if (order.getStatus() != WorkOrderStatus.IN_PROGRESS
                 && order.getStatus() != WorkOrderStatus.IN_REVIEW) {
+            log.warn("Intento de gestionar previsualizaciones en orden no activa: orden={}, estado={}", order.getId(), order.getStatus());
             throw new BadRequestException("Solo se pueden gestionar previsualizaciones en órdenes en estado IN_PROGRESS o IN_REVIEW");
         }
     }

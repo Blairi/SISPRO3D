@@ -13,10 +13,12 @@ import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrder;
 import com.sispro3d.unam.workorder.repository.WorkOrderRepository;
 import com.sispro3d.unam.message.repository.MessageRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 public class ApiThreadService {
 
     private final ThreadRepository threadRepository;
@@ -47,13 +49,16 @@ public class ApiThreadService {
         access.requireParticipant(order);
 
         if (threadRepository.existsByWorkOrder_Id(order.getId())) {
+            log.warn("Rechazado: hilo duplicado para la orden (API): orden={}", order.getId());
             throw new ConflictException("A work order can have only one thread");
         }
 
         Thread thread = new Thread();
         thread.setWorkOrder(order);
 
-        return mapper.toResponse(threadRepository.save(thread));
+        var saved = threadRepository.save(thread);
+        log.info("Hilo creado (API): id={}, orden={}", saved.getId(), order.getId());
+        return mapper.toResponse(saved);
     }
 
     public ThreadResponseDTO findByWorkOrderId(Long workOrderId) {
@@ -78,6 +83,7 @@ public class ApiThreadService {
 
         messageRepository.deleteByThread_Id(id);
         threadRepository.delete(thread);
+        log.info("Hilo eliminado (API): id={}", id);
     }
 
     private Thread findThread(Long id) {

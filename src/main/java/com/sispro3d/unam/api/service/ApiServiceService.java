@@ -15,6 +15,7 @@ import com.sispro3d.unam.quote.repository.QuoteRepository;
 import com.sispro3d.unam.review.repository.ReviewRepository;
 import com.sispro3d.unam.user.domain.Role;
 import com.sispro3d.unam.user.repository.AccountRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Slf4j
 public class ApiServiceService {
 
     private final OfferedServiceRepository offeredServiceRepository;
@@ -77,6 +79,7 @@ public class ApiServiceService {
         var expert = accountRepository.findById(expertId)
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", expertId));
         if (expert.getRole() != Role.EXPERT) {
+            log.warn("Rechazado: publicación de servicio por cuenta no experta (API): cuenta={}", expertId);
             throw new ForbiddenException("Only EXPERT accounts can publish services");
         }
         if (!categoryRepository.existsById(request.getCategoryId())) {
@@ -90,6 +93,7 @@ public class ApiServiceService {
         offeredService.setCreatedAt(LocalDateTime.now());
 
         var saved = offeredServiceRepository.save(offeredService);
+        log.info("Servicio ofrecido creado (API): id={}, experto={}", saved.getId(), expertId);
         return mapper.toResponse(saved, List.of());
     }
 
@@ -111,6 +115,7 @@ public class ApiServiceService {
         existing.setUpdatedAt(LocalDateTime.now());
 
         var updated = offeredServiceRepository.save(existing);
+        log.info("Servicio ofrecido actualizado (API): id={}", updated.getId());
         return mapper.toResponse(updated, reviewRepository.findByOfferedService_Id(id));
     }
 
@@ -119,13 +124,16 @@ public class ApiServiceService {
         var existing = offeredServiceRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.forId("OfferedService", id));
         if (!reviewRepository.findByOfferedService_Id(id).isEmpty()) {
+            log.warn("Rechazado: servicio con reseñas no eliminable (API): id={}", id);
             throw new DataIntegrityException("OfferedService with id " + id
                     + " has associated reviews and cannot be deleted");
         }
         if (!quoteRepository.findByOfferedService_Id(id).isEmpty()) {
+            log.warn("Rechazado: servicio con cotizaciones no eliminable (API): id={}", id);
             throw new DataIntegrityException("OfferedService with id " + id
                     + " has associated quotes and cannot be deleted");
         }
         offeredServiceRepository.delete(existing);
+        log.info("Servicio ofrecido eliminado (API): id={}", id);
     }
 }

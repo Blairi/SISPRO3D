@@ -6,6 +6,7 @@ import com.sispro3d.unam.category.mapper.CategoryMapper;
 import com.sispro3d.unam.category.repository.CategoryRepository;
 import com.sispro3d.unam.category.service.CategoryService;
 import com.sispro3d.unam.core.exception.ResourceNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class CategoryServiceImpl implements CategoryService {
 
     @Autowired
@@ -38,6 +40,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse create(CategoryRequest request) {
         var category = categoryMapper.toEntity(request);
         var saved = categoryRepository.save(category);
+        log.info("Categoría creada: id={}, nombre={}", saved.getId(), saved.getName());
         return categoryMapper.toResponse(saved);
     }
 
@@ -48,6 +51,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         categoryMapper.updateEntityFromRequest(request, existing);
         var updated = categoryRepository.save(existing);
+        log.info("Categoría actualizada: id={}", updated.getId());
         return categoryMapper.toResponse(updated);
     }
 
@@ -57,6 +61,7 @@ public class CategoryServiceImpl implements CategoryService {
             throw ResourceNotFoundException.forId("Category", id);
         }
         categoryRepository.deleteById(id);
+        log.info("Categoría eliminada: id={}", id);
     }
 
     @Override

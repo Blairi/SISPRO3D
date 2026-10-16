@@ -17,11 +17,13 @@ import com.sispro3d.unam.user.repository.AccountRepository;
 import com.sispro3d.unam.workorder.domain.WorkOrderStatus;
 
 import java.time.LocalDateTime;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@Slf4j
 public class ApiPreviewService {
 
     private final PreviewRepository previewRepository;
@@ -53,17 +55,20 @@ public class ApiPreviewService {
         var expert = accountRepository.findById(expertId)
                 .orElseThrow(() -> ResourceNotFoundException.forId("Account (expert)", expertId));
         if (expert.getRole() != Role.EXPERT) {
+            log.warn("Rechazado: previsualización por cuenta no experta (API): cuenta={}", expertId);
             throw new ForbiddenException("Only EXPERT accounts can add previews");
         }
 
         var order = deliverable.getWorkOrder();
         if (order.getQuote().getOfferedService().getExpert() == null
                 || !expert.getIdUser().equals(order.getQuote().getOfferedService().getExpert().getIdUser())) {
+            log.warn("Rechazado: previsualización por experto no propietario (API): experto={}", expertId);
             throw new ForbiddenException("Only the expert owning the order can add previews");
         }
 
         WorkOrderStatus status = order.getStatus();
         if (status != WorkOrderStatus.IN_PROGRESS && status != WorkOrderStatus.IN_REVIEW) {
+            log.warn("Rechazado: previsualización en orden no activa (API): entregable={}, estado={}", deliverableId, status);
             throw new InvalidRequestException("Previews can only be added while the order is IN_PROGRESS or IN_REVIEW");
         }
 
@@ -73,7 +78,9 @@ public class ApiPreviewService {
         preview.setUrlFile(request.getUrlFile());
         preview.setCreatedAt(LocalDateTime.now());
 
-        return mapper.toResponse(previewRepository.save(preview));
+        var saved = previewRepository.save(preview);
+        log.info("Previsualización creada (API): id={}, entregable={}", saved.getId(), deliverableId);
+        return mapper.toResponse(saved);
     }
 
     public List<PreviewResponseDTO> findByDeliverableId(Long deliverableId) {
@@ -102,13 +109,16 @@ public class ApiPreviewService {
 
         if (order.getStatus() != WorkOrderStatus.IN_PROGRESS
                 && order.getStatus() != WorkOrderStatus.IN_REVIEW) {
+            log.warn("Rechazado: actualización de previsualización en orden no activa (API): id={}, estado={}", id, order.getStatus());
             throw new BadRequestException(
                     "Previews can only be updated while the order is IN_PROGRESS or IN_REVIEW");
         }
 
         preview.setCaption(request.getCaption());
         preview.setUrlFile(request.getUrlFile());
-        return mapper.toResponse(previewRepository.save(preview));
+        var updated = previewRepository.save(preview);
+        log.info("Previsualización actualizada (API): id={}", updated.getId());
+        return mapper.toResponse(updated);
     }
 
     public void delete(Long id) {
@@ -116,6 +126,7 @@ public class ApiPreviewService {
         access.requireParticipant(preview.getDeliverable().getWorkOrder());
         previewRepository.delete(preview);
         fileStorageService.delete(preview.getUrlFile());
+        log.info("Previsualización eliminada (API): id={}", id);
     }
 
     private Preview findPreview(Long id) {
